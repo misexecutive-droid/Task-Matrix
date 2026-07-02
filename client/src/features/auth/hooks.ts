@@ -15,8 +15,10 @@ export const useLoginMutation = () => {
         id:    user.id,
         name:  user.firstName ?? user.email,
         email: user.email,
+        role : user.role as 'ADMIN' | 'USER'
       });
-      navigate('/', { replace: true });
+      // navigate('/', { replace: true });
+      navigate(user.role === 'ADMIN' ? '/admin' : '/' , { replace : true})
     },
   });
 };

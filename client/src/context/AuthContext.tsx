@@ -1,6 +1,6 @@
 import { createContext, useContext, useState } from 'react';
 
-type User = { id: string; name: string; email: string };
+type User = { id: string; name: string; email: string; role : 'ADMIN' | 'USER'};
 
 // shape of the authentication context used by the app
 // includes the current user, auth token, and helper functions
