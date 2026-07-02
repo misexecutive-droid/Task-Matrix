@@ -1,46 +1,32 @@
-// useState — only used for the password eye-toggle now (loading lives in mutation)
 import { useState } from "react";
-// useForm — manages field values, validation state, and handleSubmit wrapper
 import { useForm } from "react-hook-form";
-// zodResolver — bridges zod schema into react-hook-form validation
 import { zodResolver } from "@hookform/resolvers/zod";
-// Eye / EyeOff — lucide icons swapped on the password toggle button
 import { Eye, EyeOff } from "lucide-react";
-// NavLink — like <a> but marks itself active when the route matches
 import { NavLink } from "react-router";
-// shared design-system components
-import { Input, Button, ModernHeroTitle } from "../../components";
-// loginSchema = zod rules | LoginFields = TypeScript type inferred from schema
+import { Input, Button,  } from "../../components";
 import { loginSchema, type LoginFields } from "./Schemas";
-// useLoginMutation — calls authApi.login → saves token → navigates to "/"
 import { useLoginMutation } from "./hooks";
 import { AuthBackground } from "./AuthBackground";
 
 export const LoginForm = () => {
-  // controls whether password field shows plain text or dots
   const [showPassword, setShowPassword] = useState(false);
 
-  // mutation must live INSIDE the component — hooks cannot be called at module level
-  // isPending = true while the API request is in flight
-  // isError   = true if the request threw (network error, 401, etc.)
-  // error     = the Error object thrown by authApi.login
-  // mutate    = call this with form data to trigger the API call
+
   const mutation = useLoginMutation();
 
-  // useForm wires up validation against loginSchema
-  // errors = field-level zod messages (shown under each Input)
+  
   const {
-    register,     // connects each input to react-hook-form
-    handleSubmit, // wraps our submit fn: validates first, calls fn only on pass
+    register,    
+    handleSubmit, 
     formState: { errors },
   } = useForm<LoginFields>({
-    resolver: zodResolver(loginSchema), // zod runs on every submit attempt
+    resolver: zodResolver(loginSchema), 
   });
 
   return (
     <div className="flex min-h-svh" style={{ background: "var(--bg-body)" }}>
 
-      {/* ── Left dark panel ── */}
+      
       <aside
         className="hidden lg:flex lg:w-1/2 xl:w-2/5 flex-col justify-between p-10 xl:p-14 relative overflow-hidden"
         style={{ background: "var(--bg-dark)" }}
@@ -50,10 +36,10 @@ export const LoginForm = () => {
         
       </aside>
 
-      {/* ── Right form panel ── */}
+      
       <main className="flex flex-1 items-center justify-center px-4 sm:px-8 py-10 sm:py-14 relative overflow-hidden">
 
-        {/* Decorative rings — pointer-events-none so they never block clicks */}
+       
         <span className="absolute -top-28 -right-28 size-80 rounded-full border border-primary-300/15 pointer-events-none" />
         <span className="absolute -top-12 -right-12 size-44 rounded-full border border-indigo-300/20 pointer-events-none" />
         <span className="absolute top-16 -right-20 size-56 rounded-full bg-primary-100/20 pointer-events-none" />
@@ -65,7 +51,7 @@ export const LoginForm = () => {
         <span className="absolute right-14 bottom-[28%] size-2 rounded-full bg-primary-400/20 pointer-events-none" />
         <span className="absolute right-8 top-[35%] size-1.5 rounded-full bg-indigo-400/25 pointer-events-none" />
 
-        {/* z-10 keeps card above the decorative rings */}
+        
         <div
           className="relative z-10 w-full max-w-sm sm:max-w-md lg:max-w-sm border rounded-xl shadow-xl flex flex-col gap-6 sm:gap-8 p-6 sm:p-8"
           style={{
@@ -74,7 +60,7 @@ export const LoginForm = () => {
             backdropFilter: "var(--glass-blur)",
           }}
         >
-          {/* Header */}
+          
           <div className="flex flex-col gap-3">
             <div className="pb-3 border-b-2 border-primary-500">
               <h2 className="text-xl sm:text-2xl font-display font-semibold text-slate-900">
@@ -94,8 +80,7 @@ export const LoginForm = () => {
             className="flex flex-col gap-4 sm:gap-5"
             noValidate
           >
-            {/* register("email") spreads name/ref/onChange/onBlur into Input
-                errors.email?.message = zod error string or undefined          */}
+          
             <Input
               id="email"
               label="Email address"
@@ -107,7 +92,6 @@ export const LoginForm = () => {
             />
 
             <div className="flex flex-col gap-1.5">
-              {/* type switches between "password" (dots) and "text" (visible) */}
               <Input
                 id="password"
                 label="Password"
@@ -116,7 +100,6 @@ export const LoginForm = () => {
                 autoComplete="current-password"
                 error={errors.password?.message}
                 suffix={
-                  // suffix renders inside the Input on the right edge
                   <button
                     type="button"
                     onClick={() => setShowPassword(v => !v)}
@@ -164,7 +147,6 @@ export const LoginForm = () => {
 
           </form>
 
-          {/* Footer link to signup */}
           <p className="text-center text-xs sm:text-sm text-slate-400 font-display">
             Don&apos;t have an account?{" "}
             <NavLink
