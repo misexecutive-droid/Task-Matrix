@@ -14,6 +14,7 @@ import { Input, Button, ModernHeroTitle } from "../../components";
 import { loginSchema, type LoginFields } from "./Schemas";
 // useLoginMutation — calls authApi.login → saves token → navigates to "/"
 import { useLoginMutation } from "./hooks";
+import { AuthBackground } from "./AuthBackground";
 
 export const LoginForm = () => {
   // controls whether password field shows plain text or dots
@@ -44,23 +45,9 @@ export const LoginForm = () => {
         className="hidden lg:flex lg:w-1/2 xl:w-2/5 flex-col justify-between p-10 xl:p-14 relative overflow-hidden"
         style={{ background: "var(--bg-dark)" }}
       >
-        <span className="absolute inset-6 border border-primary-400/20 rounded-xl pointer-events-none" />
-        <span className="absolute -left-28 top-1/2 -translate-y-1/2 size-80 rounded-full border border-indigo-400/20 pointer-events-none" />
-        <span className="absolute -left-40 top-1/2 -translate-y-1/2 size-[28rem] rounded-full border border-indigo-400/10 pointer-events-none" />
-        <span className="absolute -right-14 top-12 size-56 rounded-full border border-primary-400/20 pointer-events-none" />
-        <span className="absolute -right-20 bottom-12 size-40 rounded-full border border-primary-400/15 pointer-events-none" />
-        <span className="absolute -right-6 top-1/2 -translate-y-1/2 size-24 rounded-full bg-indigo-500/10 pointer-events-none" />
 
-        <div className="flex flex-col gap-6">
-          <ModernHeroTitle />
-          <p className="text-white/50 text-sm leading-relaxed max-w-xs font-display">
-            Built for teams that move fast and never miss what matters.
-          </p>
-        </div>
-
-        <p className="text-white/15 text-xs font-display tracking-widest uppercase">
-          &copy; {new Date().getFullYear()} TaskMatrix
-        </p>
+        <AuthBackground  tagline ="Built for teams that move fast and never miss what matters."/>
+        
       </aside>
 
       {/* ── Right form panel ── */}

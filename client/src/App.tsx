@@ -36,7 +36,7 @@ const router = createBrowserRouter([
       {
         element: <Dashboard />,
         children: [
-          { path: '/',         element: <p className="font-display text-slate-600">Welcome to TaskMatrix</p> },
+          { path: '/',         element: <p className="font-display text-slate-900">Welcome to TaskMatrix</p> },
           { path: '/tasks',    element: <TaskList />                                                          },
           { path: '/projects', element: <p className="font-display text-slate-600">Projects — coming soon</p> },
           { path: '/calendar', element: <p className="font-display text-slate-600">Calendar — coming soon</p> },
