@@ -1,0 +1,1 @@
+export { ModernHeroTitle } from './ModernHeroTitle';
