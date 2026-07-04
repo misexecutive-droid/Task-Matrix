@@ -1,10 +1,8 @@
 import { createContext, useContext, useState } from 'react';
+import type { Role } from '../api/auth';
 
-type User = { id: string; name: string; email: string; role : 'ADMIN' | 'USER'};
+type User = { id: string; name: string; email: string; role: Role };
 
-// shape of the authentication context used by the app
-// includes the current user, auth token, and helper functions
-// to sign in or sign out
 type AuthContextType = {
   user:   User | null;
   token:  string | null;
@@ -12,14 +10,11 @@ type AuthContextType = {
   logout: () => void;
 };
 
-// the React context that stores auth state and actions
 const AuthContext = createContext<AuthContextType | null>(null);
 
-// keys for persisting auth data in local storage
 const TOKEN_KEY = 'tm-token';
 const USER_KEY  = 'tm-user';
 
-// restore saved user object from local storage when app loads
 const loadUser = (): User | null => {
   try { return JSON.parse(localStorage.getItem(USER_KEY) ?? 'null'); }
   catch { return null; }

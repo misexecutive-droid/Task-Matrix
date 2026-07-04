@@ -15,16 +15,15 @@ export const useLoginMutation = () => {
         id:    user.id,
         name:  user.firstName ?? user.email,
         email: user.email,
-        role : user.role as 'ADMIN' | 'USER'
+        role:  user.role,
       });
-      // navigate('/', { replace: true });
-      navigate(user.role === 'ADMIN' ? '/admin' : '/' , { replace : true})
+      navigate(user.role === 'ADMIN' ? '/admin' : '/', { replace: true });
     },
   });
 };
 
 export const useSignupMutation = () => {
-  const { login } = useAuth();   // register also logs the user in — reuse login()
+  const { login } = useAuth();
   const navigate  = useNavigate();
 
   return useMutation({
@@ -34,6 +33,7 @@ export const useSignupMutation = () => {
         id:    user.id,
         name:  user.firstName ?? user.email,
         email: user.email,
+        role:  user.role,
       });
       navigate('/', { replace: true });
     },
