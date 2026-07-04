@@ -1,0 +1,13 @@
+import { Schema , model } from "mongoose"
+
+const storeSchema = new Schema(
+    {
+        name : { type : String , required : true, unique : true , trim :true},
+        code : { type : String, trim : true , uppercase : true },
+        address : { type : String , trim : true},
+        inActive : { type : Boolean , default : true}
+    },
+    { timestamps : true }
+)
+
+export const Store = model('Store' , storeSchema)
