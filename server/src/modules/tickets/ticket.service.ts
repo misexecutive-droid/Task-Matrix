@@ -1,41 +1,42 @@
 import { Ticket } from "../../models/Ticket.js"
 import { AppError } from "../../utils/AppError.js"
 import type { AccessTokenPayload } from "../../middleware/auth/auth.js"
-import type { CreateTicketInput  , UpdateTicketInput } from "./ticket.validation.js"
-import App from "../../app.js"
+import type { CreateTicketInput, UpdateTicketInput } from "./ticket.validation.js"
+import { auditService } from "../audit/audit.service.js"
+import { emitTicketEvent } from "../../sockets/ticketEvent.js"
 
-const populateTicket = (query : any) => 
-    query
-     .populate({ path : "assignee" , select : "email firtName role"})
-     .populate({ path : "checklist", populate : { path : "items"} })
+const populateTicket = (query: any) =>
+  query
+    .populate({ path: "assignee", select: "email firtName role" })
+    .populate({ path: "checklist", populate: { path: "items" } })
 
-const visibilityFilter = (user : AccessTokenPayload) => {
-    if(user.role === "ADMIN") return {}
+const visibilityFilter = (user: AccessTokenPayload) => {
+  if (user.role === "ADMIN") return {}
 
-    if(user.role === "MANAGER"){
-        const or: Record<string, unknown>[] = [{ userId : user.sub}];
-        if(user.departmentId) or.push({ deparmentId : user.departmentId});
-        if(user.storeId) or.push({ storeId : user.storeId})
-        return { $or : or}
-    }
+  if (user.role === "MANAGER") {
+    const or: Record<string, unknown>[] = [{ userId: user.sub }];
+    if (user.departmentId) or.push({ departmentId: user.departmentId });
+    if (user.storeId) or.push({ storeId: user.storeId })
+    return { $or: or }
+  }
 
   if (user.role === 'AGENT') return { $or: [{ assigneeId: user.sub }, { userId: user.sub }] };
 
-  return { userId : user.sub}
+  return { userId: user.sub }
 }
 
-const assertCanMutate = (user : AccessTokenPayload, Ticket : any) => {
-    if(user.role === "ADMIN") return;
+const assertCanMutate = (user: AccessTokenPayload, ticket: any) => {
+  if (user.role === "ADMIN") return;
 
-    if(user.role === "MANAGER"){
-        const sameDept = user.departmentId && String(Ticket.departmentId ) === user.departmentId
-        const sameStore = user.storeId && String(Ticket.storeId) === user.storeId;
+  if (user.role === "MANAGER") {
+    const sameDept = user.departmentId && String(ticket.departmentId) === user.departmentId
+    const sameStore = user.storeId && String(ticket.storeId) === user.storeId;
 
-        if(sameDept || sameStore) return
-         throw AppError.forbidden("Outside your department/store")
-    }
+    if (sameDept || sameStore) return
+    throw AppError.forbidden("Outside your department/store")
+  }
 
-   if (user.role === 'AGENT') {
+  if (user.role === 'AGENT') {
     if (String(ticket.assigneeId) === user.sub) return;
     throw AppError.forbidden('Not assigned to you');
   }
@@ -55,43 +56,77 @@ export const ticketService = {
       meta: { page, limit, total, totalPages: Math.ceil(total / limit), hasNext: page * limit < total },
     };
   },
-  
-   async getById( id : string , user : AccessTokenPayload) {
+
+  async getById(id: string, user: AccessTokenPayload) {
     const ticket = await populateTicket(Ticket.findById(id))
 
-    if(!ticket) throw AppError.notFound("Ticket not found");
-    if(user.role !== "ADMIN"){
-        const visible = await Ticket.exists({ _id : id , ...visibilityFilter(user)})
+    if (!ticket) throw AppError.notFound("Ticket not found");
+    if (user.role !== "ADMIN") {
+      const visible = await Ticket.exists({ _id: id, ...visibilityFilter(user) })
 
-        if(!visible) throw AppError.forbidden();
+      if (!visible) throw AppError.forbidden();
     }
     return ticket;
   },
 
-  async create(input : CreateTicketInput , user : AccessTokenPayload){
-    const ticket = await Ticket.create({...input, userId : user.sub})
+  async create(input: CreateTicketInput, user: AccessTokenPayload) {
+    const ticket = await Ticket.create({ ...input, userId: user.sub })
+    await auditService.record({
+      entityType: "Ticket",
+      entityId: ticket._id.toString(),
+      action: "CREATE",
+      actorId: user.sub,
+      after: ticket.toObject()
+    })
     return populateTicket(Ticket.findById(ticket._id))
   },
 
-  async update(id : string , input : UpdateTicketInput , user : AccessTokenPayload){
+  async update(id: string, input: UpdateTicketInput, user: AccessTokenPayload) {
     const ticket = await Ticket.findById(id);
-    if(!ticket) throw AppError.notFound("Ticket not found")
-        assertCanMutate(user, ticket)
+    if (!ticket) throw AppError.notFound("Ticket not found")
+    assertCanMutate(user, ticket)
 
-    Object.assign(ticket , input);
+    const before = ticket.toObject();
+    Object.assign(ticket, input);
     await ticket.save()
-    return populateTicket(Ticket.findById(ticket._id))
-  },
 
-  async remove(id : string) {
+    await auditService.record({
+      entityType: "Ticket",
+      entityId: ticket._id.toString(),
+      action: "UPDATE",
+      actorId: user.sub,
+      before,
+      after: ticket.toObject()
+    });
+
+    const populated = await populateTicket(Ticket.findById(ticket._id));
+    const target = {
+      userId: ticket.userId?.toString(),
+      assignedId: ticket.assigneeId?.toString() ?? null, 
+      departmentId: ticket.departmentId?.toString() ?? null, 
+      storeId: ticket.storeId?.toString() ?? null,
+    };
+
+    emitTicketEvent("ticket:updated", target, populated);
+    
+    if (input.assigneeId && input.assigneeId !== before.assigneeId?.toString()) {
+      emitTicketEvent("ticket:assigned", target, populated)
+    }
+
+    return populated;
+  }, 
+
+  async remove(id: string, user: AccessTokenPayload) {
     const ticket = await Ticket.findByIdAndDelete(id);
-    if(!ticket) throw AppError.notFound("Ticket not found")
+    if (!ticket) throw AppError.notFound("Ticket not found")
+
+    await auditService.record({
+      entityType: "Ticket",
+      entityId: ticket._id.toString(),
+      action: "DELETE",
+      actorId: user.sub, 
+      before: ticket.toObject(),
+    })
     return ticket;
   }
-}
-
-
-
- 
-
-
+};

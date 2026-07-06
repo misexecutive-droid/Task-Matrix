@@ -3,7 +3,6 @@ import type { Model } from "mongoose"
 import { authenticate, requireRole } from "../middleware/auth/auth.js"
 import { asyncHandler } from "./asyncHandler.js"
 import { AppError } from "./AppError.js"
-import { success } from "zod/v4"
 
 export const createLookupRouter = (LookupModel: Model<any>) => {
     const router = Router()
@@ -23,7 +22,7 @@ export const createLookupRouter = (LookupModel: Model<any>) => {
         res.status(201).json({ success: true, data: item })
     }))
 
-    router.patch("/:id", asyncHandler(async (requireRole, res) => {
+    router.patch("/:id", asyncHandler(async (req, res) => {
         const item = await LookupModel.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true })
         if (!item) throw AppError.notFound("Not Found")
         res.json({ success: true, data: item })

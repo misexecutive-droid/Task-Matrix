@@ -7,7 +7,7 @@ const ChecklistItemSchema = new Schema(
         assigneeId : { type : Schema.Types.ObjectId , ref : "User" , default : null},
         dueAt : { type : Date , default : null},
         completedAt : { type : Date , default : null},
-        checklist : { type : Schema.Types.ObjectId , ref : "Checklist" , required : true , index : true}
+        checklistId : { type : Schema.Types.ObjectId , ref : "Checklist" , required : true , index : true}
     },
     { timestamps : true }
 )

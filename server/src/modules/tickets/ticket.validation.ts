@@ -25,4 +25,4 @@ export const paginatioinSchema = z.object({
 })
 
 export type CreateTicketInput = z.infer<typeof createTicketSchema>;
-export type UpdateTicketIN = z.infer<typeof updateTicketSchema>;
+export type UpdateTicketInput = z.infer<typeof updateTicketSchema>;

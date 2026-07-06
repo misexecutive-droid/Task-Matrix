@@ -4,8 +4,9 @@ import { LoginForm }  from './features/auth/LoginForm';
 import { SignupForm } from './features/auth/SignupForm';
 import { Dashboard }  from './features/dashboard';
 import { TaskList }   from './features/tasks';
-import { PublicLayout } from './components/layout';   // ← add this
+import { PublicLayout } from './components/layout';   
 import { TicketList } from './features/tickets';
+import { useTicketsQuery } from './features/tickets/hook';
 
 const ProtectedRoute = () => {
   const { token } = useAuth();
@@ -51,5 +52,6 @@ const router = createBrowserRouter([
 ]);
 
 export default function App() {
+  useTicketsQuery();
   return <RouterProvider router={router} />;
 }

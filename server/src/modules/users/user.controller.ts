@@ -1,7 +1,6 @@
 import type { Request , Response} from 'express'
 import { userService } from './user.service.js'
 import { asyncHandler } from '../../utils/asyncHandler.js'
-import { success } from 'zod/v4'
 
 export const userController = {
     list : asyncHandler ( async (_req : Request , res : Response) => {
@@ -15,7 +14,7 @@ export const userController = {
     }),
 
     create : asyncHandler(async (req : Request , res : Response) => {
-        const user = await userService.create(req.body);
+        const user = await userService.create(req.body , req.user!.sub);
         res.status(201).json({ success : true , data : user})
     }),
 
@@ -24,7 +23,7 @@ export const userController = {
         res.json({ success : true , data : user})
     }),
 
-    remove : asyncHandler(async (req : Request . res : Response) =>{
+    remove : asyncHandler(async (req : Request , res : Response) =>{
         
     })
 }

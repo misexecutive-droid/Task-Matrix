@@ -1,8 +1,7 @@
-import { response, type Request , type Response } from "express"
+import { type Request , type Response } from "express"
 import { ticketService } from "./ticket.service.js"
 import { createTicketSchema , paginatioinSchema, updateTicketSchema } from "./ticket.validation.js"
 import { asyncHandler } from "../../utils/asyncHandler.js"
-import { success } from "zod/v4"
 
 export const ticketController = {
     list : asyncHandler( async ( req : Request , res : Response) => {
@@ -22,14 +21,14 @@ export const ticketController = {
         res.status(201).json({ success : true , data : ticket})
     }),
 
-    update : asyncHandler ( async (req : Request , res : response) => {
+    update : asyncHandler ( async (req : Request , res : Response) => {
         const input = updateTicketSchema.parse(req.body);
         const ticket = await ticketService.update(req.params.id , input , req.user!)
         res.json({ success : true , data : ticket})
     }),
 
     remove : asyncHandler ( async ( req : Request, res : Response) => {
-        await ticketService.remove(req.params.id)
+        await ticketService.remove(req.params.id , req.user!)
         res.json({ success : true , data : { deleted : true}})
     }),
 }

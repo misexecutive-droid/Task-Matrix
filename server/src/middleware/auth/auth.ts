@@ -4,9 +4,9 @@ import type { Request, Response, NextFunction } from "express";
 // Import the jsonwebtoken library to verify digital signatures on incoming tokens
 import jwt from 'jsonwebtoken';
 // Import environment configurations (specifically your private JWT secrets)
-import { env } from "../../config";
+import { env } from "../../config/index.js";
 // Import your custom AppError class to trigger clean, structured error handling responses
-import { AppError } from "../../utils";
+import { AppError } from "../../utils/index.js";
 // Import the Role type from your models directory to enforce TypeScript type safety on user roles
 import type { Role } from "../../models/index.js";
 

@@ -1,6 +1,7 @@
 import { User } from "../../models/User.js"
 import { AppError } from "../../utils/AppError.js"
 import type { Role } from "../../models/User.js"
+import { auditService } from "../audit/audit.service.js"
 
 
 type CreateUserInput = {
@@ -21,7 +22,7 @@ export const userService = {
         return user;
     },
 
-    async create(input: CreateUserInput) {
+    async create(input: CreateUserInput , actorId : string) {
         const existing = await User.findOne({ email: input.email });
         if (existing) throw AppError.conflict('Email already registered')
 
@@ -29,6 +30,14 @@ export const userService = {
         const user = new User({ ...input });
         (user as any).password = input.password;
         await user.save()
+
+        await auditService.record({
+            entityType : "User",
+            entityId : user._id.toString(),
+            action : "CREATE",
+            actorId,
+            after : { email : user.email, role : user.role, isActive : user.isActive}
+        })
         return user;
 
     },
@@ -41,8 +50,20 @@ export const userService = {
             throw AppError.badRequest('You cannot demote your own account')
         }
 
+        const before = await User.findById(id);
+        if(!before) throw AppError.notFound("User not found")
+
         const user = await User.findByIdAndUpdate(id, input, { new: true, runValidators: true })
         if (!user) throw AppError.notFound('User not found')
+
+        await auditService.record({
+            entityType : "User",
+            entityId : id ,
+            action : "UPDATE",
+            actorId , 
+            before : { email : before.email, role : before.role, isActive : before.isActive},
+            after : { email : user.email, role : user.role , isActive : user.isActive }
+        })
         return user
     },
 
@@ -51,6 +72,14 @@ export const userService = {
 
         const user = await User.findByIdAndDelete(id);
         if (!user) throw AppError.notFound('User not found')
+
+        await auditService.record({
+            entityType : "User",
+            entityId : id,
+            action : "DELETE",
+            actorId,
+            before : { email : user.email, role : user.role}
+        })
 
         return user;
     }

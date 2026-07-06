@@ -1,7 +1,9 @@
+import http from "node:http"
 import type { Server } from "node:http"
-import App from "./src/app"
-import { connectDB, disconnetDB } from "./src/config/db"
-import { env } from "./src/config/env"
+import App from "./src/app.js"
+import { connectDB, disconnectDB } from "./src/config/db.js"
+import { env } from "./src/config/env.js"
+import { initSocket } from "./src/sockets/socket.js"
 
 class ServerBootstrap {
     private readonly appInstance: App;
@@ -15,7 +17,7 @@ class ServerBootstrap {
         await connectDB();
 
         this.httpServer = this.appInstance.app.listen(env.PORT, () => {
-            console.log(`Server listening on http://localhost:${env.PORT}`)
+            initSocket(this.httpServer)
         });
 
         process.on("SIGINT", () => this.shutdown());;
@@ -26,7 +28,7 @@ class ServerBootstrap {
     private shutdown(): void {
         console.log("Shutting down server...");
         this.httpServer?.close(async () => {
-            await disconnetDB()
+            await disconnectDB()
             process.exit(0)
         })
     }
