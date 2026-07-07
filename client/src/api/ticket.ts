@@ -1,9 +1,8 @@
-const BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:3000';
+import { apiFetch } from './http';
 
 export type Priority       = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
 export type AssignmentMode = 'AUTO' | 'MANUAL';
-export type TicketStatus = 'OPEN' | 'IN_PROGRESS' | 'IN_REVIEW' | 'CLOSED' | 'ON_HOLD' | 'OVERDUE' | 'ONTIME';
-
+export type TicketStatus   = 'OPEN' | 'IN_PROGRESS' | 'IN_REVIEW' | 'CLOSED' | 'ON_HOLD';
 
 export type ChecklistItem = {
   id:          string;
@@ -40,6 +39,7 @@ export type Ticket = {
   updatedAt:      string;
   assignee:       { id: string; email: string; firstName: string; role: string } | null;
   checklists:     Checklist[];
+  isOverdue:      boolean;
 };
 
 export type PaginatedResponse<T> = {
@@ -65,8 +65,7 @@ export type CreateTicketPayload = {
   tatHours?:       number;
 };
 
-
-export type UpdateTicketPayload = Partial<CreateTicketPayload & { status: TicketStatus }>;
+export type UpdateTicketPayload = Partial<Omit<CreateTicketPayload, 'assigneeId'> & { status: TicketStatus; assigneeId: string | null }>;
 
 export type CreateChecklistPayload = {
   title:  string;
@@ -80,72 +79,31 @@ export type UpdateChecklistItemPayload = {
   dueAt?:      string;
 };
 
-const authHeaders = (token: string) => ({
-  'Content-Type': 'application/json',
-  Authorization:  `Bearer ${token}`,
-});
-
-const request = async <T>(path: string, options: RequestInit): Promise<T> => {
-  const res  = await fetch(`${BASE}${path}`, options);
-  const json = await res.json();
-  if (!res.ok) throw new Error(json?.message ?? 'Request failed');
-  return json as T;
-};
-
 export const ticketApi = {
-  getAll: (token: string, page = 1, limit = 20) =>
-    request<PaginatedResponse<Ticket>>(`/tickets?page=${page}&limit=${limit}`, {
-      headers: authHeaders(token),
-    }),
+  getAll: (page = 1, limit = 20) =>
+    apiFetch<PaginatedResponse<Ticket>>(`/tickets?page=${page}&limit=${limit}`),
 
-  getOne: (id: string, token: string) =>
-    request<ApiResponse<Ticket>>(`/tickets/${id}`, {
-      headers: authHeaders(token),
-    }),
+  getOne: (id: string) =>
+    apiFetch<ApiResponse<Ticket>>(`/tickets/${id}`),
 
-  create: (payload: CreateTicketPayload, token: string) =>
-    request<ApiResponse<Ticket>>('/tickets', {
-      method:  'POST',
-      headers: authHeaders(token),
-      body:    JSON.stringify(payload),
-    }),
+  create: (payload: CreateTicketPayload) =>
+    apiFetch<ApiResponse<Ticket>>('/tickets', { method: 'POST', body: JSON.stringify(payload) }),
 
-  update: (id: string, payload: UpdateTicketPayload, token: string) =>
-    request<ApiResponse<Ticket>>(`/tickets/${id}`, {
-      method:  'PATCH',
-      headers: authHeaders(token),
-      body:    JSON.stringify(payload),
-    }),
+  update: (id: string, payload: UpdateTicketPayload) =>
+    apiFetch<ApiResponse<Ticket>>(`/tickets/${id}`, { method: 'PATCH', body: JSON.stringify(payload) }),
 
-  delete: (id: string, token: string) =>
-    request<ApiResponse<{ deleted: boolean }>>(`/tickets/${id}`, {
-      method:  'DELETE',
-      headers: authHeaders(token),
-    }),
+  delete: (id: string) =>
+    apiFetch<ApiResponse<{ deleted: boolean }>>(`/tickets/${id}`, { method: 'DELETE' }),
 
-  addChecklist: (ticketId: string, payload: CreateChecklistPayload, token: string) =>
-    request<ApiResponse<Checklist>>(`/tickets/${ticketId}/checklists`, {
-      method:  'POST',
-      headers: authHeaders(token),
-      body:    JSON.stringify(payload),
-    }),
+  addChecklist: (ticketId: string, payload: CreateChecklistPayload) =>
+    apiFetch<ApiResponse<Checklist>>(`/tickets/${ticketId}/checklists`, { method: 'POST', body: JSON.stringify(payload) }),
 
-  deleteChecklist: (id: string, token: string) =>
-    request<ApiResponse<{ deleted: boolean }>>(`/checklists/${id}`, {
-      method:  'DELETE',
-      headers: authHeaders(token),
-    }),
+  deleteChecklist: (id: string) =>
+    apiFetch<ApiResponse<{ deleted: boolean }>>(`/checklists/${id}`, { method: 'DELETE' }),
 
-  updateChecklistItem: (id: string, payload: UpdateChecklistItemPayload, token: string) =>
-    request<ApiResponse<ChecklistItem>>(`/checklist-items/${id}`, {
-      method:  'PATCH',
-      headers: authHeaders(token),
-      body:    JSON.stringify(payload),
-    }),
+  updateChecklistItem: (id: string, payload: UpdateChecklistItemPayload) =>
+    apiFetch<ApiResponse<ChecklistItem>>(`/checklist-items/${id}`, { method: 'PATCH', body: JSON.stringify(payload) }),
 
-  deleteChecklistItem: (id: string, token: string) =>
-    request<ApiResponse<{ deleted: boolean }>>(`/checklist-items/${id}`, {
-      method:  'DELETE',
-      headers: authHeaders(token),
-    }),
+  deleteChecklistItem: (id: string) =>
+    apiFetch<ApiResponse<{ deleted: boolean }>>(`/checklist-items/${id}`, { method: 'DELETE' }),
 };

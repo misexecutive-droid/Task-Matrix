@@ -136,7 +136,7 @@ export const SignupForm = () => {
                             </Button>
                         </form>
 
-                        {/* Footer */}
+                      
                         <p className="text-center text-xs sm:text-sm text-slate-400 font-display">
                             Already have an account?{" "}
                             <NavLink

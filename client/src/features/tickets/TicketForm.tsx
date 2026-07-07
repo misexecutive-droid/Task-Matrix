@@ -1,16 +1,18 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod/v4';
+import { z } from 'zod';
 import { X } from 'lucide-react';
 import { Input, Button } from '../../components';
-import { useCreateTicketMutation } from './hook';
+import { useCreateTicketMutation, useAssignableUsersQuery } from './hook';
+import { useAuth } from '../../context/AuthContext';
 
 const ticketSchema = z.object({
   title:          z.string().min(1, 'Title is required'),
   description:    z.string().min(1, 'Description is required'),
-  priority:       z.enum(['LOW', 'MEDIUM', 'HIGH', 'CRITICAL']).default('MEDIUM'),
-  assignmentMode: z.enum(['AUTO', 'MANUAL']).default('MANUAL'),
-  tatHours:       z.coerce.number().positive().optional().or(z.literal('')),
+  priority:       z.enum(['LOW', 'MEDIUM', 'HIGH', 'CRITICAL']),
+  assignmentMode: z.enum(['AUTO', 'MANUAL']),
+  assigneeId:     z.string().optional().or(z.literal('')),
+  tatHours:       z.string().optional().refine(v => !v || Number(v) > 0, 'Must be a positive number'),
 });
 
 type TicketFields = z.infer<typeof ticketSchema>;
@@ -20,6 +22,9 @@ interface TicketFormProps {
 }
 
 export const TicketForm = ({ onClose }: TicketFormProps) => {
+  const { user } = useAuth();
+  const canAssign = user?.role === 'ADMIN' || user?.role === 'MANAGER';
+  const { data: assignableUsers } = useAssignableUsersQuery();
   const mutation = useCreateTicketMutation();
 
   const {
@@ -41,7 +46,8 @@ export const TicketForm = ({ onClose }: TicketFormProps) => {
         description:    data.description,
         priority:       data.priority,
         assignmentMode: data.assignmentMode,
-        tatHours:       data.tatHours !== '' ? Number(data.tatHours) : undefined,
+        assigneeId:     data.assigneeId !== '' ? data.assigneeId : undefined,
+        tatHours:       data.tatHours ? Number(data.tatHours) : undefined,
       },
       { onSuccess: () => onClose() },
     );
@@ -57,7 +63,6 @@ export const TicketForm = ({ onClose }: TicketFormProps) => {
         className="w-full max-w-md bg-white rounded-xl shadow-2xl border border-slate-200 flex flex-col gap-6 p-6"
         onClick={e => e.stopPropagation()}
       >
-        {/* Header */}
         <div className="flex items-center justify-between">
           <h2 className="text-base font-display font-semibold text-slate-900">New ticket</h2>
           <button
@@ -96,7 +101,6 @@ export const TicketForm = ({ onClose }: TicketFormProps) => {
           </div>
 
           <div className="grid grid-cols-2 gap-3">
-            {/* Priority */}
             <div className="flex flex-col gap-1.5">
               <label htmlFor="priority" className="text-sm font-display text-slate-700">
                 Priority
@@ -113,7 +117,6 @@ export const TicketForm = ({ onClose }: TicketFormProps) => {
               </select>
             </div>
 
-            {/* Assignment mode */}
             <div className="flex flex-col gap-1.5">
               <label htmlFor="assignmentMode" className="text-sm font-display text-slate-700">
                 Assignment
@@ -129,7 +132,26 @@ export const TicketForm = ({ onClose }: TicketFormProps) => {
             </div>
           </div>
 
-          {/* TAT hours — only shown for MANUAL mode */}
+          {canAssign && (
+            <div className="flex flex-col gap-1.5">
+              <label htmlFor="assigneeId" className="text-sm font-display text-slate-700">
+                Assign to (optional)
+              </label>
+              <select
+                id="assigneeId"
+                className="w-full px-3 h-11 sm:h-10 text-sm bg-white rounded-sm border border-slate-300 focus:outline-none focus:border-2 focus:border-blue-700 transition-colors cursor-pointer"
+                {...register('assigneeId')}
+              >
+                <option value="">Unassigned</option>
+                {assignableUsers?.map(u => (
+                  <option key={u.id} value={u.id}>
+                    {u.firstName} {u.lastName ?? ''} ({u.role})
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
           {assignmentMode === 'MANUAL' && (
             <Input
               id="tatHours"

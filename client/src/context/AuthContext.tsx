@@ -1,5 +1,6 @@
-import { createContext, useContext, useState } from 'react';
+import { createContext, useContext, useEffect, useState } from 'react';
 import type { Role } from '../api/auth';
+import { tokenStore } from '../lib/tokenStore';
 
 type User = { id: string; name: string; email: string; role: Role };
 
@@ -12,8 +13,7 @@ type AuthContextType = {
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
-const TOKEN_KEY = 'tm-token';
-const USER_KEY  = 'tm-user';
+const USER_KEY = 'tm-user';
 
 const loadUser = (): User | null => {
   try { return JSON.parse(localStorage.getItem(USER_KEY) ?? 'null'); }
@@ -21,20 +21,23 @@ const loadUser = (): User | null => {
 };
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
-  const [token, setToken] = useState<string | null>(() => localStorage.getItem(TOKEN_KEY));
+  const [token, setToken] = useState<string | null>(() => tokenStore.get());
   const [user,  setUser]  = useState<User | null>(loadUser);
 
+  useEffect(() => {
+    const unsubscribe = tokenStore.subscribe(setToken);
+    return () => { unsubscribe(); };
+  }, []);
+
   const login = (t: string, u: User) => {
-    localStorage.setItem(TOKEN_KEY, t);
+    tokenStore.set(t);
     localStorage.setItem(USER_KEY, JSON.stringify(u));
-    setToken(t);
     setUser(u);
   };
 
   const logout = () => {
-    localStorage.removeItem(TOKEN_KEY);
+    tokenStore.set(null);
     localStorage.removeItem(USER_KEY);
-    setToken(null);
     setUser(null);
   };
 

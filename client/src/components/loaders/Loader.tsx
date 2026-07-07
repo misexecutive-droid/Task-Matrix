@@ -2,7 +2,7 @@ import React from "react";
 
 interface LoaderProps {
   size?:  'sm' | 'md' | 'lg';
-  color?: 'navy' | 'white';
+  color?: 'primary' | 'white';
 }
 
 const sizeMap = {
@@ -12,11 +12,11 @@ const sizeMap = {
 };
 
 const colorMap = {
-  navy:  'border-navy-600/20  border-t-navy-900',
-  white: 'border-white/20     border-t-white',
+  primary: 'border-primary-600/20 border-t-primary-900',
+  white:   'border-white/20     border-t-white',
 };
 
-export const Loader: React.FC<LoaderProps> = ({ size = 'md', color = 'navy' }) => (
+export const Loader: React.FC<LoaderProps> = ({ size = 'md', color = 'primary' }) => (
   <div
     className={`rounded-full animate-spin ${sizeMap[size]} ${colorMap[color]}`}
     role="status"

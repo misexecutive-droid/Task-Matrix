@@ -14,7 +14,7 @@ export const useTasksQuery = () => {
 
     return useQuery({
         queryKey: TASK_KEYS.all,
-        queryFn:  () => taskApi.getAll(token!),
+        queryFn:  () => taskApi.getAll(),
         enabled:  !!token,
     });
 };
@@ -25,17 +25,16 @@ export const useTaskQuery = (id: string) => {
 
     return useQuery({
         queryKey: TASK_KEYS.detail(id),
-        queryFn:  () => taskApi.getOne(id, token!),
+        queryFn:  () => taskApi.getOne(id),
         enabled:  !!token && !!id,
     });
 };
 
 export const useCreateTaskMutation = () => {
-    const { token }   = useAuth();
     const queryClient = useQueryClient();
 
     return useMutation({
-        mutationFn: (payload: CreateTaskPayload) => taskApi.create(payload, token!),
+        mutationFn: (payload: CreateTaskPayload) => taskApi.create(payload),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: TASK_KEYS.all });
         },
@@ -43,12 +42,11 @@ export const useCreateTaskMutation = () => {
 };
 
 export const useUpdateTaskMutation = () => {
-    const { token }   = useAuth();
     const queryClient = useQueryClient();
 
     return useMutation({
         mutationFn: ({ id, payload }: { id: string; payload: UpdateTaskPayload }) =>
-            taskApi.update(id, payload, token!),
+            taskApi.update(id, payload),
         onSuccess: (updatedTask) => {
             queryClient.setQueryData(TASK_KEYS.detail(updatedTask.id), updatedTask);
             queryClient.invalidateQueries({ queryKey: TASK_KEYS.all });
@@ -57,11 +55,10 @@ export const useUpdateTaskMutation = () => {
 };
 
 export const useDeleteTaskMutation = () => {
-    const { token }   = useAuth();
     const queryClient = useQueryClient();
 
     return useMutation({
-        mutationFn: (id: string) => taskApi.delete(id, token!),
+        mutationFn: (id: string) => taskApi.delete(id),
         onSuccess: (_data, id) => {
             queryClient.removeQueries({ queryKey: TASK_KEYS.detail(id) });
             queryClient.invalidateQueries({ queryKey: TASK_KEYS.all });

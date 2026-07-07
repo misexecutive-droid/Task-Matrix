@@ -1,6 +1,5 @@
-const BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:3000';
+import { apiFetch } from './http';
 
-// ── Types ──────────────────────────────────────────────────────
 export type Task = {
     id:          string;
     title:       string;
@@ -23,48 +22,17 @@ export type CreateTaskPayload = {
 
 export type UpdateTaskPayload = Partial<CreateTaskPayload>;
 
-// ── Helpers ────────────────────────────────────────────────────
-const authHeaders = (token: string) => ({
-    'Content-Type': 'application/json',
-    Authorization:  `Bearer ${token}`,
-});
-
-const request = async <T>(path: string, options: RequestInit): Promise<T> => {
-    const res  = await fetch(`${BASE}${path}`, options);
-    const data = await res.json();
-    if (!res.ok) throw new Error(data?.message ?? 'Request failed');
-    return data as T;
-};
-
-// ── API calls ──────────────────────────────────────────────────
 export const taskApi = {
-    getAll: (token: string) =>
-        request<Task[]>('/tasks', {
-            headers: authHeaders(token),
-        }),
+    getAll: () => apiFetch<Task[]>('/tasks'),
 
-    getOne: (id: string, token: string) =>
-        request<Task>(`/tasks/${id}`, {
-            headers: authHeaders(token),
-        }),
+    getOne: (id: string) => apiFetch<Task>(`/tasks/${id}`),
 
-    create: (payload: CreateTaskPayload, token: string) =>
-        request<Task>('/tasks', {
-            method:  'POST',
-            headers: authHeaders(token),
-            body:    JSON.stringify(payload),
-        }),
+    create: (payload: CreateTaskPayload) =>
+        apiFetch<Task>('/tasks', { method: 'POST', body: JSON.stringify(payload) }),
 
-    update: (id: string, payload: UpdateTaskPayload, token: string) =>
-        request<Task>(`/tasks/${id}`, {
-            method:  'PATCH',
-            headers: authHeaders(token),
-            body:    JSON.stringify(payload),
-        }),
+    update: (id: string, payload: UpdateTaskPayload) =>
+        apiFetch<Task>(`/tasks/${id}`, { method: 'PATCH', body: JSON.stringify(payload) }),
 
-    delete: (id: string, token: string) =>
-        request<void>(`/tasks/${id}`, {
-            method:  'DELETE',
-            headers: authHeaders(token),
-        }),
+    delete: (id: string) =>
+        apiFetch<{ success: boolean }>(`/tasks/${id}`, { method: 'DELETE' }),
 };

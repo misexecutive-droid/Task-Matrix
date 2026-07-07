@@ -8,9 +8,9 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 const variantMap: Record<string, string> = {
-  primary:   'bg-navy-900 text-white hover:bg-navy-800 active:bg-navy-700',
-  secondary: 'bg-gold-500 text-navy-900 hover:bg-gold-400 active:bg-gold-600',
-  outline:   'border border-navy-900/30 text-navy-900 hover:border-navy-900 hover:bg-navy-900/5',
+  primary:   'bg-primary-600 text-white hover:bg-primary-700 active:bg-primary-800',
+  secondary: 'bg-amber-500 text-slate-900 hover:bg-amber-400 active:bg-amber-600',
+  outline:   'border border-slate-300 text-slate-700 hover:border-primary-500 hover:bg-primary-50',
 };
 
 const sizeMap: Record<string, string> = {
@@ -47,7 +47,7 @@ export const Button: React.FC<ButtonProps> = ({
       {isLoading && (
         <Loader
           size={size === 'lg' ? 'md' : 'sm'}
-          color={variant === 'primary' ? 'white' : 'navy'}
+          color={variant === 'primary' ? 'white' : 'primary'}
         />
       )}
       {children}

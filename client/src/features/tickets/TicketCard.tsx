@@ -4,21 +4,17 @@ import type { Ticket } from '../../api/ticket';
 const STATUS_STYLES: Record<Ticket['status'], string> = {
   OPEN:        'bg-slate-100  text-slate-600',
   IN_PROGRESS: 'bg-amber-50   text-amber-600',
+  IN_REVIEW:   'bg-blue-50    text-blue-600',
   CLOSED:      'bg-emerald-50 text-emerald-600',
   ON_HOLD :    'bg-slate-100  text-slate-600',
-  OVERDUE:     'bg-red-50     text-red-600',
-  ONTIME :  'bg-emerald-50 text-emerald-600',
 };
 
 const STATUS_LABELS: Record<Ticket['status'], string> = {
   OPEN:        'Open',
   IN_PROGRESS: 'In Progress',
-
+  IN_REVIEW:   'In Review',
   CLOSED:      'Closed',
   ON_HOLD :    'On Hold',
-  OVERDUE:     'Overdue',
-  ONTIME :  'On Time',
-
 };
 
 const PRIORITY_STYLES: Record<Ticket['priority'], string> = {
@@ -37,9 +33,8 @@ export const TicketCard = ({ ticket, onClick }: TicketCardProps) => {
   const totalItems = ticket.checklists.reduce((s, c) => s + c.items.length, 0);
   const doneItems  = ticket.checklists.reduce((s, c) => s + c.items.filter(i => i.isDone).length, 0);
   const progress   = totalItems > 0 ? Math.round((doneItems / totalItems) * 100) : null;
-  const isOverdue  = ticket.tatDueAt
-    && new Date(ticket.tatDueAt) < new Date()
-    && ticket.status !== 'CLOSED';
+const isOverdue = ticket.isOverdue && ticket.status !== 'CLOSED';
+
 
   return (
     <button

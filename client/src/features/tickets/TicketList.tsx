@@ -7,30 +7,33 @@ import { TicketForm } from './TicketForm';
 import { TicketDetail } from './TicketDetail';
 import type { Ticket, TicketStatus } from '../../api/ticket';
 
-const STATUS_FILTERS: { key: TicketStatus | 'ALL'; label: string }[] = [
+const STATUS_FILTERS: { key: TicketStatus | 'ALL' | 'OVERDUE'; label: string }[] = [
   { key: 'ALL',         label: 'All'         },
   { key: 'OPEN',        label: 'Open'        },
   { key: 'IN_PROGRESS', label: 'In Progress' },
+  { key: 'IN_REVIEW',   label: 'In Review'   },
   { key: 'CLOSED',      label: 'Closed'      },
   { key: 'ON_HOLD',     label: 'On Hold'     },
   { key: 'OVERDUE',     label: 'Overdue'     },
-  { key: 'ONTIME',      label: 'On Time'     },
-
 ];
+
 
 export const TicketList = () => {
   const [showForm, setShowForm]         = useState(false);
   const [selected, setSelected]         = useState<Ticket | null>(null);
-  const [statusFilter, setStatusFilter] = useState<TicketStatus | 'ALL'>('ALL');
   const [page, setPage]                 = useState(1);
 
   const { data, isPending, isError } = useTicketsQuery(page);
   const tickets  = data?.data ?? [];
   const meta     = data?.meta;
 
-  const filtered = statusFilter === 'ALL'
-    ? tickets
+const [statusFilter, setStatusFilter] = useState<TicketStatus | 'ALL' | 'OVERDUE'>('ALL');
+const filtered = statusFilter === 'ALL'
+  ? tickets
+  : statusFilter === 'OVERDUE'
+    ? tickets.filter(t => t.isOverdue && t.status !== 'CLOSED')
     : tickets.filter(t => t.status === statusFilter);
+
 
   return (
     <div className="flex flex-col gap-6 max-w-3xl">

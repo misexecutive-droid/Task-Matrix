@@ -7,18 +7,28 @@ import type {
   CreateChecklistPayload,
   UpdateChecklistItemPayload,
 } from '../../api/ticket';
+import { userApi } from "../../api/users";
 
 const KEYS = {
   all:    (page: number) => ['tickets', page]         as const,
   detail: (id: string)   => ['tickets', 'detail', id] as const,
 };
 
+// Helper function to prevent React Query from retrying on 401 Unauthorized errors
+const handleQueryRetry = (failureCount: number, error: any) => {
+  if (error?.response?.status === 401 || error?.status === 401) {
+    return false;
+  }
+  return failureCount < 3;
+};
+
 export const useTicketsQuery = (page = 1) => {
   const { token } = useAuth();
   return useQuery({
     queryKey: KEYS.all(page),
-    queryFn:  () => ticketApi.getAll(token!, page),
+    queryFn:  () => ticketApi.getAll(page),
     enabled:  !!token,
+    retry:    handleQueryRetry,
   });
 };
 
@@ -26,27 +36,26 @@ export const useTicketQuery = (id: string) => {
   const { token } = useAuth();
   return useQuery({
     queryKey: KEYS.detail(id),
-    queryFn:  () => ticketApi.getOne(id, token!).then(r => r.data),
+    queryFn:  () => ticketApi.getOne(id).then(r => r.data),
     enabled:  !!token && !!id,
+    retry:    handleQueryRetry,
   });
 };
 
 export const useCreateTicketMutation = () => {
-  const { token }   = useAuth();
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (payload: CreateTicketPayload) =>
-      ticketApi.create(payload, token!).then(r => r.data),
+      ticketApi.create(payload).then(r => r.data),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['tickets'] }),
   });
 };
 
 export const useUpdateTicketMutation = () => {
-  const { token }   = useAuth();
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({ id, payload }: { id: string; payload: UpdateTicketPayload }) =>
-      ticketApi.update(id, payload, token!).then(r => r.data),
+      ticketApi.update(id, payload).then(r => r.data),
     onSuccess: (updated) => {
       queryClient.setQueryData(KEYS.detail(updated.id), updated);
       queryClient.invalidateQueries({ queryKey: ['tickets'] });
@@ -55,20 +64,18 @@ export const useUpdateTicketMutation = () => {
 };
 
 export const useDeleteTicketMutation = () => {
-  const { token }   = useAuth();
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (id: string) => ticketApi.delete(id, token!),
+    mutationFn: (id: string) => ticketApi.delete(id),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['tickets'] }),
   });
 };
 
 export const useAddChecklistMutation = (ticketId: string) => {
-  const { token }   = useAuth();
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (payload: CreateChecklistPayload) =>
-      ticketApi.addChecklist(ticketId, payload, token!).then(r => r.data),
+      ticketApi.addChecklist(ticketId, payload).then(r => r.data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: KEYS.detail(ticketId) });
       queryClient.invalidateQueries({ queryKey: ['tickets'] });
@@ -77,10 +84,9 @@ export const useAddChecklistMutation = (ticketId: string) => {
 };
 
 export const useDeleteChecklistMutation = (ticketId: string) => {
-  const { token }   = useAuth();
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (id: string) => ticketApi.deleteChecklist(id, token!),
+    mutationFn: (id: string) => ticketApi.deleteChecklist(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: KEYS.detail(ticketId) });
       queryClient.invalidateQueries({ queryKey: ['tickets'] });
@@ -89,11 +95,10 @@ export const useDeleteChecklistMutation = (ticketId: string) => {
 };
 
 export const useUpdateChecklistItemMutation = (ticketId: string) => {
-  const { token }   = useAuth();
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({ id, payload }: { id: string; payload: UpdateChecklistItemPayload }) =>
-      ticketApi.updateChecklistItem(id, payload, token!).then(r => r.data),
+      ticketApi.updateChecklistItem(id, payload).then(r => r.data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: KEYS.detail(ticketId) });
       queryClient.invalidateQueries({ queryKey: ['tickets'] });
@@ -102,10 +107,19 @@ export const useUpdateChecklistItemMutation = (ticketId: string) => {
 };
 
 export const useDeleteChecklistItemMutation = (ticketId: string) => {
-  const { token }   = useAuth();
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (id: string) => ticketApi.deleteChecklistItem(id, token!),
+    mutationFn: (id: string) => ticketApi.deleteChecklistItem(id),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: KEYS.detail(ticketId) }),
+  });
+};
+
+export const useAssignableUsersQuery = () => {
+  const { token, user } = useAuth();
+  return useQuery({
+    queryKey : ['assignable-users'],
+    queryFn : () => userApi.getAssignable().then(r => r.data),
+    enabled : !!token && (user?.role === "ADMIN" || user?.role === "MANAGER"),
+    retry:    handleQueryRetry,
   });
 };

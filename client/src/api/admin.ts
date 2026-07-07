@@ -1,6 +1,6 @@
-const BASE = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
+import { apiFetch } from './http';
 
-export type Role = "ADMIN" | "MANAGER" | "AGENT" | "USER"
+export type Role = "ADMIN" | "MANAGER" | "AGENT" | "USER";
 
 export type AdminUser = {
     id: string;
@@ -11,8 +11,8 @@ export type AdminUser = {
     departmentId: string | null;
     storeId: string | null;
     isActive: boolean;
-    createAt: string
-}
+    createdAt: string;
+};
 
 export type CreateUserPayload = {
     email: string;
@@ -21,41 +21,23 @@ export type CreateUserPayload = {
     lastName?: string;
     role: Role;
     departmentId?: string;
-    storeId?: string
-}
+    storeId?: string;
+};
 
 export type UpdateUserPayload = Partial<Omit<CreateUserPayload, "password">> & { isActive?: boolean };
-export type ApiResponse<T> = { success: boolean; data: T }
-
-const authHeaders = (token: string) => ({
-    "Content-Type": "application/json",
-    Authorization: `Bearer ${token}`,
-});
-
-const request = async <T>(path: string, options: RequestInit): Promise<T> => {
-    const res = await fetch(`${BASE}${path}`, options);
-    if (!res.ok) throw new Error(data?.message ?? "Request failed");
-    return data as T;
-}
+export type ApiResponse<T> = { success: boolean; data: T };
 
 export const adminApi = {
-    getAll: (token: string) =>
-        request<ApiResponse<AdminUer[]>>("/users", { headers: authHeaders(token) }),
+    getAll: () => apiFetch<ApiResponse<AdminUser[]>>("/users"),
 
-    getOne: (id: string, token: string) =>
-        request<ApiResponse<AdminUser[]>>(`/users/${id}`, { headers: authHeaders(token) }),
+    getOne: (id: string) => apiFetch<ApiResponse<AdminUser>>(`/users/${id}`),
 
-    update: (id: string, payload: UpdateUserPayload, token: string) =>
-        request<ApiResponse<AdminUser>>(`/users/${id}`, {
-            method: "PATCH",
-            headers: authHeaders(token),
-            body: JSON.stringify(payload)
-        }),
+    create: (payload: CreateUserPayload) =>
+        apiFetch<ApiResponse<AdminUser>>("/users", { method: "POST", body: JSON.stringify(payload) }),
 
-    delete: (id: string, token: string) =>
-        request<ApiResponse<{ deleted: boolean }>>(`/users/${id}`, {
-            method: "DELETE",
-            headers: authHeaders(token),
+    update: (id: string, payload: UpdateUserPayload) =>
+        apiFetch<ApiResponse<AdminUser>>(`/users/${id}`, { method: "PATCH", body: JSON.stringify(payload) }),
 
-        })
-}
+    delete: (id: string) =>
+        apiFetch<ApiResponse<{ deleted: boolean }>>(`/users/${id}`, { method: "DELETE" }),
+};
