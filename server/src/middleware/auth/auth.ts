@@ -13,7 +13,7 @@ import type { Role } from "../../models/index.js";
 // 2. JWT PAYLOAD TYPE DEFINITION
 // Define the shape of the decoded data hidden inside the JWT access token
 // 'sub' stands for Subject (usually the User's MongoDB ObjectId string)
-export type AccessTokenPayload = { sub: string; role: Role; departmentId? : string; storeId : string };
+export type AccessTokenPayload = { sub: string; role: Role; departmentId?: string; storeId?: string };
 
 // 3. EXPRESS REQUEST DECLARATION MERGING
 // Open the global namespace scope to inject custom types into third-party libraries

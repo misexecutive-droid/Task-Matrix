@@ -7,8 +7,8 @@ import { emitTicketEvent } from "../../sockets/ticketEvent.js"
 
 const populateTicket = (query: any) =>
   query
-    .populate({ path: "assignee", select: "email firtName role" })
-    .populate({ path: "checklist", populate: { path: "items" } })
+    .populate({ path: "assignee", select: "email firstName role" })
+    .populate({ path: "checklists", populate: { path: "items" } })
 
 const visibilityFilter = (user: AccessTokenPayload) => {
   if (user.role === "ADMIN") return {}
@@ -78,7 +78,16 @@ export const ticketService = {
       actorId: user.sub,
       after: ticket.toObject()
     })
-    return populateTicket(Ticket.findById(ticket._id))
+
+    const populated = await populateTicket(Ticket.findById(ticket._id));
+    emitTicketEvent("ticket:created", {
+      userId:       ticket.userId?.toString(),
+      assigneeId:   ticket.assigneeId?.toString() ?? null,
+      departmentId: ticket.departmentId?.toString() ?? null,
+      storeId:      ticket.storeId?.toString() ?? null,
+    }, populated);
+
+    return populated;
   },
 
   async update(id: string, input: UpdateTicketInput, user: AccessTokenPayload) {
@@ -102,8 +111,8 @@ export const ticketService = {
     const populated = await populateTicket(Ticket.findById(ticket._id));
     const target = {
       userId: ticket.userId?.toString(),
-      assignedId: ticket.assigneeId?.toString() ?? null, 
-      departmentId: ticket.departmentId?.toString() ?? null, 
+      assigneeId: ticket.assigneeId?.toString() ?? null,
+      departmentId: ticket.departmentId?.toString() ?? null,
       storeId: ticket.storeId?.toString() ?? null,
     };
 

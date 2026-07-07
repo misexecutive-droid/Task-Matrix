@@ -2,6 +2,7 @@ import { User } from "../../models/User.js"
 import { AppError } from "../../utils/AppError.js"
 import type { Role } from "../../models/User.js"
 import { auditService } from "../audit/audit.service.js"
+import { AccessTokenPayload } from "../../middleware/auth/auth.js"
 
 
 type CreateUserInput = {
@@ -82,6 +83,19 @@ export const userService = {
         })
 
         return user;
+    },
+
+    async listAssignable( user : AccessTokenPayload ) {
+        const filter: Record <string , unknown> = { isActive : true};
+        if(user.role === "MANAGER"){
+            const or : Record<string , unknown>[] = [{_id : user.sub}];
+            if(user.departmentId) or.push({ departmentId : user.departmentId});
+            if(user.storeId) or.push({ storeId : user.storeId});
+            filter.$or = or;
+
+        }
+
+        return User.find(filter).select("firstName lastName email role ").sort({ firstName : 1})
     }
 
 }

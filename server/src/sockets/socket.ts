@@ -15,7 +15,7 @@ export const initSocket = (httpServer: HttpServer): SocketIOServer => {
         const token = socket.handshake.auth?.token as string | undefined;
         if (!token) return next(new Error("Missing access token"));
         try {
-            socket.data.user = jwt.verify(token, env.JWT_ACCESS_SECRET) as Access; TokenPayload;
+            socket.data.user = jwt.verify(token, env.JWT_ACCESS_SECRET) as AccessTokenPayload;
             next()
         } catch {
             next(new Error("Invalid access token"))
@@ -25,7 +25,7 @@ export const initSocket = (httpServer: HttpServer): SocketIOServer => {
     io.on("connection", (socket: Socket) => {
         const user = socket.data.user as AccessTokenPayload;
         socket.join(`user:${user.sub}`);
-        socket.join(`role : ${user.role}`);
+        socket.join(`role:${user.role}`);
         if (user.departmentId) socket.join(`department:${user.departmentId}`);
         if (user.storeId) socket.join(`store:${user.storeId}`)
     })

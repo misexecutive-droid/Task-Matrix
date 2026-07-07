@@ -25,5 +25,10 @@ export const userController = {
 
     remove : asyncHandler(async (req : Request , res : Response) =>{
         
+    }),
+
+    listAssignable : asyncHandler(async (req : Request , res : Response) => {
+        const users = await userService.listAssignable(req.user!);
+        res.json({ success : true, data : users})
     })
 }

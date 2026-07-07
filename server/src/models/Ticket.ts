@@ -4,7 +4,7 @@ export const PRIORITIES = ["LOW", "MEDIUM", "HIGH", "CRITICAL"] as const
 export type Priority = (typeof PRIORITIES)[number]
 
 export const ASSIGNMENT_MODES = ["AUTO", "MANUAL"] as const
-export type AssigmentMode = (typeof ASSIGNMENT_MODES)[number]
+export type AssignmentMode = (typeof ASSIGNMENT_MODES)[number]
 
 export const TICKET_STATUSES = ["OPEN", "IN_PROGRESS", "IN_REVIEW", "CLOSED", "ON_HOLD"] as const;
 export type TicketStatus = (typeof TICKET_STATUSES)[number]
@@ -37,7 +37,7 @@ ticketSchema.virtual("assignee" , {
     justOne : true
 })
 
-ticketSchema.virtual("checklist", {
+ticketSchema.virtual("checklists", {
     ref : "Checklist",
     localField : "_id",
     foreignField : "ticketId"
@@ -46,6 +46,7 @@ ticketSchema.virtual("checklist", {
 ticketSchema.pre("save" , function (next){
     if(this.isModified("tatHours")){
         this.tatDueAt = this.tatHours ? new Date(Date.now() + this.tatHours * 60 * 60 * 1000) : null ;
+        this.isOverdue = false;
     }
     next()
 })

@@ -12,6 +12,9 @@ import { categoryRouter } from "./modules/categories/category.routes.js"
 import { taskRouter } from "./modules/tasks/task.routes.js"
 import { projectRouter } from "./modules/projects/project.routes.js"
 import { auditRouter } from "./modules/audit/audit.routes.js"
+import { ticketRouter } from "./modules/tickets/ticket.routes.js"
+import { checklistRouter, checklistItemRouter } from "./modules/checklists/checklist.routes.js"
+
 
 class App {
     public app: Application;
@@ -40,6 +43,10 @@ class App {
 
         this.app.use('/tasks', taskRouter);
         this.app.use('/projects' , projectRouter)
+
+        this.app.use('/tickets', ticketRouter);
+        this.app.use('/checklists', checklistRouter);
+        this.app.use('/checklist-items', checklistItemRouter);
 
         this.app.use("/audit-logs"  , auditRouter)
 

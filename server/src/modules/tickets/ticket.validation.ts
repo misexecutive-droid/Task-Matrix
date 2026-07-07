@@ -7,7 +7,7 @@ export const createTicketSchema = z.object({
     title : z.string().min(1),
     description : z.string().min(1),
     priority :  z.enum(PRIORITIES).optional(),
-    assigmentMode : z.enum(ASSIGNMENT_MODES).optional(),
+    assignmentMode : z.enum(ASSIGNMENT_MODES).optional(),
     assigneeId : objectId.optional(),
     storeId : objectId.optional(),
     categoryId : objectId.optional(),
@@ -16,7 +16,8 @@ export const createTicketSchema = z.object({
 })
 
 export const updateTicketSchema = createTicketSchema.partial().extend({
-    status : z.enum(TICKET_STATUSES).optional()
+    status : z.enum(TICKET_STATUSES).optional(),
+    assigneeId : objectId.nullable().optional()
 })
 
 export const paginatioinSchema = z.object({

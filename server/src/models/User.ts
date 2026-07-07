@@ -33,7 +33,7 @@ userSchema.virtual('password').set(function (this: UserMethodsContext, plain: st
     this._plainPassword = plain;
 });
 
-userSchema.pre('save', async function (this: UserMethodsContext, next) {
+userSchema.pre('validate', async function (this: UserMethodsContext, next) {
     const plain = this._plainPassword;
     if (!plain) return next();
     
