@@ -4,6 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import { NavLink } from 'react-router';
 import { CheckSquare, Menu, Moon, PanelLeft, Sun, X } from 'lucide-react';
 import { Button } from '../button';
+import { NotificationBell } from '../../features/notifications/NotificationBell';
 
 const NAV = [
     { to: '/', label: 'Dashboard' },
@@ -51,6 +52,8 @@ export const Header = ({ onToggleSidebar }: { onToggleSidebar?: () => void }) =>
 
 
                     <div className="flex items-center gap-3">
+
+                        <NotificationBell/>
                         <Button
                             onClick={toggleTheme}
                             className="size-9 rounded-lg border border-slate-200 flex items-center justify-center hover:text-slate-800 hover:bg-slate-50 transition-colors cursor-pointer"

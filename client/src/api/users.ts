@@ -13,5 +13,8 @@ export type AssignableUser = {
 export type ApiResponse<T> = { success: boolean; data: T };
 
 export const userApi = {
-    getAssignable: () => apiFetch<ApiResponse<AssignableUser[]>>('/users/assignable'),
+    getAssignable: (departmentId?: string) =>
+        apiFetch<ApiResponse<AssignableUser[]>>(
+            departmentId ? `/users/assignable?departmentId=${departmentId}` : '/users/assignable'
+        ),
 };

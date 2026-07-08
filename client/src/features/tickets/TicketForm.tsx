@@ -1,9 +1,10 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useEffect } from 'react';
 import { z } from 'zod';
 import { X } from 'lucide-react';
 import { Input, Button } from '../../components';
-import { useCreateTicketMutation, useAssignableUsersQuery } from './hook';
+import { useCreateTicketMutation, useAssignableUsersQuery, useDepartmentsQuery } from './hook';
 import { useAuth } from '../../context/AuthContext';
 
 const ticketSchema = z.object({
@@ -11,9 +12,11 @@ const ticketSchema = z.object({
   description:    z.string().min(1, 'Description is required'),
   priority:       z.enum(['LOW', 'MEDIUM', 'HIGH', 'CRITICAL']),
   assignmentMode: z.enum(['AUTO', 'MANUAL']),
+  departmentId:   z.string().optional().or(z.literal('')),
   assigneeId:     z.string().optional().or(z.literal('')),
   tatHours:       z.string().optional().refine(v => !v || Number(v) > 0, 'Must be a positive number'),
 });
+
 
 type TicketFields = z.infer<typeof ticketSchema>;
 
@@ -24,13 +27,15 @@ interface TicketFormProps {
 export const TicketForm = ({ onClose }: TicketFormProps) => {
   const { user } = useAuth();
   const canAssign = user?.role === 'ADMIN' || user?.role === 'MANAGER';
-  const { data: assignableUsers } = useAssignableUsersQuery();
+  const { data: departments } = useDepartmentsQuery();
   const mutation = useCreateTicketMutation();
 
-  const {
+
+    const {
     register,
     handleSubmit,
     watch,
+    setValue,
     formState: { errors },
   } = useForm<TicketFields>({
     resolver:      zodResolver(ticketSchema),
@@ -38,6 +43,12 @@ export const TicketForm = ({ onClose }: TicketFormProps) => {
   });
 
   const assignmentMode = watch('assignmentMode');
+  const departmentId   = watch('departmentId');
+  const { data: assignableUsers } = useAssignableUsersQuery(departmentId || undefined);
+
+  useEffect(() => {
+    setValue('assigneeId', '');
+  }, [departmentId, setValue]);
 
   const onSubmit = (data: TicketFields) => {
     mutation.mutate(
@@ -46,6 +57,7 @@ export const TicketForm = ({ onClose }: TicketFormProps) => {
         description:    data.description,
         priority:       data.priority,
         assignmentMode: data.assignmentMode,
+        departmentId:   data.departmentId !== '' ? data.departmentId : undefined,
         assigneeId:     data.assigneeId !== '' ? data.assigneeId : undefined,
         tatHours:       data.tatHours ? Number(data.tatHours) : undefined,
       },
@@ -133,23 +145,41 @@ export const TicketForm = ({ onClose }: TicketFormProps) => {
           </div>
 
           {canAssign && (
-            <div className="flex flex-col gap-1.5">
-              <label htmlFor="assigneeId" className="text-sm font-display text-slate-700">
-                Assign to (optional)
-              </label>
-              <select
-                id="assigneeId"
-                className="w-full px-3 h-11 sm:h-10 text-sm bg-white rounded-sm border border-slate-300 focus:outline-none focus:border-2 focus:border-blue-700 transition-colors cursor-pointer"
-                {...register('assigneeId')}
-              >
-                <option value="">Unassigned</option>
-                {assignableUsers?.map(u => (
-                  <option key={u.id} value={u.id}>
-                    {u.firstName} {u.lastName ?? ''} ({u.role})
-                  </option>
-                ))}
-              </select>
-            </div>
+            <>
+              <div className="flex flex-col gap-1.5">
+                <label htmlFor="departmentId" className="text-sm font-display text-slate-700">
+                  Department (optional)
+                </label>
+                <select
+                  id="departmentId"
+                  className="w-full px-3 h-11 sm:h-10 text-sm bg-white rounded-sm border border-slate-300 focus:outline-none focus:border-2 focus:border-blue-700 transition-colors cursor-pointer"
+                  {...register('departmentId')}
+                >
+                  <option value="">Any department</option>
+                  {departments?.map(d => (
+                    <option key={d.id} value={d.id}>{d.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <label htmlFor="assigneeId" className="text-sm font-display text-slate-700">
+                  Assign to (optional)
+                </label>
+                <select
+                  id="assigneeId"
+                  className="w-full px-3 h-11 sm:h-10 text-sm bg-white rounded-sm border border-slate-300 focus:outline-none focus:border-2 focus:border-blue-700 transition-colors cursor-pointer"
+                  {...register('assigneeId')}
+                >
+                  <option value="">Unassigned</option>
+                  {assignableUsers?.map(u => (
+                    <option key={u.id} value={u.id}>
+                      {u.firstName} {u.lastName ?? ''} ({u.role})
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </>
           )}
 
           {assignmentMode === 'MANUAL' && (

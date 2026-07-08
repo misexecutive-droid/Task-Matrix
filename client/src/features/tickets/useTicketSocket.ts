@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "../../context/AuthContext"
-import { connectSocket , disconnectSocket } from "../../lib/socket";
+import { connectSocket , disconnectSocket , releaseSocket } from "../../lib/socket";
 
 export const useTicketSocket = () => {
     const { token } = useAuth()
@@ -22,7 +22,8 @@ export const useTicketSocket = () => {
             socket.off("ticket:created", invalidateTickets);
             socket.off("ticket:update", invalidateTickets);
             socket.off("ticket:assigned", invalidateTickets);
-            socket.off("checklistItem:update", invalidateTickets);
+            socket.off("checklistItem:updated", invalidateTickets)
+            releaseSocket()
             disconnectSocket()
         };
     }, [token, queryClient])

@@ -4,9 +4,11 @@ import { LoginForm }  from './features/auth/LoginForm';
 import { SignupForm } from './features/auth/SignupForm';
 import { Dashboard }  from './features/dashboard';
 import { TaskList }   from './features/tasks';
-import { PublicLayout } from './components/layout';   
-import { TicketList } from './features/tickets';
-import { useTicketsQuery } from './features/tickets/hook';
+import { PublicLayout } from './components/layout';
+import { TicketList, useTicketSocket } from './features/tickets';
+import { useNotificationSocket } from './features/notifications/useNotificationSocket';
+import { AdminLayout } from './features/admin/AdminLayout';
+import { UserList } from './features/admin/UserList';
 
 const ProtectedRoute = () => {
   const { token } = useAuth();
@@ -18,9 +20,15 @@ const AuthRoute = () => {
   return token ? <Navigate to="/" replace /> : <Outlet />;
 };
 
+const AdminRoute = () => {
+  const { token, user } = useAuth();
+  if (!token) return <Navigate to="/login" replace />;
+  return user?.role === 'ADMIN' ? <Outlet /> : <Navigate to="/" replace />;
+};
+
 const router = createBrowserRouter([
   {
-    element: <PublicLayout />,         
+    element: <PublicLayout />,
     children: [
       {
         element: <AuthRoute />,
@@ -44,7 +52,20 @@ const router = createBrowserRouter([
           { path: '/settings', element: <p className="font-display text-slate-600">Settings — coming soon</p> },
           { path: '/tickets', element: <TicketList /> },
           { path: '/dashboard', element: <Navigate to="/" replace /> },
-          
+        ],
+      },
+      {
+        element: <AdminRoute />,
+        children: [
+          {
+            element: <AdminLayout />,
+            children: [
+              { path: '/admin',          element: <p className="font-display text-slate-600">Admin overview — coming soon</p> },
+              { path: '/admin/users',    element: <UserList /> },
+              { path: '/admin/tickets',  element: <p className="font-display text-slate-600">Admin tickets — coming soon</p> },
+              { path: '/admin/settings', element: <p className="font-display text-slate-600">Settings — coming soon</p> },
+            ],
+          },
         ],
       },
     ],
@@ -52,6 +73,7 @@ const router = createBrowserRouter([
 ]);
 
 export default function App() {
-  useTicketsQuery();
+  useTicketSocket();
+  useNotificationSocket();
   return <RouterProvider router={router} />;
 }

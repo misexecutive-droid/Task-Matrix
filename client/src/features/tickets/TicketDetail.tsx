@@ -41,7 +41,12 @@ export const TicketDetail = ({ ticket: initialTicket, onClose }: TicketDetailPro
 
   const { user: currentUser } = useAuth();
   const canAssign = currentUser?.role === "ADMIN" || currentUser?.role === "MANAGER";
-  const { data: assignableUsers } = useAssignableUsersQuery();
+  const isAdmin = currentUser?.role === "ADMIN";
+  const canChangeStatus =
+    currentUser?.role === "ADMIN" ||
+    currentUser?.role === "MANAGER" ||
+    (currentUser?.role === "AGENT" && ticket.assigneeId === currentUser?.id);
+  const { data: assignableUsers } = useAssignableUsersQuery(ticket.departmentId ?? undefined);
 
   const handleDelete = () => {
     deleteMut.mutate(ticket.id, { onSuccess: onClose });
@@ -87,17 +92,23 @@ export const TicketDetail = ({ ticket: initialTicket, onClose }: TicketDetailPro
 
           <div className="flex flex-wrap gap-2 items-center">
             {/* Status Selector */}
-            <select
-              value={ticket.status}
-              onChange={e =>
-                updateMut.mutate({ id: ticket.id, payload: { status: e.target.value as TicketStatus } })
-              }
-              className={`text-xs font-display font-medium px-2.5 py-1 rounded-full border-0 cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary-300 ${STATUS_COLORS[ticket.status]}`}
-            >
-              {STATUS_OPTIONS.map(s => (
-                <option key={s.value} value={s.value}>{s.label}</option>
-              ))}
-            </select>
+            {canChangeStatus ? (
+              <select
+                value={ticket.status}
+                onChange={e =>
+                  updateMut.mutate({ id: ticket.id, payload: { status: e.target.value as TicketStatus } })
+                }
+                className={`text-xs font-display font-medium px-2.5 py-1 rounded-full border-0 cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary-300 ${STATUS_COLORS[ticket.status]}`}
+              >
+                {STATUS_OPTIONS.map(s => (
+                  <option key={s.value} value={s.value}>{s.label}</option>
+                ))}
+              </select>
+            ) : (
+              <span className={`text-xs font-display font-medium px-2.5 py-1 rounded-full ${STATUS_COLORS[ticket.status]}`}>
+                {STATUS_OPTIONS.find(s => s.value === ticket.status)?.label ?? ticket.status}
+              </span>
+            )}
 
             {/* Priority Badge */}
             <span className={`text-xs font-display font-medium px-2.5 py-1 rounded-full ${PRIORITY_COLORS[ticket.priority]}`}>
@@ -163,17 +174,19 @@ export const TicketDetail = ({ ticket: initialTicket, onClose }: TicketDetailPro
 
         </div>
 
-        <div className="flex items-center justify-between px-6 py-4 border-t border-slate-200/60 shrink-0">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleDelete}
-            isLoading={deleteMut.isPending}
-            className="text-red-500 border-red-200 hover:bg-red-50 gap-1.5"
-          >
-            <Trash2 size={13} />
-            Delete
-          </Button>
+        <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-200/60 shrink-0">
+          {isAdmin && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleDelete}
+              isLoading={deleteMut.isPending}
+              className="mr-auto text-red-500 border-red-200 hover:bg-red-50 gap-1.5"
+            >
+              <Trash2 size={13} />
+              Delete
+            </Button>
+          )}
           <Button variant="outline" size="sm" onClick={onClose}>
             Close
           </Button>

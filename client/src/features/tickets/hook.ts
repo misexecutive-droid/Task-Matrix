@@ -114,12 +114,23 @@ export const useDeleteChecklistItemMutation = (ticketId: string) => {
   });
 };
 
-export const useAssignableUsersQuery = () => {
+export const useAssignableUsersQuery = (departmentId?: string) => {
   const { token, user } = useAuth();
   return useQuery({
-    queryKey : ['assignable-users'],
-    queryFn : () => userApi.getAssignable().then(r => r.data),
+    queryKey : ['assignable-users', departmentId ?? 'all'],
+    queryFn : () => userApi.getAssignable(departmentId).then(r => r.data),
     enabled : !!token && (user?.role === "ADMIN" || user?.role === "MANAGER"),
     retry:    handleQueryRetry,
   });
 };
+
+export const useDepartmentsQuery = () => {
+  const { token } = useAuth();
+  return useQuery({
+    queryKey: ['departments'],
+    queryFn:  () => departmentApi.getAll().then(r => r.data),
+    enabled:  !!token,
+  });
+};
+
+
