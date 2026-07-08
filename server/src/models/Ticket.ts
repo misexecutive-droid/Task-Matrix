@@ -51,5 +51,12 @@ ticketSchema.pre("save" , function (next){
     next()
 })
 
+ticketSchema.virtual("raisedBy" , {
+    ref : "User",
+    localField : "userId",
+    foreignField : "_id",
+    justOne : true
+})
+
 export type TicketDoc = HydratedDocument<InferSchemaType<typeof ticketSchema>>;
 export const Ticket = model("Ticket" , ticketSchema)

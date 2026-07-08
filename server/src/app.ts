@@ -14,6 +14,7 @@ import { projectRouter } from "./modules/projects/project.routes.js"
 import { auditRouter } from "./modules/audit/audit.routes.js"
 import { ticketRouter } from "./modules/tickets/ticket.routes.js"
 import { checklistRouter, checklistItemRouter } from "./modules/checklists/checklist.routes.js"
+import { notificationRouter } from "./modules/notifications/notification.routes.js"
 
 
 class App {
@@ -42,14 +43,15 @@ class App {
         this.app.use('/categories', categoryRouter);
 
         this.app.use('/tasks', taskRouter);
-        this.app.use('/projects' , projectRouter)
+        this.app.use('/projects', projectRouter)
 
         this.app.use('/tickets', ticketRouter);
         this.app.use('/checklists', checklistRouter);
         this.app.use('/checklist-items', checklistItemRouter);
 
-        this.app.use("/audit-logs"  , auditRouter)
+        this.app.use("/audit-logs", auditRouter)
 
+        this.app.use("/notifications", notificationRouter)
         this.app.use((_req: Request, res: Response) => res.status(404).json({ success: false, message: 'Not found' }))
     }
 

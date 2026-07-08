@@ -10,3 +10,4 @@ export { ChecklistItem } from './ChecklistItem.js';
 export { Project } from './Project.js';
 export { Task } from './Task.js';
 export { AuditLog } from "./AuditLog.js"
+export { Notification } from "./Notificaiton.js"

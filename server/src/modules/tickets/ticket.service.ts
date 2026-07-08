@@ -4,11 +4,13 @@ import type { AccessTokenPayload } from "../../middleware/auth/auth.js"
 import type { CreateTicketInput, UpdateTicketInput } from "./ticket.validation.js"
 import { auditService } from "../audit/audit.service.js"
 import { emitTicketEvent } from "../../sockets/ticketEvent.js"
+import { notificationService } from "../notifications/notification.service.js"
 
 const populateTicket = (query: any) =>
   query
     .populate({ path: "assignee", select: "email firstName role" })
     .populate({ path: "checklists", populate: { path: "items" } })
+    .populate({ path : "raisedBy" , select : "email firstName role"})
 
 const visibilityFilter = (user: AccessTokenPayload) => {
   if (user.role === "ADMIN") return {}
@@ -87,6 +89,10 @@ export const ticketService = {
       storeId:      ticket.storeId?.toString() ?? null,
     }, populated);
 
+    if(ticket.assigneeId){
+      await notificationService.notifyTicketAssigned(ticket)
+    }
+
     return populated;
   },
 
@@ -120,6 +126,7 @@ export const ticketService = {
     
     if (input.assigneeId && input.assigneeId !== before.assigneeId?.toString()) {
       emitTicketEvent("ticket:assigned", target, populated)
+      await notificationService.notifyTicketAssigned(ticket);
     }
 
     return populated;
