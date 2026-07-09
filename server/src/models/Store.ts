@@ -7,7 +7,7 @@ const storeSchema = new Schema(
         address : { type : String , trim : true},
         isActive : { type : Boolean , default : true}
     },
-    { timestamps : true }
+    { timestamps : true, toJSON: { virtuals: true }, toObject: { virtuals: true } }
 )
 
 export const Store = model('Store' , storeSchema)

@@ -24,11 +24,13 @@ export const userController = {
     }),
 
     remove : asyncHandler(async (req : Request , res : Response) =>{
-        
+        const user = await userService.remove(req.params.id, req.user!.sub);
+        res.json({ success : true , data : { deleted : true, id : user._id.toString() } })
     }),
 
     listAssignable : asyncHandler(async (req : Request , res : Response) => {
-        const users = await userService.listAssignable(req.user!);
+        const departmentId = typeof req.query.departmentId === 'string' ? req.query.departmentId : undefined;
+        const users = await userService.listAssignable(req.user!, departmentId);
         res.json({ success : true, data : users})
     })
 }

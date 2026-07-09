@@ -85,9 +85,11 @@ export const userService = {
         return user;
     },
 
-    async listAssignable( user : AccessTokenPayload ) {
+    async listAssignable( user : AccessTokenPayload, departmentId?: string ) {
         const filter: Record <string , unknown> = { isActive : true};
-        if(user.role === "MANAGER"){
+        if(departmentId){
+            filter.departmentId = departmentId;
+        } else if(user.role === "MANAGER"){
             const or : Record<string , unknown>[] = [{_id : user.sub}];
             if(user.departmentId) or.push({ departmentId : user.departmentId});
             if(user.storeId) or.push({ storeId : user.storeId});

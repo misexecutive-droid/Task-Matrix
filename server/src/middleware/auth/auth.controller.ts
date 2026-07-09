@@ -1,7 +1,7 @@
 import type { Request, Response } from "express";
 import { env } from "../../config/env.js";
 import { authService } from "./auth.service.js";
-import { registerSchema, loginSchema } from "./auth.validation.js";
+import { loginSchema } from "./auth.validation.js";
 import { asyncHandler } from "../../utils/asyncHandler.js";
 
 const REFRESH_COOKIE = 'refreshToken';
@@ -20,12 +20,6 @@ const sendAuthResponse = (res: Response, result: { accessToken: string; refreshT
 };
 
 export const authController = {
-    register: asyncHandler(async (req: Request, res: Response) => {
-        const input = registerSchema.parse(req.body); 
-        const result = await authService.register(input); 
-        sendAuthResponse(res, result);
-    }),
-
     login: asyncHandler(async (req: Request, res: Response) => {
         const input = loginSchema.parse(req.body);
         const result = await authService.login(input);

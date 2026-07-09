@@ -20,7 +20,7 @@ const userSchema = new Schema(
         storeId: { type: Schema.Types.ObjectId, ref: 'Store', default: null },
         isActive: { type: Boolean, default: true }
     },
-    { timestamps: true },
+    { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } },
 );
 
 

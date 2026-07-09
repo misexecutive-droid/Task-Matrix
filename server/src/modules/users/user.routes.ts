@@ -6,7 +6,7 @@ export const userRouter = Router()
 
 userRouter.use(authenticate)
 
-userRouter.get("/assignable", requireRole('ADMIN', 'MANAGER'), userController.listAssignable)
+userRouter.get("/assignable", userController.listAssignable)
 
 userRouter.use(requireRole('ADMIN'))
 userRouter.get("/", userController.list)
