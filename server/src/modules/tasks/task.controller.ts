@@ -6,9 +6,13 @@ import { asyncHandler } from "../../utils/asyncHandler.js" // wraps async route 
 // the controller layer: turns HTTP requests into calls to the service layer, and turns the service's results back into HTTP responses.
 // this is the "C" in the routes -> controller -> service -> validation pattern used across this codebase.
 export const taskController = {
-    // GET /tasks - list tasks visible to the logged-in user
+    // GET /tasks - list tasks visible to the logged-in user.
+    // GET /tasks?userId=<id> - (admin only, enforced inside the service) list one specific user's tasks.
     list : asyncHandler(async ( req : Request , res : Response) => {
-        const tasks = await taskService.list(req.user!) // req.user is attached by the auth middleware after verifying the JWT; "!" tells TS "trust me, this exists here"
+        // Same defensive pattern as user.controller.ts's listAssignable: query params can technically
+        // come through as arrays or be missing entirely, so we only accept it if it's actually a string.
+        const filterUserId = typeof req.query.userId === 'string' ? req.query.userId : undefined;
+        const tasks = await taskService.list(req.user!, filterUserId) // req.user is attached by the auth middleware after verifying the JWT; "!" tells TS "trust me, this exists here"
         res.json(tasks) // send the list back as plain JSON
     }),
 

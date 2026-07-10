@@ -11,11 +11,17 @@ export const createTaskSchema = z.object({
     status : z.enum(TASK_STATUSES).optional(), // if provided, status must be one of the fixed allowed values (e.g. "todo", "done", etc.)
     priority : z.enum(TASK_PRIORITIES).optional(), // if provided, priority must be one of the fixed allowed values (e.g. "low", "high")
     dueDate : z.string().datetime().optional(), // if provided, must be a valid ISO date-time string
-    projectId : objectId.optional() // optional link to the Project this task belongs to (this is how Tasks relate to Projects)
+    projectId : objectId.optional(), // optional link to the Project this task belongs to (this is how Tasks relate to Projects)
+    assigneeId : objectId.optional() // NEW — optional id of the user this task is being handed to
 });
 
-// for updates we don't want to force the caller to resend every field, so `.partial()` makes every field from createTaskSchema optional
-export const updateTaskSchema = createTaskSchema.partial();
+// for updates we don't want to force the caller to resend every field, so `.partial()` makes every field from createTaskSchema optional.
+// `.extend()` then re-declares assigneeId so it can ALSO be explicitly `null` (to unassign a task back to "nobody"),
+// which the base `objectId.optional()` above wouldn't allow — that only accepts "a valid id" or "field missing", not "null".
+// This is the exact same trick used in ticket.validation.ts's updateTicketSchema, for the exact same reason.
+export const updateTaskSchema = createTaskSchema.partial().extend({
+    assigneeId : objectId.nullable().optional()
+});
 
 // these are TypeScript types automatically derived from the zod schemas above, so the rest of the code
 // (service/controller) can use strongly-typed "CreateTaskInput" / "UpdateTaskInput" without redefining them by hand

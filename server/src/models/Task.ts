@@ -20,9 +20,23 @@ const taskSchema = new Schema(
         // projectId: optional reference linking this task to a Project document
         projectId: { type: Schema.Types.ObjectId, ref: "Project", default: null },
         // userId: reference to the User who owns/created this task (required)
-        userId: { type: Schema.Types.ObjectId, ref: "User", required: true }
+        userId: { type: Schema.Types.ObjectId, ref: "User", required: true },
+        // assigneeId: NEW — optional reference to the User this task has been handed off to.
+        // Same idea as Ticket's assigneeId: the task still remembers who originally created it
+        // (userId), but it can now also be "given" to someone else to actually do.
+        assigneeId: { type: Schema.Types.ObjectId, ref: "User", default: null }
     },
-    { timestamps: true }, // adds createdAt/updatedAt automatically (no toJSON/toObject virtuals set here)
+    // NEW: added toJSON/toObject virtuals here. Without this, Task documents were missing
+    // the `id` field in every API response — only `_id` was present. Your client's Task type
+    // (client/src/api/task.ts) has always expected `id: string`, and TaskList.tsx/hook.ts use
+    // `task.id` for the update/delete mutation URLs. This is the exact same bug class we found
+    // and fixed on User/Department/Store/Category/Ticket/Checklist earlier — a Mongoose document
+    // only exposes its auto-generated `id` string in JSON output when this option is set.
+    // Practical effect of the bug: clicking a task's status-cycle button or delete button was
+    // likely sending requests like `PATCH /tasks/undefined`, which Mongoose can't parse as a
+    // valid ObjectId — that throws a CastError, which isn't one of the specific cases your
+    // errorHandler.ts checks for, so it would fall through to a generic 500 response.
+    { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } },
 )
 
 // The Mongoose Model used to query/create/update Task documents
