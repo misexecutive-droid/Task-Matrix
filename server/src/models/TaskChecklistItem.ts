@@ -17,3 +17,19 @@ const taskChecklistItemSchema = new Schema(
         timestamps : true, toJSON : { virtuals : true} , toObject : { virtuals  : true}
     }
 )
+
+taskChecklistItemSchema.virtual("images", {
+    ref : "TaskImage",
+    localField : "_id",
+    foreignField : "taskChecklistItemId",
+})
+
+taskChecklistItemSchema.pre("save", function(next){
+    if(this.isModified("isDone")){
+        this.completedAt = this.isDone ? new Date() : null;
+
+    }
+    next()
+})
+
+export const TaskChecklistItem = model("TaskChecklistItem", taskChecklistItemSchema)

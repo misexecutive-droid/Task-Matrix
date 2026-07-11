@@ -24,7 +24,15 @@ const taskSchema = new Schema(
         // assigneeId: NEW — optional reference to the User this task has been handed off to.
         // Same idea as Ticket's assigneeId: the task still remembers who originally created it
         // (userId), but it can now also be "given" to someone else to actually do.
-        assigneeId: { type: Schema.Types.ObjectId, ref: "User", default: null }
+        assigneeId: { type: Schema.Types.ObjectId, ref: "User", default: null },
+
+
+        // NEW — which department this task belongs to. This is what the daily compliance job
+        // (a few files from now) will group by: it needs to answer "for THIS department, across
+        // all of its tasks, what's the completion/compliance/quality rate today" — that's only
+        // possible if a Task actually records which department it's under.
+
+        departmentId : {type : Schema.Types.ObjectId , ref : "Department", default : null}
     },
     // NEW: added toJSON/toObject virtuals here. Without this, Task documents were missing
     // the `id` field in every API response — only `_id` was present. Your client's Task type
@@ -39,5 +47,14 @@ const taskSchema = new Schema(
     { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } },
 )
 
+// Virtual field "checklists": not stored on this document directly. When populated, Mongoose
+// finds every TaskChecklist whose taskId matches this task's own _id. Same pattern as
+// Ticket.ts's "checklists" virtual.
+
+taskSchema.virtual("checklists", {
+    ref : "TaskChecklist",
+    localField : "_id",
+    foreignField : "taskId"
+})
 // The Mongoose Model used to query/create/update Task documents
 export const Task = model("Task", taskSchema)
