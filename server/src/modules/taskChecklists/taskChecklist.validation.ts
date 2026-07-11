@@ -34,7 +34,7 @@ export const updateTaskChecklistItemSchema = z.object({
     assigneeId : objectId.nullable().optional(),
     dueAt : z.string().datetime().nullable().optional(),
     requiredImageCount : z.number().int().min(0).optional(),
-    requiredLivePhoto : z.boolean().optional(),
+    requiresLivePhoto : z.boolean().optional(),
     isDone : z.literal(false).optional()
 })
 

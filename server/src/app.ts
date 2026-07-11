@@ -1,37 +1,22 @@
-// Express is the web framework we use to build our REST API.
-// "Application" is the TypeScript type for an Express app instance; "Request"/"Response" type the req/res objects in route handlers.
 import express, { type Application, type Request, type Response } from "express"
-// CORS = Cross-Origin Resource Sharing. It's middleware that controls which websites/origins are allowed to call this API from the browser.
 import cors from "cors"
-// Middleware that reads cookies sent by the browser and makes them available as `req.cookies`.
 import cookieParser from "cookie-parser"
-// Middleware that logs each incoming HTTP request to the console (method, URL, status code, response time, etc.) — handy for debugging.
 import morgan from "morgan"
-// Our validated environment variables (PORT, CLIENT_URL, NODE_ENV, etc.).
+import path from "node:path"
 import { env } from "./config/env.js"
-// Router containing login/logout/refresh-token style authentication endpoints.
 import { authRouter } from "./middleware/auth/auth.routes.js"
-// Router containing user-management endpoints (create/list/update users, etc.).
 import { userRouter } from "./modules/users/user.routes.js"
-// A centralized error-handling middleware — catches errors thrown anywhere in the app and turns them into a proper HTTP response.
 import { errorHandler } from "./middleware/errorHandler/errorHandler.js"
-// Router for store-related endpoints.
 import { StoreRouter } from "./modules/stores/store.routes.js"
-// Router for department-related endpoints.
 import { departmentRouter } from "./modules/departments/department.routes.js"
-// Router for category-related endpoints.
 import { categoryRouter } from "./modules/categories/category.routes.js"
-// Router for task-related endpoints.
 import { taskRouter } from "./modules/tasks/task.routes.js"
-// Router for project-related endpoints.
 import { projectRouter } from "./modules/projects/project.routes.js"
-// Router for audit-log endpoints (records of who did what, for tracking/history purposes).
 import { auditRouter } from "./modules/audit/audit.routes.js"
-// Router for support-ticket endpoints.
 import { ticketRouter } from "./modules/tickets/ticket.routes.js"
-// Two routers: one for checklists themselves, one for individual checklist items inside a checklist.
 import { checklistRouter, checklistItemRouter } from "./modules/checklists/checklist.routes.js"
-// Router for notification endpoints (e.g. fetching a user's notifications).
+import { taskChecklistRouter, taskChecklistItemRouter } from "./modules/taskChecklists/taskChecklist.routes.js"
+import { taskImageRouter } from "./modules/taskImages/taskImage.routes.js"
 import { notificationRouter } from "./modules/notifications/notification.routes.js"
 
 
@@ -65,6 +50,12 @@ class App {
         // Only log requests with morgan when we're NOT running tests — keeps test output clean.
         // 'dev' is a predefined morgan format meant for local development (colored, concise).
         if (env.NODE_ENV != 'test') this.app.use(morgan('dev'))
+        // NEW — serve everything inside the uploads/ folder directly as static files, so a browser
+        // can load an image at a plain URL like http://localhost:5050/uploads/tasks/<filename>.jpg,
+        // exactly the same way it would load any other image on the web. express.static handles
+        // reading the file, setting the right Content-Type header, and caching headers for us —
+        // we don't write any of that by hand.
+        this.app.use('/uploads', express.static(path.resolve('uploads')))
     }
 
     // Registers all the actual API routes/endpoints, each handled by its own router imported above.
@@ -93,6 +84,12 @@ class App {
         this.app.use('/checklists', checklistRouter);
         // Mount the checklist-item router under /checklist-items.
         this.app.use('/checklist-items', checklistItemRouter);
+
+        // NEW — mount the task checklist routers under /task-checklists and /task-checklist-items.
+        this.app.use('/task-checklists', taskChecklistRouter);
+        this.app.use('/task-checklist-items', taskChecklistItemRouter);
+        // NEW — mount the task image router (currently just DELETE /task-images/:id) under /task-images.
+        this.app.use('/task-images', taskImageRouter);
 
         // Mount the audit-log router under /audit-logs.
         this.app.use("/audit-logs", auditRouter)

@@ -1,9 +1,7 @@
 import type { Request, Response } from "express";
 import { taskChecklistService } from "./taskChecklist.service.js";
-import { createTaskChecklistSchema } from "./taskChecklist.validation.js";
+import { createTaskChecklistSchema, updateTaskChecklistItemSchema } from "./taskChecklist.validation.js";
 import { asyncHandler } from "../../utils/asyncHandler.js";
-import { updateChecklistItemSchema } from "../checklists/checklist.validation.js";
-import { success } from "zod/v4";
 
 export const taskChecklistController = {
     // POST /tasks/:taskId/checklists -- create a checklist (optionally with items) under a task
@@ -18,7 +16,7 @@ export const taskChecklistController = {
     // photo requirements , or reopen it with { isDone : false}
 
     updateItem: asyncHandler(async (req: Request, res: Response) => {
-        const input = updateChecklistItemSchema.parse(req.body)
+        const input = updateTaskChecklistItemSchema.parse(req.body)
         const item = await taskChecklistService.updateItem(req.params.id, input, req.user!)
         res.json({ success: true, data: item })
     }),
@@ -36,6 +34,13 @@ export const taskChecklistController = {
 
     removeChecklist : asyncHandler(async (req : Request , res : Response) => {
         await taskChecklistService.removeChecklist(req.params.id, req.user!)
+        res.json({ success : true , data : { deleted : true}})
+    }),
+
+    // DELETE /task-checklist-items/:id — remove a single item
+
+    removeItem : asyncHandler(async (req : Request , res : Response) => {
+        await taskChecklistService.removeItem(req.params.id, req.user!)
         res.json({ success : true , data : { deleted : true}})
     })
 }

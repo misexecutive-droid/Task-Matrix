@@ -31,6 +31,14 @@ const taskImageSchema = new Schema(
 
         sizeBytes : { type : Number ,required : true},
 
+        // mimeType: recorded from the upload so we know how to correctly serve it back later
+        // and so it's clear what type of file was actually validated at upload time.
+        mimeType : { type : String, required : true },
+
+        // captureMethod: how this specific photo was actually obtained (live camera vs a
+        // gallery/file picker) — this is what the daily compliance job checks against a
+        // checklist item's requiresLivePhoto flag.
+        captureMethod : { type : String, enum : CAPTURE_METHODS, required : true },
 
                 // taskChecklistItemId: which checklist item this photo is evidence for.
         // index: true speeds up "how many images exist for this item" lookups.
