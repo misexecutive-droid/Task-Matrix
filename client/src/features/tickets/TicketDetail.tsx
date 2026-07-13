@@ -45,7 +45,8 @@ export const TicketDetail = ({ ticket: initialTicket, onClose }: TicketDetailPro
   const canChangeStatus =
     currentUser?.role === "ADMIN" ||
     currentUser?.role === "MANAGER" ||
-    (currentUser?.role === "AGENT" && ticket.assigneeId === currentUser?.id);
+    (currentUser?.role === "AGENT" && ticket.assigneeId === currentUser?.id) ||
+    (currentUser?.role === "USER" && ticket.userId === currentUser?.id);
   const { data: assignableUsers } = useAssignableUsersQuery(ticket.departmentId ?? undefined);
 
   const handleDelete = () => {

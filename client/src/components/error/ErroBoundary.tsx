@@ -1,11 +1,10 @@
-import React from 'react';
-import { useRouteError , isRouterErrorResponse } from 'react-router-dom';
+import { useRouteError , isRouteErrorResponse } from 'react-router';
 
 function MyErrorBoundary(){
     const error = useRouteError();
     console.log("Detailed error:", error);
 
-    if(isRouterErrorResponse(error)){
+    if(isRouteErrorResponse(error)){
         return (
             <div className="flex flex-col items-center justify-center h-screen">
                 <h1 className="text-4xl font-bold text-red-600">Error {error.status}</h1>

@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "../../context/AuthContext";
 import { adminApi, type CreateUserPayload, type UpdateUserPayload } from "../../api/admin";
+import { departmentApi , type CreateDepartmentPayload , type UpdateDepartmentPayload } from "../../api/departments";
 
 const USER_KEYS = {
     all:    ["admin-users"]                     as const,
@@ -55,3 +56,43 @@ export const useDeleteUserMutation = () => {
         },
     });
 };
+
+
+const DEPARTMENT_KEY = {
+    all : ["departments"] as const,
+};
+
+export const useDepartmentsQuery = () => {
+    const { token } = useAuth();
+    return useQuery({
+        queryKey : DEPARTMENT_KEY.all,
+        queryFn : () => departmentApi.getAll().then(r => r.data),
+        enabled : !!token,
+    })
+};
+
+export const useCreateDepartmentMutation = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn : (payload : CreateDepartmentPayload) => departmentApi.create(payload).then(r => r.data),
+        onSuccess : () => queryClient.invalidateQueries({ queryKey : DEPARTMENT_KEY.all})
+    })
+}
+
+export const useUpdateDepartmentMutaion = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn : ({id , payload} : {id : string; payload : UpdateDepartmentPayload}) =>
+            departmentApi.update(id, payload).then(r => r.data),
+
+        onSuccess : () => queryClient.invalidateQueries({ queryKey : DEPARTMENT_KEY.all})
+    })
+}
+
+export const useDelereDepartmentMutation = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn : (id : string) => departmentApi.delete(id),
+        onSuccess : () => queryClient.invalidateQueries({ queryKey : DEPARTMENT_KEY.all})
+    })
+}

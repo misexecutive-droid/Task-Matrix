@@ -1,7 +1,6 @@
 import { createBrowserRouter, RouterProvider, Navigate, Outlet } from 'react-router';
 import { useAuth } from './context/AuthContext';
 import { LoginForm }  from './features/auth/LoginForm';
-import { SignupForm } from './features/auth/SignupForm';
 import { Dashboard }  from './features/dashboard';
 import { TaskList }   from './features/tasks';
 import { PublicLayout } from './components/layout';
@@ -9,6 +8,8 @@ import { TicketList, useTicketSocket } from './features/tickets';
 import { useNotificationSocket } from './features/notifications/useNotificationSocket';
 import { AdminLayout } from './features/admin/AdminLayout';
 import { UserList } from './features/admin/UserList';
+import { DepartmentList } from "./features/admin/DepartmentList"
+import { TatReport } from "./features/admin/TatReport"
 
 const ProtectedRoute = () => {
   const { token } = useAuth();
@@ -34,7 +35,6 @@ const router = createBrowserRouter([
         element: <AuthRoute />,
         children: [
           { path: '/login',  element: <LoginForm />  },
-          { path: '/signup', element: <SignupForm /> },
         ],
       },
     ],
@@ -60,8 +60,9 @@ const router = createBrowserRouter([
           {
             element: <AdminLayout />,
             children: [
-              { path: '/admin',          element: <p className="font-display text-slate-600">Admin overview — coming soon</p> },
+              { path: '/admin',          element: <TatReport /> },
               { path: '/admin/users',    element: <UserList /> },
+              { path : '/admin/departments', element : <DepartmentList/>},
               { path: '/admin/tickets',  element: <p className="font-display text-slate-600">Admin tickets — coming soon</p> },
               { path: '/admin/settings', element: <p className="font-display text-slate-600">Settings — coming soon</p> },
             ],

@@ -4,6 +4,15 @@ export type Priority       = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
 export type AssignmentMode = 'AUTO' | 'MANUAL';
 export type TicketStatus   = 'OPEN' | 'IN_PROGRESS' | 'IN_REVIEW' | 'CLOSED' | 'ON_HOLD';
 
+export type TatReportGroupBy = "hour" | "day" | "week" | "month"
+
+export type TatReportRow = {
+  bucket : string;
+  count : number;
+  avgTatHours : number | null;
+  overdueCount : number;
+}
+
 export type ChecklistItem = {
   id:          string;
   label:       string;
@@ -106,4 +115,7 @@ export const ticketApi = {
 
   deleteChecklistItem: (id: string) =>
     apiFetch<ApiResponse<{ deleted: boolean }>>(`/checklist-items/${id}`, { method: 'DELETE' }),
+
+  getTatReport : ( groupBy : TatReportGroupBy = "day") =>
+    apiFetch<ApiResponse<TatReportRow[]>>(`/tickets/reports/tat?groupBy=${groupBy}`),
 };

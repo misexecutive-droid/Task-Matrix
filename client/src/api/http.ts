@@ -1,6 +1,6 @@
 import { tokenStore } from '../lib/tokenStore';
 
-const BASE = (import.meta.env.VITE_API_URL as string | undefined) ?? 'http://localhost:3000';
+const BASE = (import.meta.env.VITE_API_URL as string | undefined) ?? 'http://localhost:5050';
 
 let refreshPromise: Promise<string | null> | null = null;
 
@@ -27,13 +27,16 @@ const forceLogout = () => {
 export const apiFetch = async <T>(path: string, options: RequestInit = {}): Promise<T> => {
   const isAuthEndpoint = path.startsWith('/auth/');
   const token = tokenStore.get();
+  // FormData bodies (file uploads) need the browser to set their own
+  // `multipart/form-data; boundary=...` header — forcing 'application/json' here would corrupt them.
+  const isFormData = options.body instanceof FormData;
 
   const doFetch = (t: string | null) =>
     fetch(`${BASE}${path}`, {
       ...options,
       credentials: 'include',
       headers: {
-        'Content-Type': 'application/json',
+        ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
         ...(t ? { Authorization: `Bearer ${t}` } : {}),
         ...options.headers,
       },

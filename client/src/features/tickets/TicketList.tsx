@@ -6,33 +6,36 @@ import { TicketCard } from './TicketCard';
 import { TicketForm } from './TicketForm';
 import { TicketDetail } from './TicketDetail';
 import type { Ticket, TicketStatus } from '../../api/ticket';
+import { useAuth } from '../../context/AuthContext';
 
 const STATUS_FILTERS: { key: TicketStatus | 'ALL' | 'OVERDUE'; label: string }[] = [
-  { key: 'ALL',         label: 'All'         },
-  { key: 'OPEN',        label: 'Open'        },
+  { key: 'ALL', label: 'All' },
+  { key: 'OPEN', label: 'Open' },
   { key: 'IN_PROGRESS', label: 'In Progress' },
-  { key: 'IN_REVIEW',   label: 'In Review'   },
-  { key: 'CLOSED',      label: 'Closed'      },
-  { key: 'ON_HOLD',     label: 'On Hold'     },
-  { key: 'OVERDUE',     label: 'Overdue'     },
+  { key: 'IN_REVIEW', label: 'In Review' },
+  { key: 'CLOSED', label: 'Closed' },
+  { key: 'ON_HOLD', label: 'On Hold' },
+  { key: 'OVERDUE', label: 'Overdue' },
 ];
 
 
 export const TicketList = () => {
-  const [showForm, setShowForm]         = useState(false);
-  const [selected, setSelected]         = useState<Ticket | null>(null);
-  const [page, setPage]                 = useState(1);
+  const { user } = useAuth();
+  const isAdmin = user?.role === "ADMIN";
+  const [showForm, setShowForm] = useState(false);
+  const [selected, setSelected] = useState<Ticket | null>(null);
+  const [page, setPage] = useState(1);
 
   const { data, isPending, isError } = useTicketsQuery(page);
-  const tickets  = data?.data ?? [];
-  const meta     = data?.meta;
+  const tickets = data?.data ?? [];
+  const meta = data?.meta;
 
-const [statusFilter, setStatusFilter] = useState<TicketStatus | 'ALL' | 'OVERDUE'>('ALL');
-const filtered = statusFilter === 'ALL'
-  ? tickets
-  : statusFilter === 'OVERDUE'
-    ? tickets.filter(t => t.isOverdue && t.status !== 'CLOSED')
-    : tickets.filter(t => t.status === statusFilter);
+  const [statusFilter, setStatusFilter] = useState<TicketStatus | 'ALL' | 'OVERDUE'>('ALL');
+  const filtered = statusFilter === 'ALL'
+    ? tickets
+    : statusFilter === 'OVERDUE'
+      ? tickets.filter(t => t.isOverdue && t.status !== 'CLOSED')
+      : tickets.filter(t => t.status === statusFilter);
 
 
   return (
@@ -46,10 +49,14 @@ const filtered = statusFilter === 'ALL'
             {meta?.total ?? 0} ticket{meta?.total !== 1 ? 's' : ''}
           </p>
         </div>
-        <Button  size="sm" variant="primary" className="gap-1.5 text-slate-600" onClick={() => setShowForm(true)}>
-          <Plus size={14} className="text-slate-600" />
-          New ticket
-        </Button>
+        {
+          isAdmin && (
+            <Button size="sm" variant="primary" className="gap-1.5 text-slate-600" onClick={() => setShowForm(true)}>
+              <Plus size={14} className="text-slate-600" />
+              New ticket
+            </Button>
+          )
+        }
       </div>
 
       {/* Status filter tabs */}
@@ -124,8 +131,8 @@ const filtered = statusFilter === 'ALL'
         </div>
       )}
 
-      {showForm  && <TicketForm    onClose={() => setShowForm(false)}    />}
-      {selected  && <TicketDetail  ticket={selected} onClose={() => setSelected(null)} />}
+      {showForm && <TicketForm onClose={() => setShowForm(false)} />}
+      {selected && <TicketDetail ticket={selected} onClose={() => setSelected(null)} />}
     </div>
   );
 };

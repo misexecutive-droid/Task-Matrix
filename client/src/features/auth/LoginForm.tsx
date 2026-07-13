@@ -2,7 +2,6 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Eye, EyeOff } from "lucide-react";
-import { NavLink } from "react-router";
 import { Input, Button,  } from "../../components";
 import { loginSchema, type LoginFields } from "./Schemas";
 import { useLoginMutation } from "./hooks";
@@ -146,17 +145,6 @@ export const LoginForm = () => {
             </Button>
 
           </form>
-
-          <p className="text-center text-xs sm:text-sm text-slate-400 font-display">
-            Don&apos;t have an account?{" "}
-            <NavLink
-              to="/signup"
-              className="font-semibold text-primary-700 hover:text-primary-600 transition-colors"
-              style={{ transitionDuration: "var(--transition-fast)" }}
-            >
-              Sign up
-            </NavLink>
-          </p>
 
         </div>
       </main>

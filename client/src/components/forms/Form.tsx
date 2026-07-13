@@ -1,8 +1,9 @@
 import React from "react";
 
-interface FormProps extends React.FormHTMLAttributes<HTMLFormElement> {
+interface FormProps extends Omit<React.FormHTMLAttributes<HTMLFormElement>, 'onSubmit'> {
   title?:       string;
   description?: string;
+  onSubmit?:    React.FormEventHandler<HTMLFormElement>;
 }
 
 export const Form: React.FC<FormProps> = ({
@@ -13,7 +14,7 @@ export const Form: React.FC<FormProps> = ({
   className = "",
   ...props
 }) => {
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit: React.FormEventHandler<HTMLFormElement> = (e) => {
     e.preventDefault();
     onSubmit?.(e);
   };
@@ -23,10 +24,10 @@ export const Form: React.FC<FormProps> = ({
       onSubmit={handleSubmit}
       className={[
         'w-full max-w-md p-6 bg-white',
-        'border border-grey-200 rounded-card shadow-card',
+        ' rounded-card shadow-card',
         'flex flex-col gap-6',
         className,
-      ].join(' ')}
+      ].join(' ')}  
       {...props}
     >
       {(title || description) && (

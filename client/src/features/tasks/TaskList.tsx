@@ -1,31 +1,35 @@
 import React, { useState } from "react";
 import { Plus, CheckCheck, Clock, Circle, AlertCircle, Loader2 } from "lucide-react";
 import { Button } from "../../components";
-import { useTasksQuery, useUpdateTaskMutation, useDeleteTaskMutation } from "./hook";
+import { useTasksQuery, useUpdateTaskMutation, useDeleteTaskMutation, useAssignableUsersQuery } from "./hook";
 import type { Task } from '../../api/task';
 import { TaskForm } from "./TaskForm";
+import { TaskDetail } from "./TaskDetail";
+import { useAuth } from "../../context/AuthContext"
 
 const PRIORITY_MAP = {
-    low:    { label: 'Low',    className: 'bg-slate-100 text-slate-500' },
+    low: { label: 'Low', className: 'bg-slate-100 text-slate-500' },
     medium: { label: 'Medium', className: 'bg-amber-50  text-amber-600' },
-    high:   { label: 'High',   className: 'bg-red-50    text-red-500'   },
+    high: { label: 'High', className: 'bg-red-50    text-red-500' },
 } satisfies Record<Task['priority'], { label: string; className: string }>;
 
 const STATUS_ICON = {
-    todo:        <Circle     size={15} className="text-slate-400"  />,
-    in_progress: <Clock      size={15} className="text-amber-500"  />,
-    done:        <CheckCheck size={15} className="text-emerald-500" />,
+    todo: <Circle size={15} className="text-slate-400" />,
+    in_progress: <Clock size={15} className="text-amber-500" />,
+    done: <CheckCheck size={15} className="text-emerald-500" />,
 } satisfies Record<Task['status'], React.ReactNode>;
 
-const TaskRow = ({ task }: { task: Task }) => {
+// NEW: accepts an optional assigneeName to display, resolved by the parent TaskList
+// (see userMap below) since the API only ever gives us a bare assigneeId, not a full user object.
+const TaskRow = ({ task, assigneeName, isAdmin, onOpen }: { task: Task; assigneeName?: string, isAdmin: boolean, onOpen: (task: Task) => void }) => {
     const updateMutation = useUpdateTaskMutation();
     const deleteMutation = useDeleteTaskMutation();
 
     const cycleStatus = () => {
         const next: Record<Task['status'], Task['status']> = {
-            todo:        'in_progress',
+            todo: 'in_progress',
             in_progress: 'done',
-            done:        'todo',
+            done: 'todo',
         };
         updateMutation.mutate({ id: task.id, payload: { status: next[task.status] } });
     };
@@ -46,18 +50,33 @@ const TaskRow = ({ task }: { task: Task }) => {
             </button>
 
             <div className="flex-1 min-w-0">
-                <p className={[
-                    'text-sm font-display font-medium truncate',
-                    task.status === 'done' ? 'line-through text-slate-400' : 'text-slate-800',
-                ].join(' ')}>
+                <button
+                    onClick={() => onOpen(task)}
+                    className={[
+                        'text-sm font-display font-medium truncate text-left cursor-pointer hover:underline',
+                        task.status === 'done' ? 'line-through text-slate-400' : 'text-slate-800',
+                    ].join(' ')}
+                >
                     {task.title}
-                </p>
+                </button>
                 {task.dueDate && (
                     <p className="text-xs text-slate-400 mt-0.5">
                         Due {new Date(task.dueDate).toLocaleDateString()}
                     </p>
                 )}
+                {updateMutation.isError && (
+                    <p className="text-xs text-red-500 mt-0.5">
+                        {updateMutation.error instanceof Error ? updateMutation.error.message : 'Failed to update task.'}
+                    </p>
+                )}
             </div>
+
+            {/* NEW — only rendered when this task is actually assigned to someone */}
+            {assigneeName && (
+                <span className="text-xs text-slate-400 font-display shrink-0 truncate max-w-[8rem]">
+                    → {assigneeName}
+                </span>
+            )}
 
             <span className={[
                 'text-xs font-display font-medium px-2 py-0.5 rounded-full shrink-0',
@@ -66,34 +85,50 @@ const TaskRow = ({ task }: { task: Task }) => {
                 {priority.label}
             </span>
 
-            <button
-                onClick={() => deleteMutation.mutate(task.id)}
-                disabled={deleteMutation.isPending}
-                className="shrink-0 text-slate-300 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all cursor-pointer disabled:opacity-50"
-                aria-label="Delete task"
-            >
-                {deleteMutation.isPending
-                    ? <Loader2 size={14} className="animate-spin" />
-                    : <AlertCircle size={14} />}
-            </button>
+            {
+                isAdmin && (
+                    <Button
+                        onClick={() => deleteMutation.mutate(task.id)}
+                        disabled={deleteMutation.isPending}
+                        className="shrink-0 text-slate-300 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all cursor-pointer disabled:opacity-50"
+                        aria-label="Delete task"
+                    >
+                        {deleteMutation.isPending
+                            ? <Loader2 size={14} className="animate-spin" />
+                            : <AlertCircle size={14} />}
+                    </Button>
+                )
+            }
         </div>
     );
 };
 
-export const TaskList = () => {
+interface TaskListProps {
+    userId?: string;
+}
+
+export const TaskList = ({ userId }: TaskListProps = {}) => {
+    const { user } = useAuth();
+    const isAdmin = user?.role === "ADMIN";
     const [showForm, setShowForm] = useState(false);
-    const { data: tasks, isPending, isError } = useTasksQuery();
+    const [selected, setSelected] = useState<Task | null>(null);
+    const { data: tasks, isPending, isError } = useTasksQuery(userId);
+    const { data: assignableUsers } = useAssignableUsersQuery(); // NEW
     const [filter, setFilter] = useState<Task['status'] | 'all'>('all');
+
+    const assigneeNames = new Map(
+        (assignableUsers ?? []).map(u => [u.id, `${u.firstName} ${u.lastName ?? ''}`.trim()]),
+    );
 
     const filtered = filter === 'all'
         ? (tasks ?? [])
         : (tasks ?? []).filter(t => t.status === filter);
 
     const FILTERS: { key: Task['status'] | 'all'; label: string }[] = [
-        { key: 'all',         label: 'All'         },
-        { key: 'todo',        label: 'To Do'        },
-        { key: 'in_progress', label: 'In Progress'  },
-        { key: 'done',        label: 'Done'         },
+        { key: 'all', label: 'All' },
+        { key: 'todo', label: 'To Do' },
+        { key: 'in_progress', label: 'In Progress' },
+        { key: 'done', label: 'Done' },
     ];
 
     return (
@@ -105,15 +140,18 @@ export const TaskList = () => {
                         {tasks?.length ?? 0} task{tasks?.length !== 1 ? 's' : ''}
                     </p>
                 </div>
-                <Button
-                    size="sm"
-                    variant="primary"
-                    className="gap-1.5"
-                    onClick={() => setShowForm(true)}
-                >
-                    <Plus size={14} />
-                    New task
-                </Button>
+
+                {!userId && isAdmin && (
+                    <Button
+                        size="sm"
+                        variant="primary"
+                        className="gap-1.5"
+                        onClick={() => setShowForm(true)}
+                    >
+                        <Plus size={14} />
+                        New task
+                    </Button>
+                )}
             </div>
 
             <div className="flex gap-1 p-1 bg-slate-100 rounded-lg w-fit">
@@ -157,12 +195,19 @@ export const TaskList = () => {
             {!isPending && !isError && filtered.length > 0 && (
                 <div className="flex flex-col gap-2">
                     {filtered.map(task => (
-                        <TaskRow key={task.id} task={task} />
+                        <TaskRow
+                            key={task.id}
+                            task={task}
+                            isAdmin={isAdmin}
+                            onOpen={setSelected}
+                            assigneeName={task.assigneeId ? assigneeNames.get(task.assigneeId) : undefined}
+                        />
                     ))}
                 </div>
             )}
 
             {showForm && <TaskForm onClose={() => setShowForm(false)} />}
+            {selected && <TaskDetail task={selected} onClose={() => setSelected(null)} />}
         </div>
     );
 };

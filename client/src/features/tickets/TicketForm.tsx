@@ -5,7 +5,6 @@ import { z } from 'zod';
 import { X } from 'lucide-react';
 import { Input, Button } from '../../components';
 import { useCreateTicketMutation, useAssignableUsersQuery, useDepartmentsQuery } from './hook';
-import { useAuth } from '../../context/AuthContext';
 
 const ticketSchema = z.object({
   title:          z.string().min(1, 'Title is required'),
@@ -25,8 +24,6 @@ interface TicketFormProps {
 }
 
 export const TicketForm = ({ onClose }: TicketFormProps) => {
-  const { user } = useAuth();
-  const canAssign = user?.role === 'ADMIN' || user?.role === 'MANAGER';
   const { data: departments } = useDepartmentsQuery();
   const mutation = useCreateTicketMutation();
 
@@ -59,7 +56,7 @@ export const TicketForm = ({ onClose }: TicketFormProps) => {
         assignmentMode: data.assignmentMode,
         departmentId:   data.departmentId !== '' ? data.departmentId : undefined,
         assigneeId:     data.assigneeId !== '' ? data.assigneeId : undefined,
-        tatHours:       data.tatHours ? Number(data.tatHours) : undefined,
+        tatHours:       data.tatHours ? Number(data.tatHours) : (data.assignmentMode === 'AUTO' ? 24 : undefined),
       },
       { onSuccess: () => onClose() },
     );
@@ -144,45 +141,41 @@ export const TicketForm = ({ onClose }: TicketFormProps) => {
             </div>
           </div>
 
-          {canAssign && (
-            <>
-              <div className="flex flex-col gap-1.5">
-                <label htmlFor="departmentId" className="text-sm font-display text-slate-700">
-                  Department (optional)
-                </label>
-                <select
-                  id="departmentId"
-                  className="w-full px-3 h-11 sm:h-10 text-sm bg-white rounded-sm border border-slate-300 focus:outline-none focus:border-2 focus:border-blue-700 transition-colors cursor-pointer"
-                  {...register('departmentId')}
-                >
-                  <option value="">Any department</option>
-                  {departments?.map(d => (
-                    <option key={d.id} value={d.id}>{d.name}</option>
-                  ))}
-                </select>
-              </div>
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="departmentId" className="text-sm font-display text-slate-700">
+              Department (optional)
+            </label>
+            <select
+              id="departmentId"
+              className="w-full px-3 h-11 sm:h-10 text-sm bg-white rounded-sm border border-slate-300 focus:outline-none focus:border-2 focus:border-blue-700 transition-colors cursor-pointer"
+              {...register('departmentId')}
+            >
+              <option value="">Any department</option>
+              {departments?.map(d => (
+                <option key={d.id} value={d.id}>{d.name}</option>
+              ))}
+            </select>
+          </div>
 
-              <div className="flex flex-col gap-1.5">
-                <label htmlFor="assigneeId" className="text-sm font-display text-slate-700">
-                  Assign to (optional)
-                </label>
-                <select
-                  id="assigneeId"
-                  className="w-full px-3 h-11 sm:h-10 text-sm bg-white rounded-sm border border-slate-300 focus:outline-none focus:border-2 focus:border-blue-700 transition-colors cursor-pointer"
-                  {...register('assigneeId')}
-                >
-                  <option value="">Unassigned</option>
-                  {assignableUsers?.map(u => (
-                    <option key={u.id} value={u.id}>
-                      {u.firstName} {u.lastName ?? ''} ({u.role})
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </>
-          )}
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="assigneeId" className="text-sm font-display text-slate-700">
+              Assign to (optional)
+            </label>
+            <select
+              id="assigneeId"
+              className="w-full px-3 h-11 sm:h-10 text-sm bg-white rounded-sm border border-slate-300 focus:outline-none focus:border-2 focus:border-blue-700 transition-colors cursor-pointer"
+              {...register('assigneeId')}
+            >
+              <option value="">Unassigned</option>
+              {assignableUsers?.map(u => (
+                <option key={u.id} value={u.id}>
+                  {u.firstName} {u.lastName ?? ''} ({u.role})
+                </option>
+              ))}
+            </select>
+          </div>
 
-          {assignmentMode === 'MANUAL' && (
+          {assignmentMode === 'MANUAL' ? (
             <Input
               id="tatHours"
               label="TAT hours (optional)"
@@ -191,6 +184,10 @@ export const TicketForm = ({ onClose }: TicketFormProps) => {
               error={errors.tatHours?.message}
               {...register('tatHours')}
             />
+          ) : (
+            <p className="text-xs text-slate-400 font-display -mt-1">
+              Auto-assigned tickets get a default TAT of 24 hours.
+            </p>
           )}
 
           {mutation.isError && (

@@ -8,36 +8,38 @@ import {
   useDeleteChecklistItemMutation,
 } from './hook';
 import type { Checklist } from '../../api/ticket';
+import { useAuth } from '../../context/AuthContext';
 
 interface ChecklistPanelProps {
-  ticketId:   string;
+  ticketId: string;
   checklists: Checklist[];
 }
 
 const ChecklistBlock = ({
   checklist,
   ticketId,
+  isAdmin,
 }: {
   checklist: Checklist;
-  ticketId:  string;
+  ticketId: string;
+  isAdmin: boolean;
 }) => {
-  const [open, setOpen]           = useState(true);
-  const updateItem                = useUpdateChecklistItemMutation(ticketId);
-  const deleteItem                = useDeleteChecklistItemMutation(ticketId);
-  const deleteChecklist           = useDeleteChecklistMutation(ticketId);
-  const doneCount                 = checklist.items.filter(i => i.isDone).length;
+  const [open, setOpen] = useState(true);
+  const updateItem = useUpdateChecklistItemMutation(ticketId);
+  const deleteItem = useDeleteChecklistItemMutation(ticketId);
+  const deleteChecklist = useDeleteChecklistMutation(ticketId);
+  const doneCount = checklist.items.filter(i => i.isDone).length;
 
   return (
     <div className="border border-slate-200 rounded-lg overflow-hidden">
 
-      {/* Checklist header */}
       <div className="flex items-center justify-between px-3 py-2.5 bg-slate-50">
         <button
           onClick={() => setOpen(v => !v)}
           className="flex items-center gap-2 flex-1 min-w-0 cursor-pointer"
         >
           {open
-            ? <ChevronDown  size={14} className="text-slate-400 shrink-0" />
+            ? <ChevronDown size={14} className="text-slate-400 shrink-0" />
             : <ChevronRight size={14} className="text-slate-400 shrink-0" />}
           <span className="text-sm font-display font-medium text-slate-700 truncate">
             {checklist.title}
@@ -47,19 +49,20 @@ const ChecklistBlock = ({
           </span>
         </button>
 
-        <button
-          onClick={() => deleteChecklist.mutate(checklist.id)}
-          disabled={deleteChecklist.isPending}
-          className="text-slate-300 hover:text-red-400 transition-colors cursor-pointer disabled:opacity-50 ml-2"
-          aria-label="Delete checklist"
-        >
-          {deleteChecklist.isPending
-            ? <Loader2 size={13} className="animate-spin" />
-            : <Trash2  size={13} />}
-        </button>
+        {isAdmin && (
+          <button
+            onClick={() => deleteChecklist.mutate(checklist.id)}
+            disabled={deleteChecklist.isPending}
+            className="text-slate-300 hover:text-red-400 transition-colors cursor-pointer disabled:opacity-50 ml-2"
+            aria-label="Delete checklist"
+          >
+            {deleteChecklist.isPending
+              ? <Loader2 size={13} className="animate-spin" />
+              : <Trash2 size={13} />}
+          </button>
+        )}
       </div>
 
-      {/* Items */}
       {open && (
         <div className="divide-y divide-slate-100">
           {checklist.items.length === 0 && (
@@ -76,7 +79,7 @@ const ChecklistBlock = ({
               >
                 {item.isDone
                   ? <CheckSquare size={15} className="text-primary-600" />
-                  : <Square      size={15} className="text-slate-300"   />}
+                  : <Square size={15} className="text-slate-300" />}
               </button>
 
               <span className={`flex-1 text-sm font-display min-w-0 truncate ${item.isDone ? 'line-through text-slate-400' : 'text-slate-700'}`}>
@@ -89,14 +92,16 @@ const ChecklistBlock = ({
                 </span>
               )}
 
-              <button
-                onClick={() => deleteItem.mutate(item.id)}
-                disabled={deleteItem.isPending}
-                className="shrink-0 text-slate-200 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all cursor-pointer disabled:opacity-50"
-                aria-label="Delete item"
-              >
-                <Trash2 size={12} />
-              </button>
+              {isAdmin && (
+                <button
+                  onClick={() => deleteItem.mutate(item.id)}
+                  disabled={deleteItem.isPending}
+                  className="shrink-0 text-slate-200 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all cursor-pointer disabled:opacity-50"
+                  aria-label="Delete item"
+                >
+                  <Trash2 size={12} />
+                </button>
+              )}
             </div>
           ))}
         </div>
@@ -106,9 +111,11 @@ const ChecklistBlock = ({
 };
 
 export const ChecklistPanel = ({ ticketId, checklists }: ChecklistPanelProps) => {
-  const [adding, setAdding]   = useState(false);
-  const [title, setTitle]     = useState('');
-  const addChecklist          = useAddChecklistMutation(ticketId);
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'ADMIN';
+  const [adding, setAdding] = useState(false);
+  const [title, setTitle] = useState('');
+  const addChecklist = useAddChecklistMutation(ticketId);
 
   const handleAdd = () => {
     if (!title.trim()) return;
@@ -122,7 +129,7 @@ export const ChecklistPanel = ({ ticketId, checklists }: ChecklistPanelProps) =>
     <div className="flex flex-col gap-3">
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-display font-semibold text-slate-700">Checklists</h3>
-        {!adding && (
+        {isAdmin && !adding && (
           <button
             onClick={() => setAdding(true)}
             className="flex items-center gap-1 text-xs font-display text-primary-600 hover:text-primary-700 transition-colors cursor-pointer"
@@ -133,7 +140,6 @@ export const ChecklistPanel = ({ ticketId, checklists }: ChecklistPanelProps) =>
         )}
       </div>
 
-      {/* Inline add form */}
       {adding && (
         <div className="flex gap-2">
           <input
@@ -158,7 +164,7 @@ export const ChecklistPanel = ({ ticketId, checklists }: ChecklistPanelProps) =>
       )}
 
       {checklists.map(cl => (
-        <ChecklistBlock key={cl.id} checklist={cl} ticketId={ticketId} />
+        <ChecklistBlock key={cl.id} checklist={cl} ticketId={ticketId} isAdmin={isAdmin} />
       ))}
     </div>
   );

@@ -1,15 +1,18 @@
-import React from "react";
 import { ModernHeroTitle } from "../../components";
+
+interface AuthBackgroundProps {
+    tagline?: string;
+}
 
 const AuthBackground = ({
     tagline = 'Built for teams that move fast and never miss what matters',
-}: AuthBackroundProps) => {
+}: AuthBackgroundProps) => {
     return (
         <>
 
             <aside
                 className="hidden lg:flex lg:w-1/2 xl:w-full flex-col justify-between p-10 xl:p-14 relative overflow-hidden"
-                style={{ background: 'var(--bg-dark' }}>
+                style={{ background: 'var(--bg-dark)' }}>
 
                 <span className="absolute inset-6 border border-primary-400/20 rounded-xl pointer-events-none" />
                 <span className="absolute -left-28 top-1/2 -translate-y-1/2 size-80 rounded-full border border-indigo-400/20 pointer-events-none" />

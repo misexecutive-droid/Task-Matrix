@@ -3,14 +3,18 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod/v4';
 import { X } from 'lucide-react';
 import { Input, Button } from '../../components';
-import { useCreateTaskMutation } from './hook';
+import { useCreateTaskMutation, useAssignableUsersQuery } from './hook';
 
 // ── Schema ─────────────────────────────────────────────────────
 const taskSchema = z.object({
   title:       z.string().min(1, 'Title is required'),
   description: z.string().optional(),
-  priority:    z.enum(['low', 'medium', 'high']).default('medium'),
+  priority:    z.enum(['low', 'medium', 'high']),
   dueDate:     z.string().optional(),
+  // NEW — the <select> below always submits a string (the "Unassigned" option submits ''),
+  // so we accept a plain optional string here and convert '' -> undefined manually in onSubmit,
+  // the same pattern already used for departmentId/assigneeId in TicketForm.tsx.
+  assigneeId:  z.string().optional(),
 });
 
 type TaskFields = z.infer<typeof taskSchema>;
@@ -21,6 +25,7 @@ interface TaskFormProps {
 
 export const TaskForm = ({ onClose }: TaskFormProps) => {
   const mutation = useCreateTaskMutation();
+  const { data: assignableUsers } = useAssignableUsersQuery(); // NEW
 
   const {
     register,
@@ -32,13 +37,24 @@ export const TaskForm = ({ onClose }: TaskFormProps) => {
   });
 
   const onSubmit = (data: TaskFields) => {
-    mutation.mutate(data, {
-      onSuccess: () => onClose(), 
-    });
+    mutation.mutate(
+      {
+        ...data,
+        // NEW: turn the "Unassigned" option's empty string into `undefined` so it's left out
+        // of the JSON body entirely, rather than sending assigneeId: "" (which would fail the
+        // server's ObjectId regex check and come back as a 400 Validation error).
+        assigneeId: data.assigneeId !== '' ? data.assigneeId : undefined,
+        // The <input type="date"> gives a plain "YYYY-MM-DD" (or "" when empty), but the server
+        // requires a full ISO-8601 datetime (z.string().datetime() in task.validation.ts) — so
+        // convert to an ISO string here, or omit the field entirely when left blank.
+        dueDate: data.dueDate ? new Date(data.dueDate).toISOString() : undefined,
+      },
+      { onSuccess: () => onClose() },
+    );
   };
 
   return (
-    
+
     <div
       className="fixed inset-0 z-50 flex items-center justify-center p-4"
       style={{ background: 'rgba(0,0,0,0.35)', backdropFilter: 'blur(2px)' }}
@@ -114,6 +130,25 @@ export const TaskForm = ({ onClose }: TaskFormProps) => {
               {...register('dueDate')}
             />
 
+          </div>
+
+          {/* NEW — Assign to (optional) */}
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="assigneeId" className="text-sm font-display text-slate-700">
+              Assign to <span className="text-slate-400">(optional)</span>
+            </label>
+            <select
+              id="assigneeId"
+              className="w-full px-3 h-11 sm:h-10 text-sm bg-white rounded-sm border border-slate-300 focus:outline-none focus:border-2 focus:border-blue-700 transition-colors cursor-pointer"
+              {...register('assigneeId')}
+            >
+              <option value="">Unassigned (just for me)</option>
+              {assignableUsers?.map(u => (
+                <option key={u.id} value={u.id}>
+                  {u.firstName} {u.lastName ?? ''} ({u.role})
+                </option>
+              ))}
+            </select>
           </div>
 
           {/* API error */}

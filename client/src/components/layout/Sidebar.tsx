@@ -1,27 +1,32 @@
 import { NavLink } from 'react-router';
 import {
   LayoutDashboard, CheckSquare, FolderKanban,
-  Calendar, Settings, LogOut, TicketCheck,
+  Calendar, Settings, LogOut, TicketCheck, ShieldCheck,
 } from 'lucide-react';
 
 const NAV = [
-  { to: '/',         icon: LayoutDashboard, label: 'Dashboard' },
-  { to: '/tasks',    icon: CheckSquare,     label: 'Tasks'     },
-  { to: '/tickets',  icon: TicketCheck,     label: 'Tickets'   },
-  { to: '/projects', icon: FolderKanban,    label: 'Projects'  },
-  { to: '/calendar', icon: Calendar,        label: 'Calendar'  },
-  { to: '/settings', icon: Settings,        label: 'Settings'  },
+  { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
+  { to: '/tasks', icon: CheckSquare, label: 'Tasks' },
+  { to: '/tickets', icon: TicketCheck, label: 'Tickets' },
+  { to: '/projects', icon: FolderKanban, label: 'Projects' },
+  { to: '/calendar', icon: Calendar, label: 'Calendar' },
+  { to: '/settings', icon: Settings, label: 'Settings' },
 ];
 
 interface SidebarProps {
   isOpen: boolean;
-  user:   { name: string; email: string } | null;
+  user: { name: string; email: string; role?: string } | null;
   logout: () => void;
 }
 
 export const Sidebar = ({ isOpen, user, logout }: SidebarProps) => {
   const initials = (user?.name ?? 'U')
     .split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase();
+
+  const navItems = user?.role === 'ADMIN'
+    ? [...NAV, { to: '/admin/users', icon: ShieldCheck, label: 'Admin' }]
+    : NAV;
+
 
   return (
     <aside
@@ -33,7 +38,7 @@ export const Sidebar = ({ isOpen, user, logout }: SidebarProps) => {
     >
       {/* Nav links */}
       <nav className="flex flex-col gap-0.5 flex-1">
-        {NAV.map(({ to, icon: Icon, label }) => (
+        {navItems.map(({ to, icon: Icon, label }) => (
           <NavLink
             key={to}
             to={to}

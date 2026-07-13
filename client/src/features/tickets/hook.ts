@@ -6,12 +6,14 @@ import type {
   UpdateTicketPayload,
   CreateChecklistPayload,
   UpdateChecklistItemPayload,
+  TatReportGroupBy,
 } from '../../api/ticket';
 import { userApi } from "../../api/users";
+import { departmentApi } from "../../api/departments";
 
 const KEYS = {
-  all:    (page: number) => ['tickets', page]         as const,
-  detail: (id: string)   => ['tickets', 'detail', id] as const,
+  all: (page: number) => ['tickets', page] as const,
+  detail: (id: string) => ['tickets', 'detail', id] as const,
 };
 
 // Helper function to prevent React Query from retrying on 401 Unauthorized errors
@@ -26,9 +28,9 @@ export const useTicketsQuery = (page = 1) => {
   const { token } = useAuth();
   return useQuery({
     queryKey: KEYS.all(page),
-    queryFn:  () => ticketApi.getAll(page),
-    enabled:  !!token,
-    retry:    handleQueryRetry,
+    queryFn: () => ticketApi.getAll(page),
+    enabled: !!token,
+    retry: handleQueryRetry,
   });
 };
 
@@ -36,9 +38,9 @@ export const useTicketQuery = (id: string) => {
   const { token } = useAuth();
   return useQuery({
     queryKey: KEYS.detail(id),
-    queryFn:  () => ticketApi.getOne(id).then(r => r.data),
-    enabled:  !!token && !!id,
-    retry:    handleQueryRetry,
+    queryFn: () => ticketApi.getOne(id).then(r => r.data),
+    enabled: !!token && !!id,
+    retry: handleQueryRetry,
   });
 };
 
@@ -115,12 +117,12 @@ export const useDeleteChecklistItemMutation = (ticketId: string) => {
 };
 
 export const useAssignableUsersQuery = (departmentId?: string) => {
-  const { token, user } = useAuth();
+  const { token } = useAuth();
   return useQuery({
-    queryKey : ['assignable-users', departmentId ?? 'all'],
-    queryFn : () => userApi.getAssignable(departmentId).then(r => r.data),
-    enabled : !!token && (user?.role === "ADMIN" || user?.role === "MANAGER"),
-    retry:    handleQueryRetry,
+    queryKey: ['assignable-users', departmentId ?? 'all'],
+    queryFn: () => userApi.getAssignable(departmentId).then(r => r.data),
+    enabled: !!token,
+    retry: handleQueryRetry,
   });
 };
 
@@ -128,9 +130,19 @@ export const useDepartmentsQuery = () => {
   const { token } = useAuth();
   return useQuery({
     queryKey: ['departments'],
-    queryFn:  () => departmentApi.getAll().then(r => r.data),
-    enabled:  !!token,
+    queryFn: () => departmentApi.getAll().then(r => r.data),
+    enabled: !!token,
   });
 };
+
+export const useTatReportQuery = (groupBy: TatReportGroupBy) => {
+  const { token, user } = useAuth();
+  return useQuery({
+    queryKey: ["tickets", "tat-report", groupBy],
+    queryFn: () => ticketApi.getTatReport(groupBy).then(r => r.data),
+    enabled: !!token && user?.role === "ADMIN",
+    retry: handleQueryRetry,
+  })
+}
 
 
