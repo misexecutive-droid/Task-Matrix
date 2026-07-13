@@ -1,6 +1,6 @@
 import type { Request, Response } from "express";
 import { taskChecklistService } from "./taskChecklist.service.js";
-import { createTaskChecklistSchema, updateTaskChecklistItemSchema } from "./taskChecklist.validation.js";
+import { createTaskChecklistSchema, updateTaskChecklistItemSchema, updateRemarksSchema } from "./taskChecklist.validation.js";
 import { asyncHandler } from "../../utils/asyncHandler.js";
 
 export const taskChecklistController = {
@@ -28,6 +28,14 @@ export const taskChecklistController = {
     completeItem: asyncHandler(async (req: Request, res: Response) => {
         const item = await taskChecklistService.completeItem(req.params.id, req.user!)
         res.json({ success: true, data: item })
+    }),
+
+    // PATCH /task-checklist-items/:id/remarks — the assignee's own notes about their work on
+    // this item. Separate from updateItem since it has its own (looser) permission rule.
+    updateRemarks: asyncHandler(async (req: Request, res: Response) => {
+        const { remarks } = updateRemarksSchema.parse(req.body);
+        const item = await taskChecklistService.updateRemarks(req.params.id, remarks, req.user!);
+        res.json({ success: true, data: item });
     }),
 
         // DELETE /task-checklists/:id — remove a whole checklist (and everything under it)

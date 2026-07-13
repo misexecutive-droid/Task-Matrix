@@ -1,18 +1,19 @@
 import { Router } from "express"
 import { taskChecklistController } from "./taskChecklist.controller.js"
-import { authenticate } from "../../middleware/auth/auth.js"
+import { authenticate, requireRole} from "../../middleware/auth/auth.js"
 import { taskImageController } from "../taskImages/taskImage.controller.js"
 import { taskImageUpload } from "../../config/upload.js"
 
 // Mounted at /task-checklists in app.ts
 export const taskChecklistRouter = Router()
 taskChecklistRouter.use(authenticate)
-taskChecklistRouter.delete('/:id', taskChecklistController.removeChecklist)
+taskChecklistRouter.delete('/:id', requireRole("ADMIN"), taskChecklistController.removeChecklist)
 
 // Mounted at /task-checklist-items in app.ts
 export const taskChecklistItemRouter = Router()
 taskChecklistItemRouter.use(authenticate)
 taskChecklistItemRouter.patch('/:id', taskChecklistController.updateItem)
+taskChecklistItemRouter.patch('/:id/remarks', taskChecklistController.updateRemarks)
 taskChecklistItemRouter.post('/:id/complete', taskChecklistController.completeItem)
 taskChecklistItemRouter.post('/:id/images', taskImageUpload.array('images', 10), taskImageController.upload)
-taskChecklistItemRouter.delete('/:id', taskChecklistController.removeItem)
+taskChecklistItemRouter.delete('/:id', requireRole("ADMIN"),taskChecklistController.removeItem)

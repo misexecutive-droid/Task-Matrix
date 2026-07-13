@@ -11,6 +11,7 @@ const taskChecklistItemSchema = new Schema(
 
         requiredImageCount : { type : Number , default : 0 , min : 0},
         requiresLivePhoto : { type : Boolean , default : false},
+        remarks : { type : String , default : null },
     },
     {
         timestamps : true, toJSON : { virtuals : true} , toObject : { virtuals  : true}

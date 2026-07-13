@@ -40,21 +40,13 @@ class App {
 
     // Sets up middleware that should run on (almost) every incoming request.
     private initMiddlewares(): void {
-        // Enable CORS so that only our frontend (env.CLIENT_URL) is allowed to make requests to this API from a browser,
-        // and allow cookies to be sent/received cross-origin (credentials: true) — needed for things like auth cookies.
         this.app.use(cors({ origin: env.CLIENT_URL, credentials: true }))
-        // Parse incoming JSON request bodies into `req.body` so we can read data sent by clients (e.g. form submissions as JSON).
         this.app.use(express.json())
-        // Parse cookies from incoming requests into `req.cookies`.
         this.app.use(cookieParser())
+        this.app.set("etag", false)
         // Only log requests with morgan when we're NOT running tests — keeps test output clean.
         // 'dev' is a predefined morgan format meant for local development (colored, concise).
         if (env.NODE_ENV != 'test') this.app.use(morgan('dev'))
-        // NEW — serve everything inside the uploads/ folder directly as static files, so a browser
-        // can load an image at a plain URL like http://localhost:5050/uploads/tasks/<filename>.jpg,
-        // exactly the same way it would load any other image on the web. express.static handles
-        // reading the file, setting the right Content-Type header, and caching headers for us —
-        // we don't write any of that by hand.
         this.app.use('/uploads', express.static(path.resolve('uploads')))
     }
 
@@ -109,5 +101,4 @@ class App {
     }
 }
 
-// Export the App class so server.ts can create an instance of it and attach it to a real HTTP server.
 export default App;

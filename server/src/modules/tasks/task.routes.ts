@@ -1,6 +1,6 @@
 import { Router } from "express" // Express's Router lets us group related endpoints (all the /tasks ones) together
 import { taskController } from "./task.controller.js" // the functions that actually handle each route
-import { authenticate } from "../../middleware/auth/auth.js" // middleware that checks the JWT and attaches req.user, or rejects the request
+import { authenticate , requireRole } from "../../middleware/auth/auth.js" // middleware that checks the JWT and attaches req.user, or rejects the request
 import { taskChecklistController } from "../taskChecklists/taskChecklist.controller.js" // creating a checklist under a specific task
 
 export const taskRouter = Router()
@@ -12,8 +12,10 @@ taskRouter.use(authenticate)
 // these routes get mounted somewhere under a path like "/api/tasks" in the main app setup.
 taskRouter.get("/", taskController.list)       // GET    /tasks      -> list all tasks visible to this user
 taskRouter.get("/:id" , taskController.getOne) // GET    /tasks/:id  -> get a single task by id
-taskRouter.post("/" , taskController.create)   // POST   /tasks      -> create a new task
 taskRouter.patch("/:id" , taskController.update) // PATCH /tasks/:id  -> partially update a task
-taskRouter.delete("/:id" , taskController.remove) // DELETE /tasks/:id -> delete a task
+taskRouter.delete("/:id" , requireRole("ADMIN"),taskController.remove) // DELETE /tasks/:id -> delete a task
 
-taskRouter.post("/:taskId/checklists", taskChecklistController.createForTask) // POST /tasks/:taskId/checklists -> create a checklist under this task
+taskRouter.post("/", requireRole("ADMIN"), taskController.create)
+
+
+taskRouter.post("/:taskId/checklists", requireRole("ADMIN"), taskChecklistController.createForTask) // POST /tasks/:taskId/checklists -> create a checklist under this task

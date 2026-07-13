@@ -1,32 +1,18 @@
-// Ticket = the Mongoose model that maps to the "tickets" collection in MongoDB. It defines what fields a ticket has (title, status, assigneeId, etc).
 import { Ticket } from "../../models/Ticket.js"
-// AppError = a custom error class we throw to represent "expected" errors like 404 Not Found or 403 Forbidden, with a status code baked in, so the error middleware can turn it into the right HTTP response.
 import { AppError } from "../../utils/AppError.js"
-// Type-only import: describes what's inside a decoded JWT access token (the logged-in user's id, role, department, store, etc). `type` import means it's erased at compile time - no runtime code.
 import type { AccessTokenPayload } from "../../middleware/auth/auth.js"
-// Type-only imports for the shapes of data allowed when creating/updating a ticket (inferred from the Zod schemas in ticket.validation.ts).
 import type { CreateTicketInput, UpdateTicketInput } from "./ticket.validation.js"
-// Service that writes an audit trail entry any time a ticket is created/updated/deleted, so there's a history of who changed what.
 import { auditService } from "../audit/audit.service.js"
-// Helper that emits a real-time event over Socket.IO (or similar) so connected clients can update their UI live (e.g. "a new ticket showed up") without needing to refresh/poll.
 import { emitTicketEvent } from "../../sockets/ticketEvent.js"
-// Service responsible for creating notifications (e.g. "you were assigned a ticket") for users.
 import { notificationService } from "../notifications/notification.service.js"
 
-// Small helper that takes a Mongoose query (not yet executed) and attaches `.populate()` calls to it.
-// By default, fields like `assignee` or `raisedBy` are just stored as raw ObjectId references in the database (pointers to a User document).
-// `.populate()` tells Mongoose "before you hand this back to me, go fetch the real document for these ids and swap it in", so instead of just an id we get a full object with the fields we `select`.
 const populateTicket = (query: any) =>
   query
-    // Turn the stored `assignee` id into a full embedded object, but only include email/firstName/role (not the whole user document, e.g. no password hash).
     .populate({ path: "assignee", select: "email firstName role" })
-    // Turn the stored `checklists` ids into full checklist objects, and for each checklist, also populate its `items` (a checklist has items, and we want those expanded too - nested populate).
     .populate({ path: "checklists", populate: { path: "items" } })
-    // Also expand `raisedBy` (whoever originally raised/created the ticket) into a full user object with just the safe fields.
-    .populate({ path : "raisedBy" , select : "email firstName role"})
+    .populate({ path: "raisedBy", select: "email firstName role" })
 
-// This is the core Role-Based Access Control (RBAC) rule for tickets: given the logged-in user, build a MongoDB filter object that describes which tickets they're allowed to see.
-// It gets passed straight into Ticket.find(filter) / Ticket.countDocuments(filter) etc.
+
 const visibilityFilter = (user: AccessTokenPayload) => {
   // ADMIN can see everything - an empty filter `{}` matches every document in MongoDB.
   if (user.role === "ADMIN") return {}
@@ -54,6 +40,10 @@ const visibilityFilter = (user: AccessTokenPayload) => {
 const assertCanMutate = (user: AccessTokenPayload, ticket: any) => {
   // Admins can edit anything.
   if (user.role === "ADMIN") return;
+  if (user.role === "AGENT") {
+    if (String(ticket.assigneeId) === user.sub) return;
+    throw AppError.forbidden("Not assigned to you")
+  }
 
   if (user.role === "MANAGER") {
     // Manager can edit the ticket if it belongs to their department...
@@ -66,10 +56,9 @@ const assertCanMutate = (user: AccessTokenPayload, ticket: any) => {
     throw AppError.forbidden("Outside your department/store")
   }
 
-  if (user.role === 'AGENT') {
-    // An agent can only edit a ticket if it's currently assigned to them.
-    if (String(ticket.assigneeId) === user.sub) return;
-    throw AppError.forbidden('Not assigned to you');
+  if (user.role === "USER") {
+    if (String(ticket.userId) === user.sub) return;
+    throw AppError.forbidden("Not your ticket")
   }
 
   // Any other role (e.g. plain USER) is never allowed to mutate a ticket at all.
@@ -128,35 +117,35 @@ export const ticketService = {
     const populated = await populateTicket(Ticket.findById(ticket._id));
     // Broadcast a real-time "ticket:created" event over the socket layer so any connected clients (e.g. dashboards) can update live. We pass along the relevant ids (who owns it, who it's assigned to, department/store) so the socket layer can decide which connected users should receive this event, plus the full populated ticket as the payload.
     emitTicketEvent("ticket:created", {
-      userId:       ticket.userId?.toString(),
-      assigneeId:   ticket.assigneeId?.toString() ?? null,
+      userId: ticket.userId?.toString(),
+      assigneeId: ticket.assigneeId?.toString() ?? null,
       departmentId: ticket.departmentId?.toString() ?? null,
-      storeId:      ticket.storeId?.toString() ?? null,
+      storeId: ticket.storeId?.toString() ?? null,
     }, populated);
 
     // If the ticket was created with an assignee already set, fire off a notification (e.g. push/email/in-app) letting that person know they've been assigned something.
-    if(ticket.assigneeId){
+    if (ticket.assigneeId) {
       await notificationService.notifyTicketAssigned(ticket)
     }
 
     return populated;
   },
 
-  // Update (PATCH) an existing ticket.
   async update(id: string, input: UpdateTicketInput, user: AccessTokenPayload) {
     const ticket = await Ticket.findById(id);
     if (!ticket) throw AppError.notFound("Ticket not found")
-    // Permission check: can this user actually mutate this specific ticket? Throws a 403 if not (see assertCanMutate above).
     assertCanMutate(user, ticket)
 
-    // Snapshot what the ticket looked like BEFORE we change it, for the audit log and to detect if the assignee changed.
     const before = ticket.toObject();
-    // Copy every field from `input` onto the ticket document (only fields the client actually sent, since updateTicketSchema makes everything optional).
+
+    if (input.status === "CLOSED" && before.status !== "CLOSED") {
+      ticket.closedAt = new Date();
+    } else if (input.status && input.status !== "CLOSED" && before.status === "CLOSED") {
+      ticket.closedAt = null;
+    }
     Object.assign(ticket, input);
-    // Persist the changes to MongoDB.
     await ticket.save()
 
-    // Log this update in the audit trail with both the before and after snapshots, so changes are traceable.
     await auditService.record({
       entityType: "Ticket",
       entityId: ticket._id.toString(),
@@ -187,7 +176,6 @@ export const ticketService = {
     return populated;
   },
 
-  // Delete a ticket outright (only reachable by ADMIN, enforced at the route level in ticket.routes.ts).
   async remove(id: string, user: AccessTokenPayload) {
     // findByIdAndDelete both finds and removes it in one database call, returning the document as it was right before deletion (or null if it didn't exist).
     const ticket = await Ticket.findByIdAndDelete(id);
@@ -202,5 +190,48 @@ export const ticketService = {
       before: ticket.toObject(),
     })
     return ticket;
+  },
+
+ async tatReport(groupBy: 'hour' | 'day' | 'week' | 'month', from?: string, to?: string) {
+    const DATE_FORMATS: Record<'hour' | 'day' | 'week' | 'month', string> = {
+      hour:  '%Y-%m-%dT%H:00',
+      day:   '%Y-%m-%d',
+      week:  '%G-W%V',
+      month: '%Y-%m',
+    }
+
+    const match : Record<string , any> = { closedAt : { $ne : null}}
+    if(from) match.closedAt.$gte = new Date(from);
+    if(to) match.closedAt.$lte = new Date(to);
+
+    const rows = await Ticket.aggregate([
+      { $match : match},
+      {
+        $project : {
+          bucket : { $dateToString : { format : DATE_FORMATS[groupBy] , date : "$closedAt"}},
+          tatActualHours : { $divide : [{ $subtract : ["$closedAt" , "$createdAt"]}, 1000*60*60]},
+          isOverdue : 1,
+        },
+
+      },
+      {
+        $group : {
+          _id : "$bucket",
+          count : { $sum : 1},
+          avgTatHours : { $avg : "$tatActualHours"},
+          overdueCount : { $sum : { $cond : ["$isOverdue", 1,0]}},
+
+        }
+      },
+      { $sort : { _id : 1}}
+    ]);
+
+    return rows.map(r => ({
+      bucket : r._id as string,
+      count : r.count as number,
+      avgTatHours : r.avgTatHours != null ? Math.round(r.avgTatHours * 10) / 10 : null,
+      overdueCount : r.overdueCount as number 
+
+    }))
   }
-};
+}

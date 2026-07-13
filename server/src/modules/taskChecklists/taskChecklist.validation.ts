@@ -13,7 +13,8 @@ export const createTaskChecklistSchema = z.object({
       assigneeId : objectId.optional(),
       dueAt : z.string().datetime().optional(),
       requiredImageCount : z.number().int().min(0).optional(),
-      requiresLivePhoto : z.boolean().optional()
+      requiresLivePhoto : z.boolean().optional(),
+      remarks : z.string().max(2000).optional(),
     })).optional(),
 })
 
@@ -38,5 +39,14 @@ export const updateTaskChecklistItemSchema = z.object({
     isDone : z.literal(false).optional()
 })
 
+// Updating just the remarks text on an item — deliberately its own schema/endpoint (see
+// taskChecklist.service.ts's updateRemarks) since remarks are something the ASSIGNEE writes about
+// their own work, not a structural change to the item's definition (label/assignee/due date/photo
+// requirements), which stays gated to the task owner/admin via the generic updateItem above.
+export const updateRemarksSchema = z.object({
+    remarks : z.string().max(2000),
+})
+
 export type CreateTaskChecklistInput = z.infer<typeof createTaskChecklistSchema>
 export type UpdateTaskChecklistItemInput = z.infer<typeof updateTaskChecklistItemSchema>
+export type UpdateRemarksInput = z.infer<typeof updateRemarksSchema>

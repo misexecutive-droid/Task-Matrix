@@ -24,6 +24,7 @@ const ticketSchema = new Schema(
         tatHours: { type: Number, default: null }, // "Turn-Around-Time" in hours allowed to resolve the ticket
         tatDueAt: { type: Date, default: null }, // the actual deadline date/time computed from tatHours
         isOverdue: { type: Boolean, default: false }, // flag for whether the ticket has passed its due date
+        closedAt: { type: Date, default: null }, // when the ticket actually closed, used for TAT reporting
         // userId: reference to the User who raised/created this ticket
         userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
         // assigneeId: reference to the User this ticket is currently assigned to (optional)

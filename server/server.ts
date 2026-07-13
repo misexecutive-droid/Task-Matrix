@@ -1,17 +1,10 @@
-// Node's built-in HTTP module — this lets us create a raw web server that Express will use under the hood.
 import http from "node:http";
-// Importing just the TypeScript "type" for Server, so we can type-annotate our httpServer variable (this import disappears at runtime).
 import type { Server } from "node:http";
 
-// Our custom Express application class (all routes/middleware live inside it).
 import App from "./src/app.js";
-// Functions to open and close the connection to our MongoDB database.
 import { connectDB, disconnectDB } from "./src/config/db.js";
-// Our validated environment variables (things like PORT, loaded from .env).
 import { env } from "./src/config/env.js";
-// Sets up Socket.IO (real-time/websocket communication) on top of our HTTP server.
 import { initSocket } from "./src/sockets/socket.js";
-// Starts a background job that periodically checks for SLA (service-level-agreement) breaches on tickets.
 import { startSlaSweep } from "./src/jobs/slaSweep.job.js";
 
 // This class is responsible for "bootstrapping" (starting up) our whole server:

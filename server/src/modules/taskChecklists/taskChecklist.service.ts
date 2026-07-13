@@ -95,6 +95,19 @@ export const taskChecklistService = {
         return item;
     },
 
+    // Set the item's remarks — free text the assignee writes about their own work on this item.
+    // Uses assertCanComplete (assignee-or-admin), NOT assertCanManage, because this is the person
+    // doing the work describing what they did, not a structural change to the item's definition.
+    async updateRemarks(itemId: string, remarks: string, user: AccessTokenPayload) {
+        const item = await TaskChecklistItem.findById(itemId);
+        if (!item) throw AppError.notFound("Checklist item not found");
+        assertCanComplete(user, item);
+
+        item.remarks = remarks;
+        await item.save();
+        return item;
+    },
+
     // Delete a whole checklist and everything under it. MongoDB doesn't cascade deletes the way
     // a relational DB with ON DELETE CASCADE would, so this has to happen manually, in order:
     // images first, then items, then the checklist itself.

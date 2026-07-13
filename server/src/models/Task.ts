@@ -1,7 +1,7 @@
 import { Schema, model } from "mongoose"
 
-// Allowed statuses for a Task (note: casing is inconsistent with other files' enums - left as-is)
-export const TASK_STATUSES = ["todo", "in_Progress", "done"] as const
+// Allowed statuses for a Task
+export const TASK_STATUSES = ["todo", "in_progress", "done"] as const
 export type TaskStatus = (typeof TASK_STATUSES)[number];
 
 // Allowed priority levels for a Task

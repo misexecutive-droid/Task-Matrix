@@ -3,20 +3,11 @@ import { AppError } from "../../utils/AppError.js" // helper for throwing consis
 import type { AccessTokenPayload } from "../../middleware/auth/auth.js" // the shape of the decoded JWT: who is making this request (their id/role)
 import type { CreateTaskInput , UpdateTaskInput } from "./task.validation.js" // typed shapes for create/update input, coming from the zod schemas
 
-// Who can see a given task by default: admins see everything, everyone else sees tasks
-// they either CREATED (userId) or have been ASSIGNED (assigneeId). Previously this only
-// checked userId, so a task assigned to you by someone else wouldn't show up in your own
-// list at all — that's fixed now that Task has an assigneeId field.
 const visiblityFilter = ( user : AccessTokenPayload) =>
     user.role === "ADMIN" ? {} : { $or: [{ userId : user.sub }, { assigneeId : user.sub }] }
     // note: "visiblityFilter" is spelled wrong (should be "visibilityFilter") but left as-is since it's just an internal name
 
 export const taskService = {
-    // fetch the list of tasks this user is allowed to see, newest first.
-    // `filterUserId` is NEW and optional — only meaningful for admins: it powers the
-    // "pick a user, see their tasks" admin page. A non-admin passing this would be ignored
-    // (they always just get their own visiblityFilter), so there's no way to abuse this
-    // parameter to peek at someone else's tasks by calling the API directly.
     async list (user : AccessTokenPayload, filterUserId?: string){
         if (user.role === "ADMIN" && filterUserId) {
             return Task.find({ $or: [{ userId: filterUserId }, { assigneeId: filterUserId }] }).sort({ createdAt: -1 });
@@ -30,8 +21,11 @@ export const taskService = {
 
 
     // fetch a single task by its id, but only if this user is allowed to see it (per visiblityFilter)
+    // populates its checklists (and each item's uploaded images) so the task detail view can show
+    // them in one call, same pattern as ticket.service.ts's populateTicket.
     async getById ( id : string, user : AccessTokenPayload) {
-        const task = await Task.findOne({_id : id , ...visiblityFilter(user)});
+        const task = await Task.findOne({_id : id , ...visiblityFilter(user)})
+            .populate({ path: "checklists", populate: { path: "items", populate: { path: "images" } } });
         if(!task) throw AppError.notFound("Task not found") // if nothing matched (wrong id, or belongs to someone else), respond with a 404-style error
         return task;
     },
@@ -42,8 +36,6 @@ export const taskService = {
         return Task.create({...input , userId : user.sub})
     },
 
-    // update an existing task (partial fields allowed, per updateTaskSchema — including
-    // reassigning it via assigneeId, or unassigning with assigneeId: null)
     async update(id : string, input : UpdateTaskInput , user : AccessTokenPayload) {
 
         const task = await Task.findOneAndUpdate(
@@ -59,14 +51,7 @@ export const taskService = {
     // delete a task, same ownership/assignment rule applies
     async remove(id : string , user : AccessTokenPayload){
         const task = await Task.findOneAndDelete({_id : id , ...visiblityFilter(user)})
-        // FIXED: this used to call `Task.findByIdAndDelete({_id: id, ...visiblityFilter(user)})`.
-        // findByIdAndDelete expects its FIRST argument to be a plain id string — passing a whole
-        // filter object there means Mongoose builds a query like `{ _id: { _id: "...", $or: [...] } }`,
-        // which can never match any real document (a document's _id is never itself an object
-        // shaped like that). In practice, this meant task deletion silently never worked —
-        // it always fell into the "not found" branch below, no matter what id you passed.
-        // `findOneAndDelete` is the correct method when you want to pass a full filter object
-        // (id + extra conditions) instead of just a bare id.
+       
         if(!task) throw AppError.notFound("Task not found");
         return task;
     },
