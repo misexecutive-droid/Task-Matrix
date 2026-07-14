@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Plus, Ticket as TicketIcon, Loader2, AlertCircle } from 'lucide-react';
-import { Button } from '../../components';
+import { Button, PageNav } from '../../components';
 import { useTicketsQuery } from './hook';
 import { TicketCard } from './TicketCard';
 import { TicketForm } from './TicketForm';
@@ -44,15 +44,15 @@ export const TicketList = () => {
       {/* Page header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-display font-semibold text-slate-900">Tickets</h1>
-          <p className="text-sm text-slate-400 mt-0.5">
+          <h1 className="text-xl font-display font-semibold text-text">Tickets</h1>
+          <p className="text-sm text-text-muted mt-0.5">
             {meta?.total ?? 0} ticket{meta?.total !== 1 ? 's' : ''}
           </p>
         </div>
         {
           isAdmin && (
-            <Button size="sm" variant="primary" className="gap-1.5 text-slate-600" onClick={() => setShowForm(true)}>
-              <Plus size={14} className="text-slate-600" />
+            <Button size="sm" variant="primary" className="gap-1.5" onClick={() => setShowForm(true)}>
+              <Plus size={14} />
               New ticket
             </Button>
           )
@@ -60,7 +60,7 @@ export const TicketList = () => {
       </div>
 
       {/* Status filter tabs */}
-      <div className="flex gap-1 p-1 bg-slate-100 rounded-lg w-fit overflow-x-auto">
+      <div className="flex gap-1 p-1 bg-surface-hover rounded-lg w-fit overflow-x-auto max-w-full">
         {STATUS_FILTERS.map(f => (
           <button
             key={f.key}
@@ -68,8 +68,8 @@ export const TicketList = () => {
             className={[
               'px-3 py-1.5 text-xs font-display font-medium rounded-md transition-colors cursor-pointer whitespace-nowrap',
               statusFilter === f.key
-                ? 'bg-white text-slate-800 shadow-sm'
-                : 'text-slate-500 hover:text-slate-700',
+                ? 'bg-surface text-text shadow-sm'
+                : 'text-text-muted hover:text-text-secondary',
             ].join(' ')}
           >
             {f.label}
@@ -79,7 +79,7 @@ export const TicketList = () => {
 
       {/* Loading */}
       {isPending && (
-        <div className="flex items-center justify-center py-16 text-slate-400">
+        <div className="flex items-center justify-center py-16 text-text-muted">
           <Loader2 size={20} className="animate-spin mr-2" />
           <span className="text-sm font-display">Loading tickets…</span>
         </div>
@@ -87,7 +87,7 @@ export const TicketList = () => {
 
       {/* Error */}
       {isError && (
-        <div className="flex items-center gap-2 px-4 py-3 rounded-lg bg-red-50 text-red-500 text-sm font-display">
+        <div className="flex items-center gap-2 px-4 py-3 rounded-lg bg-danger/10 text-danger text-sm font-display">
           <AlertCircle size={15} />
           Failed to load tickets. Please refresh.
         </div>
@@ -95,8 +95,8 @@ export const TicketList = () => {
 
       {/* Empty */}
       {!isPending && !isError && filtered.length === 0 && (
-        <div className="flex flex-col items-center justify-center py-16 text-slate-400 gap-2">
-          <TicketIcon size={28} className="text-slate-300" />
+        <div className="flex flex-col items-center justify-center py-16 text-text-muted gap-2">
+          <TicketIcon size={28} className="text-text-light" />
           <p className="text-sm font-display">No tickets here.</p>
         </div>
       )}
@@ -112,23 +112,7 @@ export const TicketList = () => {
 
       {/* Pagination */}
       {meta && meta.totalPages > 1 && (
-        <div className="flex items-center justify-center gap-3 pt-2">
-          <button
-            disabled={page <= 1}
-            onClick={() => setPage(p => p - 1)}
-            className="px-3 py-1.5 text-xs font-display rounded-md border border-slate-200 text-slate-500 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-colors"
-          >
-            Previous
-          </button>
-          <span className="text-xs text-slate-400 font-display">{page} / {meta.totalPages}</span>
-          <button
-            disabled={!meta.hasNext}
-            onClick={() => setPage(p => p + 1)}
-            className="px-3 py-1.5 text-xs font-display rounded-md border border-slate-200 text-slate-500 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-colors"
-          >
-            Next
-          </button>
-        </div>
+        <PageNav page={page} totalPages={meta.totalPages} onPageChange={setPage} className="pt-2" />
       )}
 
       {showForm && <TicketForm onClose={() => setShowForm(false)} />}

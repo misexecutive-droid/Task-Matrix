@@ -2,8 +2,7 @@ import { useState } from 'react';
 import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
 import { NavLink } from 'react-router';
-import { CheckSquare, Menu, Moon, PanelLeft, Sun, X } from 'lucide-react';
-import { Button } from '../button';
+import { CheckSquare, LogOut, Menu, Moon, PanelLeft, Sun, X } from 'lucide-react';
 import { NotificationBell } from '../../features/notifications/NotificationBell';
 
 const NAV = [
@@ -12,37 +11,45 @@ const NAV = [
     { to: '/projects', label: 'Projects' },
 ]
 
+export const ICON_BUTTON_CLASS =
+    'inline-flex items-center justify-center size-9 rounded-lg border border-border bg-surface ' +
+    'text-text-secondary shadow-xs cursor-pointer ' +
+    'transition-all duration-150 ' +
+    'hover:text-text hover:bg-surface-hover hover:border-border-hover hover:shadow-sm ' +
+    'active:scale-90 ' +
+    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50 focus-visible:ring-offset-2 focus-visible:ring-offset-background';
+
 export const Header = ({ onToggleSidebar }: { onToggleSidebar?: () => void }) => {
     const { theme, toggleTheme } = useTheme();
     const { user, logout } = useAuth();
 
     const [menuOpen, setMenuOpen] = useState(false);
     return (
-        <>
-            <header className="sticky top-0 z-50 w-full border-b border-slate-200/60"
-                style={{ background: 'var(--glass-bg)', backdropFilter: 'var(--glass-blur)' }}
-            >
-                <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between gap-4">
+        <header className="sticky top-0 z-50 w-full border-b border-border"
+            style={{ background: 'var(--glass-bg)', backdropFilter: 'var(--glass-blur)' }}
+        >
+            <div className="max-w-7xl mx-auto">
+                <div className="px-4 sm:px-6 h-16 flex items-center justify-between gap-4">
 
                     <NavLink to="/" className="flex items-center gap-2.5 shrink-0">
 
                         {
                             onToggleSidebar && (
-                                <Button
+                                <button
                                     onClick={onToggleSidebar}
-                                    className="size-9 rounded-lg border border-slate-200 flex items-center justify-center hover:text-slate-800 hover:bg-slate-50 transition-colors cursor-pointer"
+                                    className={ICON_BUTTON_CLASS}
+                                    title="Toggle sidebar"
                                     aria-label="Toggle sidebar"
                                 >
-                                    <PanelLeft size={15} />
-
-                                </Button>
+                                    <PanelLeft size={16} strokeWidth={2} />
+                                </button>
                             )
                         }
-                        <span className="size-7 rounded bg-primary-600 flex items-center justify-center">
+                        <span className="size-7 rounded bg-primary-600 flex items-center justify-center shrink-0">
 
                             <CheckSquare size={14} className="text-white" />
                         </span>
-                        <span className="font-display font-semibold text-slate-900 tracking-tight">
+                        <span className="hidden sm:inline font-display font-semibold text-text tracking-tight">
                             TaskMatrix
                         </span>
 
@@ -51,73 +58,82 @@ export const Header = ({ onToggleSidebar }: { onToggleSidebar?: () => void }) =>
 
 
 
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2 sm:gap-3">
 
                         <NotificationBell/>
-                        <Button
+
+                        <button
                             onClick={toggleTheme}
-                            className="size-9 rounded-lg border border-slate-200 flex items-center justify-center hover:text-slate-800 hover:bg-slate-50 transition-colors cursor-pointer"
+                            className={`${ICON_BUTTON_CLASS} overflow-hidden`}
+                            title={theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}
                             aria-label="Toggle theme"
                         >
-                            {theme === 'light' ? <Moon size={15} /> : <Sun size={15} />}
-                        </Button>
-
+                            <span
+                                className="inline-flex transition-transform duration-300 ease-out"
+                                style={{ transform: theme === 'light' ? 'rotate(0deg)' : 'rotate(180deg)' }}
+                            >
+                                {theme === 'light' ? <Moon size={16} /> : <Sun size={16} />}
+                            </span>
+                        </button>
 
                         {
                             user && (
-                                <Button
+                                <button
                                     onClick={logout}
-                                    className="hidden md:block text-sm font-display text-slate-500 hover:text-red-500 transition-colors cursor-pointer"
+                                    title="Log out"
+                                    className="hidden md:inline-flex items-center gap-1.5 h-9 px-3 rounded-lg text-sm font-display font-medium text-text-secondary cursor-pointer transition-all duration-150 hover:text-danger hover:bg-danger/10 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-danger/40 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                                 >
-                                    Logout
-                                </Button>
+                                    <LogOut size={15} />
+                                    <span>Logout</span>
+                                </button>
                             )
                         }
-                        <Button
+                        <button
                             onClick={() => setMenuOpen(v => !v)}
-                            className="md:hidden size-9 rounded-lg flex border border-slate-200 items-center justify-center text-slate-500 hover:bg-slate-50 transition-colors cursor-pointer"
-                            aria-label="Toggle menu">
-                            {menuOpen ? <X size={15} /> : <Menu size={15} />}
-                        </Button>
+                            className={`md:hidden ${ICON_BUTTON_CLASS}`}
+                            title="Toggle menu"
+                            aria-label="Toggle menu"
+                        >
+                            {menuOpen ? <X size={16} /> : <Menu size={16} />}
+                        </button>
 
                     </div>
-
-                    {menuOpen && (
-                        <nav
-                            className="md:hidden border-t border-slate-200/60 py-3 flex flex-col gap-1"
-                            style={{ background: 'var(--glass-bg)' }}
-                        >
-                            {NAV.map(({ to, label }) => (
-                                <NavLink
-                                    key={to}
-                                    to={to}
-                                    end={to === '/'}
-                                    onClick={() => setMenuOpen(false)}
-                                    className={({ isActive }) =>
-                                        [
-                                            'px-3 py-2 rounded-lg text-sm font-display font-medium transition-colors',
-                                            isActive
-                                                ? 'bg-primary-50 text-primary-700'
-                                                : 'text-slate-500 hover:bg-slate-100 hover:text-slate-800',
-                                        ].join(' ')
-                                    }
-                                >
-                                    {label}
-                                </NavLink>
-                            ))}
-                        </nav>
-                    )}
-
-
-
-
-
-
                 </div>
 
-
-            </header>
-        </>
+                {menuOpen && (
+                    <nav
+                        className="md:hidden border-t border-border px-4 sm:px-6 py-3 flex flex-col gap-1 animate-dropdown-in"
+                    >
+                        {NAV.map(({ to, label }) => (
+                            <NavLink
+                                key={to}
+                                to={to}
+                                end={to === '/'}
+                                onClick={() => setMenuOpen(false)}
+                                className={({ isActive }) =>
+                                    [
+                                        'px-3 py-2 rounded-lg text-sm font-display font-medium transition-colors',
+                                        isActive
+                                            ? 'bg-primary-500/10 text-primary-600 dark:text-primary-300'
+                                            : 'text-text-secondary hover:bg-surface-hover hover:text-text',
+                                    ].join(' ')
+                                }
+                            >
+                                {label}
+                            </NavLink>
+                        ))}
+                        {user && (
+                            <button
+                                onClick={() => { setMenuOpen(false); logout(); }}
+                                className="px-3 py-2 rounded-lg text-sm font-display font-medium text-left text-danger hover:bg-danger/10 transition-colors cursor-pointer flex items-center gap-2"
+                            >
+                                <LogOut size={15} />
+                                Logout
+                            </button>
+                        )}
+                    </nav>
+                )}
+            </div>
+        </header>
     )
 }
-

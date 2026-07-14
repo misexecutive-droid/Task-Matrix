@@ -62,16 +62,16 @@ export const TaskForm = ({ onClose }: TaskFormProps) => {
     >
       {/* Modal card — stop click propagating to backdrop */}
       <div
-        className="w-full max-w-md bg-white rounded-xl shadow-2xl border border-slate-200 flex flex-col gap-6 p-6"
+        className="w-full max-w-md bg-surface rounded-xl shadow-2xl border border-border flex flex-col gap-6 p-6 max-h-[90vh] overflow-y-auto"
         onClick={e => e.stopPropagation()}
       >
 
         {/* Header */}
         <div className="flex items-center justify-between">
-          <h2 className="text-base font-display font-semibold text-slate-900">New task</h2>
+          <h2 className="text-base font-display font-semibold text-text">New task</h2>
           <button
             onClick={onClose}
-            className="text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
+            className="text-text-light hover:text-text transition-colors cursor-pointer"
             aria-label="Close"
           >
             <X size={16} />
@@ -91,14 +91,14 @@ export const TaskForm = ({ onClose }: TaskFormProps) => {
 
           {/* Description — plain textarea styled like Input */}
           <div className="flex flex-col gap-1.5">
-            <label htmlFor="description" className="text-sm font-display text-slate-700">
-              Description <span className="text-slate-400">(optional)</span>
+            <label htmlFor="description" className="text-sm font-display font-medium text-text-secondary">
+              Description <span className="text-text-light">(optional)</span>
             </label>
             <textarea
               id="description"
               rows={3}
               placeholder="Add more detail…"
-              className="w-full px-3 py-2.5 text-sm bg-white rounded-sm border border-slate-300 focus:outline-none focus:border-2 focus:border-blue-700 placeholder:text-slate-400 resize-none transition-colors"
+              className="w-full px-3 py-2.5 text-sm bg-surface text-text rounded-sm border border-border focus:outline-none focus:ring-4 focus:border-primary-600 focus:ring-primary-600/15 placeholder:text-text-light resize-none transition-colors"
               {...register('description')}
             />
           </div>
@@ -108,12 +108,12 @@ export const TaskForm = ({ onClose }: TaskFormProps) => {
 
             {/* Priority select */}
             <div className="flex flex-col gap-1.5">
-              <label htmlFor="priority" className="text-sm font-display text-slate-700">
+              <label htmlFor="priority" className="text-sm font-display font-medium text-text-secondary">
                 Priority
               </label>
               <select
                 id="priority"
-                className="w-full px-3 h-11 sm:h-10 text-sm bg-white rounded-sm border border-slate-300 focus:outline-none focus:border-2 focus:border-blue-700 transition-colors cursor-pointer"
+                className="w-full px-3 h-11 sm:h-10 text-sm bg-surface text-text rounded-sm border border-border focus:outline-none focus:ring-4 focus:border-primary-600 focus:ring-primary-600/15 transition-colors cursor-pointer"
                 {...register('priority')}
               >
                 <option value="low">Low</option>
@@ -134,12 +134,12 @@ export const TaskForm = ({ onClose }: TaskFormProps) => {
 
           {/* NEW — Assign to (optional) */}
           <div className="flex flex-col gap-1.5">
-            <label htmlFor="assigneeId" className="text-sm font-display text-slate-700">
-              Assign to <span className="text-slate-400">(optional)</span>
+            <label htmlFor="assigneeId" className="text-sm font-display font-medium text-text-secondary">
+              Assign to <span className="text-text-light">(optional)</span>
             </label>
             <select
               id="assigneeId"
-              className="w-full px-3 h-11 sm:h-10 text-sm bg-white rounded-sm border border-slate-300 focus:outline-none focus:border-2 focus:border-blue-700 transition-colors cursor-pointer"
+              className="w-full px-3 h-11 sm:h-10 text-sm bg-surface text-text rounded-sm border border-border focus:outline-none focus:ring-4 focus:border-primary-600 focus:ring-primary-600/15 transition-colors cursor-pointer"
               {...register('assigneeId')}
             >
               <option value="">Unassigned (just for me)</option>
@@ -153,7 +153,7 @@ export const TaskForm = ({ onClose }: TaskFormProps) => {
 
           {/* API error */}
           {mutation.isError && (
-            <p className="text-xs text-red-500 text-center">
+            <p className="text-xs text-danger text-center">
               {mutation.error instanceof Error
                 ? mutation.error.message
                 : 'Failed to create task.'}

@@ -2,8 +2,14 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useEffect } from 'react';
 import { z } from 'zod';
-import { X } from 'lucide-react';
 import { Input, Button } from '../../components';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog';
 import { useCreateTicketMutation, useAssignableUsersQuery, useDepartmentsQuery } from './hook';
 
 const ticketSchema = z.object({
@@ -22,6 +28,9 @@ type TicketFields = z.infer<typeof ticketSchema>;
 interface TicketFormProps {
   onClose: () => void;
 }
+
+const SELECT_CLASS = 'w-full px-3 h-11 sm:h-10 text-sm bg-surface text-text rounded-sm border border-border focus:outline-none focus:ring-4 focus:border-primary-600 focus:ring-primary-600/15 transition-colors cursor-pointer';
+const LABEL_CLASS = 'text-sm font-display font-medium text-text-secondary';
 
 export const TicketForm = ({ onClose }: TicketFormProps) => {
   const { data: departments } = useDepartmentsQuery();
@@ -63,25 +72,11 @@ export const TicketForm = ({ onClose }: TicketFormProps) => {
   };
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
-      style={{ background: 'rgba(0,0,0,0.35)', backdropFilter: 'blur(2px)' }}
-      onClick={onClose}
-    >
-      <div
-        className="w-full max-w-md bg-white rounded-xl shadow-2xl border border-slate-200 flex flex-col gap-6 p-6"
-        onClick={e => e.stopPropagation()}
-      >
-        <div className="flex items-center justify-between">
-          <h2 className="text-base font-display font-semibold text-slate-900">New ticket</h2>
-          <button
-            onClick={onClose}
-            className="text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
-            aria-label="Close"
-          >
-            <X size={16} />
-          </button>
-        </div>
+    <Dialog open onOpenChange={v => { if (!v) onClose(); }}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>New ticket</DialogTitle>
+        </DialogHeader>
 
         <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4" noValidate>
 
@@ -94,29 +89,29 @@ export const TicketForm = ({ onClose }: TicketFormProps) => {
           />
 
           <div className="flex flex-col gap-1.5">
-            <label htmlFor="description" className="text-sm font-display text-slate-700">
+            <label htmlFor="description" className={LABEL_CLASS}>
               Description
             </label>
             <textarea
               id="description"
               rows={3}
               placeholder="Describe the issue or request…"
-              className="w-full px-3 py-2.5 text-sm bg-white rounded-sm border border-slate-300 focus:outline-none focus:border-2 focus:border-blue-700 placeholder:text-slate-400 resize-none transition-colors"
+              className="w-full px-3 py-2.5 text-sm bg-surface text-text rounded-sm border border-border focus:outline-none focus:ring-4 focus:border-primary-600 focus:ring-primary-600/15 placeholder:text-text-light resize-none transition-colors"
               {...register('description')}
             />
             {errors.description && (
-              <p className="text-xs text-red-500">{errors.description.message}</p>
+              <p className="text-xs text-danger">{errors.description.message}</p>
             )}
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div className="flex flex-col gap-1.5">
-              <label htmlFor="priority" className="text-sm font-display text-slate-700">
+              <label htmlFor="priority" className={LABEL_CLASS}>
                 Priority
               </label>
               <select
                 id="priority"
-                className="w-full px-3 h-11 sm:h-10 text-sm bg-white rounded-sm border border-slate-300 focus:outline-none focus:border-2 focus:border-blue-700 transition-colors cursor-pointer"
+                className={SELECT_CLASS}
                 {...register('priority')}
               >
                 <option value="LOW">Low</option>
@@ -127,12 +122,12 @@ export const TicketForm = ({ onClose }: TicketFormProps) => {
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <label htmlFor="assignmentMode" className="text-sm font-display text-slate-700">
+              <label htmlFor="assignmentMode" className={LABEL_CLASS}>
                 Assignment
               </label>
               <select
                 id="assignmentMode"
-                className="w-full px-3 h-11 sm:h-10 text-sm bg-white rounded-sm border border-slate-300 focus:outline-none focus:border-2 focus:border-blue-700 transition-colors cursor-pointer"
+                className={SELECT_CLASS}
                 {...register('assignmentMode')}
               >
                 <option value="MANUAL">Manual</option>
@@ -142,12 +137,12 @@ export const TicketForm = ({ onClose }: TicketFormProps) => {
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <label htmlFor="departmentId" className="text-sm font-display text-slate-700">
+            <label htmlFor="departmentId" className={LABEL_CLASS}>
               Department (optional)
             </label>
             <select
               id="departmentId"
-              className="w-full px-3 h-11 sm:h-10 text-sm bg-white rounded-sm border border-slate-300 focus:outline-none focus:border-2 focus:border-blue-700 transition-colors cursor-pointer"
+              className={SELECT_CLASS}
               {...register('departmentId')}
             >
               <option value="">Any department</option>
@@ -158,12 +153,12 @@ export const TicketForm = ({ onClose }: TicketFormProps) => {
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <label htmlFor="assigneeId" className="text-sm font-display text-slate-700">
+            <label htmlFor="assigneeId" className={LABEL_CLASS}>
               Assign to (optional)
             </label>
             <select
               id="assigneeId"
-              className="w-full px-3 h-11 sm:h-10 text-sm bg-white rounded-sm border border-slate-300 focus:outline-none focus:border-2 focus:border-blue-700 transition-colors cursor-pointer"
+              className={SELECT_CLASS}
               {...register('assigneeId')}
             >
               <option value="">Unassigned</option>
@@ -185,28 +180,28 @@ export const TicketForm = ({ onClose }: TicketFormProps) => {
               {...register('tatHours')}
             />
           ) : (
-            <p className="text-xs text-slate-400 font-display -mt-1">
+            <p className="text-xs text-text-muted font-display -mt-1">
               Auto-assigned tickets get a default TAT of 24 hours.
             </p>
           )}
 
           {mutation.isError && (
-            <p className="text-xs text-red-500 text-center">
+            <p className="text-xs text-danger text-center">
               {mutation.error instanceof Error ? mutation.error.message : 'Failed to create ticket.'}
             </p>
           )}
 
-          <div className="flex gap-3 justify-end pt-1">
+          <DialogFooter>
             <Button type="button" variant="outline" size="sm" onClick={onClose}>
               Cancel
             </Button>
             <Button type="submit" variant="primary" size="sm" isLoading={mutation.isPending}>
               Create ticket
             </Button>
-          </div>
+          </DialogFooter>
 
         </form>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 };

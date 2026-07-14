@@ -5,7 +5,9 @@ import { Header, Footer, Sidebar } from '../../components/layout';
 
 export const Dashboard = () => {
   const { user, logout } = useAuth();
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(
+    () => typeof window !== 'undefined' && window.matchMedia('(min-width: 768px)').matches,
+  );
 
   return (
     <div className="flex flex-col min-h-svh" style={{ background: 'var(--bg-body)' }}>
@@ -13,7 +15,12 @@ export const Dashboard = () => {
       <Header onToggleSidebar={() => setSidebarOpen(v => !v)} />
 
       <div className="flex flex-1 min-h-0">
-        <Sidebar isOpen={sidebarOpen} user={user} logout={logout} />
+        <Sidebar
+          isOpen={sidebarOpen}
+          user={user}
+          logout={logout}
+          onNavigate={() => setSidebarOpen(false)}
+        />
 
         <main className="flex-1 overflow-auto min-w-0 relative">
 

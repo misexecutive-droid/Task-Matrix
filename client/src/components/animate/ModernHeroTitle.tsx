@@ -35,7 +35,7 @@ export const ModernHeroTitle = () => {
       <span className="text-white text-5xl md:text-6xl min-h-18 block">
         {displayedText}
         <span
-          className="inline-block ml-0.5 w-0.5 h-10 md:h-12 bg-gold-500 animate-blink align-middle"
+          className="inline-block ml-0.5 w-0.5 h-10 md:h-12 bg-amber-400 animate-blink align-middle"
           aria-hidden="true"
         />
       </span>

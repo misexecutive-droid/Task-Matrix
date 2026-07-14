@@ -5,7 +5,7 @@ import { Outlet } from 'react-router';
 const PublicLayout = () => {
     return (
         <>
-            <div className="flex flex-col min-h-svh" style={{background : 'var(--glass-bg)'}}>
+            <div className="flex flex-col min-h-svh" style={{background : 'var(--bg-body)'}}>
                 <Header />
                 <main className="flex-1">
                     <Outlet/>

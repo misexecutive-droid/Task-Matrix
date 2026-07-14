@@ -23,22 +23,22 @@ export const Form: React.FC<FormProps> = ({
     <form
       onSubmit={handleSubmit}
       className={[
-        'w-full max-w-md p-6 bg-white',
-        ' rounded-card shadow-card',
+        'w-full max-w-md p-6 bg-surface',
+        'rounded-lg shadow-md',
         'flex flex-col gap-6',
         className,
-      ].join(' ')}  
+      ].join(' ')}
       {...props}
     >
       {(title || description) && (
         <div className="flex flex-col gap-1">
           {title && (
-            <h2 className="text-xl font-semibold font-display text-navy-900 title-rule">
+            <h2 className="text-xl font-semibold font-display text-text">
               {title}
             </h2>
           )}
           {description && (
-            <p className="text-sm text-grey-600">{description}</p>
+            <p className="text-sm text-text-secondary">{description}</p>
           )}
         </div>
       )}

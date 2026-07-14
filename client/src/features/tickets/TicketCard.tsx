@@ -2,11 +2,11 @@ import { Clock, ChevronRight } from 'lucide-react';
 import type { Ticket } from '../../api/ticket';
 
 const STATUS_STYLES: Record<Ticket['status'], string> = {
-  OPEN: 'bg-slate-100  text-slate-600',
-  IN_PROGRESS: 'bg-amber-50   text-amber-600',
-  IN_REVIEW: 'bg-blue-50    text-blue-600',
-  CLOSED: 'bg-emerald-50 text-emerald-600',
-  ON_HOLD: 'bg-slate-100  text-slate-600',
+  OPEN: 'bg-surface-hover text-text-secondary',
+  IN_PROGRESS: 'bg-amber-500/10 text-amber-600 dark:text-amber-400',
+  IN_REVIEW: 'bg-blue-500/10 text-blue-600 dark:text-blue-400',
+  CLOSED: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400',
+  ON_HOLD: 'bg-surface-hover text-text-secondary',
 };
 
 const STATUS_LABELS: Record<Ticket['status'], string> = {
@@ -18,10 +18,10 @@ const STATUS_LABELS: Record<Ticket['status'], string> = {
 };
 
 const PRIORITY_STYLES: Record<Ticket['priority'], string> = {
-  LOW: 'bg-slate-100  text-slate-500',
-  MEDIUM: 'bg-amber-50   text-amber-600',
-  HIGH: 'bg-orange-50  text-orange-600',
-  CRITICAL: 'bg-red-50     text-red-600',
+  LOW: 'bg-surface-hover text-text-muted',
+  MEDIUM: 'bg-amber-500/10 text-amber-600 dark:text-amber-400',
+  HIGH: 'bg-orange-500/10 text-orange-600 dark:text-orange-400',
+  CRITICAL: 'bg-danger/10 text-danger',
 };
 
 interface TicketCardProps {
@@ -39,18 +39,18 @@ export const TicketCard = ({ ticket, onClick }: TicketCardProps) => {
   return (
     <button
       onClick={() => onClick(ticket)}
-      className="w-full text-left flex items-start gap-4 px-4 py-3.5 rounded-lg border border-slate-200/70 bg-white hover:border-primary-300 hover:shadow-sm transition-all group cursor-pointer"
+      className="w-full text-left flex items-start gap-4 px-4 py-3.5 rounded-lg border border-border bg-surface hover:border-primary-400 hover:shadow-sm transition-all group cursor-pointer"
     >
       <div className="flex-1 min-w-0 flex flex-col gap-2">
 
         {/* Title + chevron */}
         <div className="flex items-start justify-between gap-2">
-          <p className="text-sm font-display font-medium text-slate-800 leading-snug line-clamp-1">
+          <p className="text-sm font-display font-medium text-text leading-snug line-clamp-1">
             {ticket.title}
           </p>
           <ChevronRight
             size={14}
-            className="text-slate-300 group-hover:text-slate-500 shrink-0 mt-0.5 transition-colors"
+            className="text-text-light group-hover:text-text-secondary shrink-0 mt-0.5 transition-colors"
           />
         </div>
 
@@ -63,7 +63,7 @@ export const TicketCard = ({ ticket, onClick }: TicketCardProps) => {
             {ticket.priority}
           </span>
           {ticket.assignee && (
-            <span className="text-xs text-slate-400 font-display">
+            <span className="text-xs text-text-muted font-display">
               → {ticket.assignee.firstName}
             </span>
           )}
@@ -72,13 +72,13 @@ export const TicketCard = ({ ticket, onClick }: TicketCardProps) => {
         {/* Checklist progress */}
         {progress !== null && (
           <div className="flex items-center gap-2">
-            <div className="flex-1 h-1 bg-slate-100 rounded-full overflow-hidden">
+            <div className="flex-1 h-1 bg-surface-hover rounded-full overflow-hidden">
               <div
                 className="h-full bg-primary-500 rounded-full transition-all"
                 style={{ width: `${progress}%` }}
               />
             </div>
-            <span className="text-xs text-slate-400 font-display shrink-0">
+            <span className="text-xs text-text-muted font-display shrink-0">
               {doneItems}/{totalItems}
             </span>
           </div>
@@ -87,7 +87,7 @@ export const TicketCard = ({ ticket, onClick }: TicketCardProps) => {
 
       {/* TAT due date */}
       {ticket.tatDueAt && (
-        <div className={`flex items-center gap-1 text-xs font-display shrink-0 mt-0.5 ${isOverdue ? 'text-red-500' : 'text-slate-400'}`}>
+        <div className={`flex items-center gap-1 text-xs font-display shrink-0 mt-0.5 ${isOverdue ? 'text-danger' : 'text-text-muted'}`}>
           <Clock size={11} />
           {new Date(ticket.tatDueAt).toLocaleDateString()}
         </div>

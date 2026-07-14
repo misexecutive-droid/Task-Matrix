@@ -10,7 +10,7 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
 const variantMap: Record<string, string> = {
   primary:   'bg-primary-600 text-white hover:bg-primary-700 active:bg-primary-800',
   secondary: 'bg-amber-500 text-slate-900 hover:bg-amber-400 active:bg-amber-600',
-  outline:   'border border-slate-300 text-slate-700 hover:border-primary-500 hover:bg-primary-50',
+  outline:   'border border-border text-text-secondary hover:border-primary-500 hover:bg-primary-500/10 hover:text-text',
 };
 
 const sizeMap: Record<string, string> = {

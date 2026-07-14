@@ -1,23 +1,36 @@
 import React, { useState } from "react";
-import { Plus, CheckCheck, Clock, Circle, AlertCircle, Loader2 } from "lucide-react";
+import { Plus, CheckCheck, Clock, Circle, AlertCircle, Loader2, LayoutList, Kanban } from "lucide-react";
 import { Button } from "../../components";
 import { useTasksQuery, useUpdateTaskMutation, useDeleteTaskMutation, useAssignableUsersQuery } from "./hook";
 import type { Task } from '../../api/task';
 import { TaskForm } from "./TaskForm";
 import { TaskDetail } from "./TaskDetail";
+import { TaskBoard } from "./TaskBoard";
 import { useAuth } from "../../context/AuthContext"
 
-const PRIORITY_MAP = {
-    low: { label: 'Low', className: 'bg-slate-100 text-slate-500' },
-    medium: { label: 'Medium', className: 'bg-amber-50  text-amber-600' },
-    high: { label: 'High', className: 'bg-red-50    text-red-500' },
+export const PRIORITY_MAP = {
+    low: { label: 'Low', className: 'bg-surface-hover text-text-muted' },
+    medium: { label: 'Medium', className: 'bg-amber-500/10 text-amber-600 dark:text-amber-400' },
+    high: { label: 'High', className: 'bg-danger/10 text-danger' },
 } satisfies Record<Task['priority'], { label: string; className: string }>;
 
-const STATUS_ICON = {
-    todo: <Circle size={15} className="text-slate-400" />,
+export const STATUS_ICON = {
+    todo: <Circle size={15} className="text-text-light" />,
     in_progress: <Clock size={15} className="text-amber-500" />,
     done: <CheckCheck size={15} className="text-emerald-500" />,
 } satisfies Record<Task['status'], React.ReactNode>;
+
+export const STATUS_LABEL = {
+    todo: 'To Do',
+    in_progress: 'In Progress',
+    done: 'Done',
+} satisfies Record<Task['status'], string>;
+
+export const NEXT_STATUS: Record<Task['status'], Task['status']> = {
+    todo: 'in_progress',
+    in_progress: 'done',
+    done: 'todo',
+};
 
 // NEW: accepts an optional assigneeName to display, resolved by the parent TaskList
 // (see userMap below) since the API only ever gives us a bare assigneeId, not a full user object.
@@ -26,18 +39,13 @@ const TaskRow = ({ task, assigneeName, isAdmin, onOpen }: { task: Task; assignee
     const deleteMutation = useDeleteTaskMutation();
 
     const cycleStatus = () => {
-        const next: Record<Task['status'], Task['status']> = {
-            todo: 'in_progress',
-            in_progress: 'done',
-            done: 'todo',
-        };
-        updateMutation.mutate({ id: task.id, payload: { status: next[task.status] } });
+        updateMutation.mutate({ id: task.id, payload: { status: NEXT_STATUS[task.status] } });
     };
 
     const priority = PRIORITY_MAP[task.priority];
 
     return (
-        <div className="flex items-center gap-3 px-4 py-3 rounded-lg border border-slate-200/70 bg-white hover:border-slate-300 transition-colors group">
+        <div className="flex items-center gap-3 px-4 py-3 rounded-lg border border-border bg-surface hover:border-border-hover transition-colors group">
             <button
                 onClick={cycleStatus}
                 disabled={updateMutation.isPending}
@@ -45,7 +53,7 @@ const TaskRow = ({ task, assigneeName, isAdmin, onOpen }: { task: Task; assignee
                 aria-label="Cycle status"
             >
                 {updateMutation.isPending
-                    ? <Loader2 size={15} className="animate-spin text-slate-400" />
+                    ? <Loader2 size={15} className="animate-spin text-text-light" />
                     : STATUS_ICON[task.status]}
             </button>
 
@@ -54,18 +62,18 @@ const TaskRow = ({ task, assigneeName, isAdmin, onOpen }: { task: Task; assignee
                     onClick={() => onOpen(task)}
                     className={[
                         'text-sm font-display font-medium truncate text-left cursor-pointer hover:underline',
-                        task.status === 'done' ? 'line-through text-slate-400' : 'text-slate-800',
+                        task.status === 'done' ? 'line-through text-text-muted' : 'text-text',
                     ].join(' ')}
                 >
                     {task.title}
                 </button>
                 {task.dueDate && (
-                    <p className="text-xs text-slate-400 mt-0.5">
+                    <p className="text-xs text-text-muted mt-0.5">
                         Due {new Date(task.dueDate).toLocaleDateString()}
                     </p>
                 )}
                 {updateMutation.isError && (
-                    <p className="text-xs text-red-500 mt-0.5">
+                    <p className="text-xs text-danger mt-0.5">
                         {updateMutation.error instanceof Error ? updateMutation.error.message : 'Failed to update task.'}
                     </p>
                 )}
@@ -73,7 +81,7 @@ const TaskRow = ({ task, assigneeName, isAdmin, onOpen }: { task: Task; assignee
 
             {/* NEW — only rendered when this task is actually assigned to someone */}
             {assigneeName && (
-                <span className="text-xs text-slate-400 font-display shrink-0 truncate max-w-[8rem]">
+                <span className="text-xs text-text-muted font-display shrink-0 truncate max-w-[8rem]">
                     → {assigneeName}
                 </span>
             )}
@@ -90,7 +98,7 @@ const TaskRow = ({ task, assigneeName, isAdmin, onOpen }: { task: Task; assignee
                     <Button
                         onClick={() => deleteMutation.mutate(task.id)}
                         disabled={deleteMutation.isPending}
-                        className="shrink-0 text-slate-300 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all cursor-pointer disabled:opacity-50"
+                        className="shrink-0 text-text-light hover:text-danger opacity-0 group-hover:opacity-100 transition-all cursor-pointer disabled:opacity-50"
                         aria-label="Delete task"
                     >
                         {deleteMutation.isPending
@@ -115,6 +123,7 @@ export const TaskList = ({ userId }: TaskListProps = {}) => {
     const { data: tasks, isPending, isError } = useTasksQuery(userId);
     const { data: assignableUsers } = useAssignableUsersQuery(); // NEW
     const [filter, setFilter] = useState<Task['status'] | 'all'>('all');
+    const [view, setView] = useState<'list' | 'board'>('board');
 
     const assigneeNames = new Map(
         (assignableUsers ?? []).map(u => [u.id, `${u.firstName} ${u.lastName ?? ''}`.trim()]),
@@ -131,68 +140,100 @@ export const TaskList = ({ userId }: TaskListProps = {}) => {
         { key: 'done', label: 'Done' },
     ];
 
+    const isEmpty = view === 'board' ? (tasks ?? []).length === 0 : filtered.length === 0;
+
     return (
-        <div className="flex flex-col gap-6 max-w-3xl">
-            <div className="flex items-center justify-between">
+        <div className={['flex flex-col gap-6', view === 'board' ? 'max-w-6xl' : 'max-w-3xl'].join(' ')}>
+            <div className="flex items-center justify-between gap-3 flex-wrap">
                 <div>
-                    <h1 className="text-xl font-display font-semibold text-slate-900">Tasks</h1>
-                    <p className="text-sm text-slate-400 mt-0.5">
+                    <h1 className="text-xl font-display font-semibold text-text">Tasks</h1>
+                    <p className="text-sm text-text-muted mt-0.5">
                         {tasks?.length ?? 0} task{tasks?.length !== 1 ? 's' : ''}
                     </p>
                 </div>
 
-                {!userId && isAdmin && (
-                    <Button
-                        size="sm"
-                        variant="primary"
-                        className="gap-1.5"
-                        onClick={() => setShowForm(true)}
-                    >
-                        <Plus size={14} />
-                        New task
-                    </Button>
-                )}
+                <div className="flex items-center gap-2">
+                    {/* View switcher — board groups by status, list keeps the filter tabs below */}
+                    <div className="flex gap-1 p-1 bg-surface-hover rounded-lg">
+                        <button
+                            onClick={() => setView('list')}
+                            title="List view"
+                            aria-label="List view"
+                            className={[
+                                'flex items-center justify-center size-7 rounded-md transition-colors cursor-pointer',
+                                view === 'list' ? 'bg-surface text-text shadow-sm' : 'text-text-muted hover:text-text-secondary',
+                            ].join(' ')}
+                        >
+                            <LayoutList size={14} />
+                        </button>
+                        <button
+                            onClick={() => setView('board')}
+                            title="Board view"
+                            aria-label="Board view"
+                            className={[
+                                'flex items-center justify-center size-7 rounded-md transition-colors cursor-pointer',
+                                view === 'board' ? 'bg-surface text-text shadow-sm' : 'text-text-muted hover:text-text-secondary',
+                            ].join(' ')}
+                        >
+                            <Kanban size={14} />
+                        </button>
+                    </div>
+
+                    {!userId && isAdmin && (
+                        <Button
+                            size="sm"
+                            variant="primary"
+                            className="gap-1.5"
+                            onClick={() => setShowForm(true)}
+                        >
+                            <Plus size={14} />
+                            New task
+                        </Button>
+                    )}
+                </div>
             </div>
 
-            <div className="flex gap-1 p-1 bg-slate-100 rounded-lg w-fit">
-                {FILTERS.map(f => (
-                    <button
-                        key={f.key}
-                        onClick={() => setFilter(f.key)}
-                        className={[
-                            'px-3 py-1.5 text-xs font-display font-medium rounded-md transition-colors cursor-pointer',
-                            filter === f.key
-                                ? 'bg-white text-slate-800 shadow-sm'
-                                : 'text-slate-500 hover:text-slate-700',
-                        ].join(' ')}
-                    >
-                        {f.label}
-                    </button>
-                ))}
-            </div>
+            {view === 'list' && (
+                <div className="flex gap-1 p-1 bg-surface-hover rounded-lg w-fit overflow-x-auto max-w-full">
+                    {FILTERS.map(f => (
+                        <button
+                            key={f.key}
+                            onClick={() => setFilter(f.key)}
+                            className={[
+                                'px-3 py-1.5 text-xs font-display font-medium rounded-md transition-colors cursor-pointer whitespace-nowrap',
+                                filter === f.key
+                                    ? 'bg-surface text-text shadow-sm'
+                                    : 'text-text-muted hover:text-text-secondary',
+                            ].join(' ')}
+                        >
+                            {f.label}
+                        </button>
+                    ))}
+                </div>
+            )}
 
             {isPending && (
-                <div className="flex items-center justify-center py-16 text-slate-400">
+                <div className="flex items-center justify-center py-16 text-text-muted">
                     <Loader2 size={20} className="animate-spin mr-2" />
                     <span className="text-sm font-display">Loading tasks…</span>
                 </div>
             )}
 
             {isError && (
-                <div className="flex items-center gap-2 px-4 py-3 rounded-lg bg-red-50 text-red-500 text-sm font-display">
+                <div className="flex items-center gap-2 px-4 py-3 rounded-lg bg-danger/10 text-danger text-sm font-display">
                     <AlertCircle size={15} />
                     Failed to load tasks. Please refresh.
                 </div>
             )}
 
-            {!isPending && !isError && filtered.length === 0 && (
-                <div className="flex flex-col items-center justify-center py-16 text-slate-400 gap-2">
-                    <CheckCheck size={28} className="text-slate-300" />
+            {!isPending && !isError && isEmpty && (
+                <div className="flex flex-col items-center justify-center py-16 text-text-muted gap-2">
+                    <CheckCheck size={28} className="text-text-light" />
                     <p className="text-sm font-display">No tasks here.</p>
                 </div>
             )}
 
-            {!isPending && !isError && filtered.length > 0 && (
+            {!isPending && !isError && !isEmpty && view === 'list' && (
                 <div className="flex flex-col gap-2">
                     {filtered.map(task => (
                         <TaskRow
@@ -204,6 +245,15 @@ export const TaskList = ({ userId }: TaskListProps = {}) => {
                         />
                     ))}
                 </div>
+            )}
+
+            {!isPending && !isError && !isEmpty && view === 'board' && (
+                <TaskBoard
+                    tasks={tasks ?? []}
+                    assigneeNames={assigneeNames}
+                    isAdmin={isAdmin}
+                    onOpen={setSelected}
+                />
             )}
 
             {showForm && <TaskForm onClose={() => setShowForm(false)} />}

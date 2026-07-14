@@ -53,26 +53,28 @@ const ItemRow = ({
   };
 
   return (
-    <div className="flex flex-col gap-2 px-3 py-3 border-t border-slate-100 first:border-t-0">
+    <div className="flex flex-col gap-2 px-3 py-3 border-t border-border first:border-t-0">
       <div className="flex items-start gap-2.5">
         {item.isDone
           ? <CheckSquare size={16} className="text-primary-600 shrink-0 mt-0.5" />
-          : <Square size={16} className="text-slate-300 shrink-0 mt-0.5" />}
+          : <Square size={16} className="text-text-light shrink-0 mt-0.5" />}
 
         <div className="flex-1 min-w-0">
-          <p className={`text-sm font-display ${item.isDone ? 'line-through text-slate-400' : 'text-slate-700'}`}>
+          <p className={`text-sm font-display ${item.isDone ? 'line-through text-text-muted' : 'text-text'}`}>
             {item.label}
           </p>
           <div className="flex flex-wrap items-center gap-2 mt-0.5">
             {item.dueAt && (
-              <span className="text-xs text-slate-400 font-display">
+              <span className="text-xs text-text-muted font-display">
                 Due {new Date(item.dueAt).toLocaleDateString()}
               </span>
             )}
             {item.requiredImageCount > 0 && (
               <span className={[
                 'text-xs font-display px-1.5 py-0.5 rounded-full',
-                qualifying >= item.requiredImageCount ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600',
+                qualifying >= item.requiredImageCount
+                  ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
+                  : 'bg-amber-500/10 text-amber-600 dark:text-amber-400',
               ].join(' ')}>
                 {qualifying}/{item.requiredImageCount} photo{item.requiredImageCount !== 1 ? 's' : ''}
                 {item.requiresLivePhoto ? ' (live)' : ''}
@@ -90,7 +92,7 @@ const ItemRow = ({
           <button
             onClick={() => updateItem.mutate({ id: item.id, payload: { isDone: false } })}
             disabled={updateItem.isPending}
-            className="shrink-0 text-slate-300 hover:text-amber-500 transition-colors cursor-pointer disabled:opacity-50"
+            className="shrink-0 text-text-light hover:text-amber-500 transition-colors cursor-pointer disabled:opacity-50"
             aria-label="Reopen item"
             title="Reopen"
           >
@@ -102,7 +104,7 @@ const ItemRow = ({
           <button
             onClick={() => deleteItem.mutate(item.id)}
             disabled={deleteItem.isPending}
-            className="shrink-0 text-slate-200 hover:text-red-400 transition-colors cursor-pointer disabled:opacity-50"
+            className="shrink-0 text-text-light hover:text-danger transition-colors cursor-pointer disabled:opacity-50"
             aria-label="Delete item"
           >
             <Trash2 size={13} />
@@ -117,7 +119,7 @@ const ItemRow = ({
               <img
                 src={`${UPLOADS_BASE}${img.url}`}
                 alt={img.originalFilename ?? 'evidence'}
-                className="size-14 object-cover rounded-md border border-slate-200"
+                className="size-14 object-cover rounded-md border border-border"
               />
               <span className={[
                 'absolute -top-1 -left-1 text-[9px] font-display px-1 rounded-full text-white',
@@ -128,7 +130,7 @@ const ItemRow = ({
               {canWork && (
                 <button
                   onClick={() => deleteImage.mutate(img.id)}
-                  className="absolute -top-1.5 -right-1.5 size-4 rounded-full bg-white border border-slate-200 flex items-center justify-center text-slate-400 hover:text-red-500 opacity-0 group-hover/img:opacity-100 transition-opacity cursor-pointer"
+                  className="absolute -top-1.5 -right-1.5 size-4 rounded-full bg-surface border border-border flex items-center justify-center text-text-muted hover:text-danger opacity-0 group-hover/img:opacity-100 transition-opacity cursor-pointer"
                   aria-label="Delete image"
                 >
                   <X size={10} />
@@ -154,7 +156,7 @@ const ItemRow = ({
                 onChange={e => { handleFiles(e.target.files, 'LIVE'); e.target.value = ''; }}
               />
             </label>
-            <label className="flex items-center gap-1 text-xs font-display text-slate-500 hover:text-slate-700 cursor-pointer">
+            <label className="flex items-center gap-1 text-xs font-display text-text-secondary hover:text-text cursor-pointer">
               <ImageUp size={13} />
               Choose from gallery
               <input
@@ -165,11 +167,11 @@ const ItemRow = ({
                 onChange={e => { handleFiles(e.target.files, 'GALLERY'); e.target.value = ''; }}
               />
             </label>
-            {uploadImages.isPending && <Loader2 size={13} className="animate-spin text-slate-400" />}
+            {uploadImages.isPending && <Loader2 size={13} className="animate-spin text-text-muted" />}
           </div>
 
           {uploadImages.isError && (
-            <p className="text-xs text-red-500">
+            <p className="text-xs text-danger">
               {uploadImages.error instanceof Error ? uploadImages.error.message : 'Upload failed.'}
             </p>
           )}
@@ -180,7 +182,7 @@ const ItemRow = ({
               onChange={e => setRemarks(e.target.value)}
               placeholder="Remarks about this item…"
               rows={2}
-              className="flex-1 px-2.5 py-1.5 text-xs bg-white rounded-md border border-slate-300 focus:outline-none focus:border-primary-500 placeholder:text-slate-400 resize-none"
+              className="flex-1 px-2.5 py-1.5 text-xs bg-surface text-text rounded-md border border-border focus:outline-none focus:border-primary-500 placeholder:text-text-light resize-none"
             />
             <Button
               size="sm"
@@ -202,7 +204,7 @@ const ItemRow = ({
               Mark complete
             </Button>
             {completeItem.isError && (
-              <p className="text-xs text-red-500 mt-1">
+              <p className="text-xs text-danger mt-1">
                 {completeItem.error instanceof Error ? completeItem.error.message : 'Could not complete item.'}
               </p>
             )}
@@ -211,7 +213,7 @@ const ItemRow = ({
       )}
 
       {(!canWork || item.isDone) && item.remarks && (
-        <p className="text-xs text-slate-500 font-display pl-[26px] italic">"{item.remarks}"</p>
+        <p className="text-xs text-text-secondary font-display pl-[26px] italic">"{item.remarks}"</p>
       )}
     </div>
   );
@@ -230,19 +232,19 @@ const ChecklistBlock = ({
   const doneCount = checklist.items.filter(i => i.isDone).length;
 
   return (
-    <div className="border border-slate-200 rounded-lg overflow-hidden">
-      <div className="flex items-center justify-between px-3 py-2.5 bg-slate-50">
+    <div className="border border-border rounded-lg overflow-hidden">
+      <div className="flex items-center justify-between px-3 py-2.5 bg-surface-hover">
         <button
           onClick={() => setOpen(v => !v)}
           className="flex items-center gap-2 flex-1 min-w-0 cursor-pointer"
         >
           {open
-            ? <ChevronDown size={14} className="text-slate-400 shrink-0" />
-            : <ChevronRight size={14} className="text-slate-400 shrink-0" />}
-          <span className="text-sm font-display font-medium text-slate-700 truncate">
+            ? <ChevronDown size={14} className="text-text-muted shrink-0" />
+            : <ChevronRight size={14} className="text-text-muted shrink-0" />}
+          <span className="text-sm font-display font-medium text-text truncate">
             {checklist.title}
           </span>
-          <span className="text-xs text-slate-400 font-display shrink-0 ml-1">
+          <span className="text-xs text-text-muted font-display shrink-0 ml-1">
             {doneCount}/{checklist.items.length}
           </span>
         </button>
@@ -251,7 +253,7 @@ const ChecklistBlock = ({
           <button
             onClick={() => deleteChecklist.mutate(checklist.id)}
             disabled={deleteChecklist.isPending}
-            className="text-slate-300 hover:text-red-400 transition-colors cursor-pointer disabled:opacity-50 ml-2"
+            className="text-text-light hover:text-danger transition-colors cursor-pointer disabled:opacity-50 ml-2"
             aria-label="Delete checklist"
           >
             {deleteChecklist.isPending
@@ -264,7 +266,7 @@ const ChecklistBlock = ({
       {open && (
         <div>
           {checklist.items.length === 0 && (
-            <p className="px-3 py-2.5 text-xs text-slate-400 font-display">No items yet.</p>
+            <p className="px-3 py-2.5 text-xs text-text-muted font-display">No items yet.</p>
           )}
           {checklist.items.map(item => (
             <ItemRow
@@ -330,7 +332,7 @@ export const TaskChecklistPanel = ({ taskId, checklists, isAdmin, currentUserId 
   return (
     <div className="flex flex-col gap-3">
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-display font-semibold text-slate-700">Checklists</h3>
+        <h3 className="text-sm font-display font-semibold text-text">Checklists</h3>
         {isAdmin && !adding && (
           <button
             onClick={() => setAdding(true)}
@@ -343,29 +345,29 @@ export const TaskChecklistPanel = ({ taskId, checklists, isAdmin, currentUserId 
       </div>
 
       {adding && (
-        <div className="flex flex-col gap-3 p-3 border border-slate-200 rounded-lg bg-slate-50">
+        <div className="flex flex-col gap-3 p-3 border border-border rounded-lg bg-surface-hover">
           <input
             autoFocus
             value={title}
             onChange={e => setTitle(e.target.value)}
             placeholder="Checklist title…"
-            className="px-3 py-2 text-sm bg-white rounded-md border border-slate-300 focus:outline-none focus:border-primary-500 placeholder:text-slate-400"
+            className="px-3 py-2 text-sm bg-surface text-text rounded-md border border-border focus:outline-none focus:border-primary-500 placeholder:text-text-muted"
           />
 
           <div className="flex flex-col gap-2">
             {itemDrafts.map((draft, i) => (
-              <div key={i} className="flex flex-col gap-1.5 p-2 bg-white rounded-md border border-slate-200">
+              <div key={i} className="flex flex-col gap-1.5 p-2 bg-surface rounded-md border border-border">
                 <input
                   value={draft.label}
                   onChange={e => updateDraft(i, { label: e.target.value })}
                   placeholder={`Item ${i + 1} label…`}
-                  className="px-2 py-1.5 text-xs bg-white rounded border border-slate-300 focus:outline-none focus:border-primary-500 placeholder:text-slate-400"
+                  className="px-2 py-1.5 text-xs bg-surface text-text rounded border border-border focus:outline-none focus:border-primary-500 placeholder:text-text-muted"
                 />
                 <div className="flex flex-wrap items-center gap-1.5">
                   <select
                     value={draft.assigneeId}
                     onChange={e => updateDraft(i, { assigneeId: e.target.value })}
-                    className="px-2 py-1 text-xs bg-white rounded border border-slate-300 cursor-pointer"
+                    className="px-2 py-1 text-xs bg-surface text-text rounded border border-border cursor-pointer"
                   >
                     <option value="">Unassigned</option>
                     {assignableUsers?.map(u => (
@@ -376,17 +378,17 @@ export const TaskChecklistPanel = ({ taskId, checklists, isAdmin, currentUserId 
                     type="date"
                     value={draft.dueAt}
                     onChange={e => updateDraft(i, { dueAt: e.target.value })}
-                    className="px-2 py-1 text-xs bg-white rounded border border-slate-300"
+                    className="px-2 py-1 text-xs bg-surface text-text rounded border border-border"
                   />
                   <input
                     type="number"
                     min={0}
                     value={draft.requiredImageCount}
                     onChange={e => updateDraft(i, { requiredImageCount: e.target.value })}
-                    className="w-16 px-2 py-1 text-xs bg-white rounded border border-slate-300"
+                    className="w-16 px-2 py-1 text-xs bg-surface text-text rounded border border-border"
                     title="Required photo count"
                   />
-                  <label className="flex items-center gap-1 text-xs text-slate-500 px-1">
+                  <label className="flex items-center gap-1 text-xs text-text-secondary px-1">
                     <input
                       type="checkbox"
                       checked={draft.requiresLivePhoto}
@@ -408,7 +410,7 @@ export const TaskChecklistPanel = ({ taskId, checklists, isAdmin, currentUserId 
           </button>
 
           {addChecklist.isError && (
-            <p className="text-xs text-red-500">
+            <p className="text-xs text-danger">
               {addChecklist.error instanceof Error ? addChecklist.error.message : 'Failed to create checklist.'}
             </p>
           )}
@@ -425,7 +427,7 @@ export const TaskChecklistPanel = ({ taskId, checklists, isAdmin, currentUserId 
       )}
 
       {checklists.length === 0 && !adding && (
-        <p className="text-xs text-slate-400 font-display py-2">No checklists yet.</p>
+        <p className="text-xs text-text-muted font-display py-2">No checklists yet.</p>
       )}
 
       {checklists.map(cl => (
