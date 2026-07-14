@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Plus, CheckCheck, Clock, Circle, AlertCircle, Loader2, LayoutList, Kanban } from "lucide-react";
-import { Button } from "../../components";
+import { Button, Skeleton } from "../../components";
 import { useTasksQuery, useUpdateTaskMutation, useDeleteTaskMutation, useAssignableUsersQuery } from "./hook";
 import type { Task } from '../../api/task';
 import { TaskForm } from "./TaskForm";
@@ -212,10 +212,31 @@ export const TaskList = ({ userId }: TaskListProps = {}) => {
                 </div>
             )}
 
-            {isPending && (
-                <div className="flex items-center justify-center py-16 text-text-muted">
-                    <Loader2 size={20} className="animate-spin mr-2" />
-                    <span className="text-sm font-display">Loading tasks…</span>
+            {isPending && view === 'list' && (
+                <div className="flex flex-col gap-2">
+                    {Array.from({ length: 5 }).map((_, i) => (
+                        <div key={i} className="flex items-center gap-3 px-4 py-3 rounded-lg border border-border bg-surface">
+                            <Skeleton className="size-4 rounded-full shrink-0" />
+                            <Skeleton className="h-4 flex-1 max-w-64" />
+                            <Skeleton className="h-5 w-14 rounded-full shrink-0" />
+                        </div>
+                    ))}
+                </div>
+            )}
+
+            {isPending && view === 'board' && (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-start">
+                    {Array.from({ length: 3 }).map((_, col) => (
+                        <div key={col} className="flex flex-col gap-3">
+                            <Skeleton className="h-5 w-24" />
+                            {Array.from({ length: 2 }).map((_, i) => (
+                                <div key={i} className="flex flex-col gap-2 p-3 rounded-lg border border-border bg-surface">
+                                    <Skeleton className="h-4 w-3/4" />
+                                    <Skeleton className="h-4 w-1/3 rounded-full" />
+                                </div>
+                            ))}
+                        </div>
+                    ))}
                 </div>
             )}
 

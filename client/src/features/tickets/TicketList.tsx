@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { Plus, Ticket as TicketIcon, Loader2, AlertCircle } from 'lucide-react';
-import { Button, PageNav } from '../../components';
+import { Plus, Ticket as TicketIcon, AlertCircle } from 'lucide-react';
+import { Button, PageNav, Skeleton } from '../../components';
 import { useTicketsQuery } from './hook';
 import { TicketCard } from './TicketCard';
 import { TicketForm } from './TicketForm';
@@ -79,9 +79,19 @@ export const TicketList = () => {
 
       {/* Loading */}
       {isPending && (
-        <div className="flex items-center justify-center py-16 text-text-muted">
-          <Loader2 size={20} className="animate-spin mr-2" />
-          <span className="text-sm font-display">Loading tickets…</span>
+        <div className="flex flex-col gap-2">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <div key={i} className="flex items-start gap-4 px-4 py-3.5 rounded-lg border border-border bg-surface">
+              <div className="flex-1 min-w-0 flex flex-col gap-2">
+                <Skeleton className="h-4 w-2/3 max-w-80" />
+                <div className="flex items-center gap-2">
+                  <Skeleton className="h-5 w-16 rounded-full" />
+                  <Skeleton className="h-5 w-14 rounded-full" />
+                </div>
+              </div>
+              <Skeleton className="h-4 w-16 shrink-0" />
+            </div>
+          ))}
         </div>
       )}
 

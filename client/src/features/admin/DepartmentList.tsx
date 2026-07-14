@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { Plus, Loader2, AlertCircle, Trash2, Pencil } from "lucide-react";
-import { Button } from "../../components";
+import { Plus, AlertCircle, Trash2, Pencil } from "lucide-react";
+import { Button, Skeleton } from "../../components";
 import { useDeleteDepartmentMutation, useDepartmentsQuery, useUpdateDepartmentMutation } from "./hooks";
 import { DepartmentForm } from "./DepartmentForm";
 import type { Department } from "../../api/departments";
@@ -45,9 +45,15 @@ export const DepartmentList = () => {
 
                 {
                     isPending && (
-                        <div className="flex items-center justify-center gap-2 py-16 text-text-muted">
-                            <Loader2 size={16} className="animate-spin" />
-                            <span className="text-sm font-display">Loading departments</span>
+                        <div className="flex flex-col gap-2">
+                            {Array.from({ length: 4 }).map((_, i) => (
+                                <div key={i} className="flex items-center justify-between gap-4 px-4 py-3 rounded-lg border border-border bg-surface">
+                                    <Skeleton className="h-4 w-40" />
+                                    <Skeleton className="h-5 w-16 rounded-full shrink-0" />
+                                    <Skeleton className="size-4 shrink-0" />
+                                    <Skeleton className="size-4 shrink-0" />
+                                </div>
+                            ))}
                         </div>
                     )
                 }
