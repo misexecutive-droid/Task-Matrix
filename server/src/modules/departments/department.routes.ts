@@ -1,17 +1,24 @@
-// Same shared factory used by every other simple lookup table in this app.
-// It hands back a router that already has list/create/update/delete routes
-// wired up, so we don't need to write that logic again here.
 import { createLookupRouter } from "../../utils/lookupModule.js";
-// The Department model is just another simple reference list (e.g. "Sales",
-// "IT", "HR") that other records (like tickets) can be tagged with.
 import { Department  } from "../../models/Department.js";
+import { authenticate , requireRole } from "../../middleware/auth/auth.js";
+import { departmentController } from "./department.controller.js";
+import { Router } from "express";
 
-// Passing the Department model into the factory gives us a router with:
-//   GET    /        -> list all departments (sorted by name), any logged-in user can view
-//   POST   /         -> create a new department (admin only)
-//   PATCH  /:id       -> update a department by id (admin only)
-//   DELETE /:id       -> delete a department by id (admin only)
-// Because Departments are simple lookup data (no special business logic
-// beyond basic CRUD), reusing createLookupRouter here keeps the code DRY
-// instead of duplicating the same route handlers for every lookup table.
-export const departmentRouter = createLookupRouter(Department)
+
+// export const departmentRouter = createLookupRouter(Department)
+
+export const departmentRouter = Router()
+
+departmentRouter.use(authenticate)
+
+// any authenticated user (ADMIN , MANAGER , AGENT , USER)
+// e.g when you raising the ticket choosing which department it belong to.
+
+departmentRouter.get("/", departmentController.list)
+departmentRouter.get("/:id" , departmentController.getOne)
+
+// Only ADMIN can create, update, or delete departments.
+departmentRouter.post("/", requireRole("ADMIN"), departmentController.create)
+departmentRouter.patch("/:id", requireRole("ADMIN"), departmentController.update)
+departmentRouter.delete("/:id", requireRole("ADMIN"), departmentController.remove)
+

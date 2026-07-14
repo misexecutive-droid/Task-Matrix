@@ -4,7 +4,6 @@ import type { AccessTokenPayload } from "../../middleware/auth/auth.js"
 import type { CreateTaskInput, UpdateTaskInput } from "./task.validation.js"
 import { Types } from "mongoose"
 import { TaskChecklistItem } from "../../models/TaskChecklistItem.js"
-import { departmentRouter } from "../departments/department.routes.js"
 
 const visiblityFilter = (user: AccessTokenPayload) =>
     user.role === "ADMIN" ? {} : { $or: [{ userId: user.sub }, { assigneeId: user.sub }] }
@@ -50,13 +49,12 @@ export const taskService = {
         return task;
     },
 
-    async complianceReport(groupBy: "hour" | "day" | "week" | "month", deparmentId?: string, to?: string) {
+    async complianceReport(groupBy: "hour" | "day" | "week" | "month", departmentId?: string, from?: string, to?: string) {
         const DATE_FORMATS: Record<"hour" | "day" | "week" | "month", string> = {
             hour: '%Y-%m-%dT%H:00',
             day: '%Y-%m-%d',
             week: '%G-W%V',
             month: '%Y-%m',
-
         };
 
         const match: Record<string, any> = {};
@@ -64,62 +62,55 @@ export const taskService = {
             match.createdAt = {};
             if (from) match.createdAt.$gte = new Date(from);
             if (to) match.createdAt.$lte = new Date(to);
-        };
+        }
 
-        const rows = await updateTaskChecklistItem.aggregate([
+        const rows = await TaskChecklistItem.aggregate([
             { $match: match },
-            { $lookup: { from: "taskchecklists", localField: "checklist.taskId", foreignField: "id", as: "task" } },
+            { $lookup: { from: "taskchecklists", localField: "taskChecklistId", foreignField: "_id", as: "checklist" } },
             { $unwind: "$checklist" },
             { $lookup: { from: "tasks", localField: "checklist.taskId", foreignField: "_id", as: "task" } },
             { $unwind: "$task" },
-            ...(deparmentId ? [{ $match: { "task.departmentId": new Types.ObjectId(deparmentId) } }] : []),
-            { $lookup: { from: "taskImages", localField: "_id", foreignField: "taskChecklistItemId", as: "images" } },
+            ...(departmentId ? [{ $match: { "task.departmentId": new Types.ObjectId(departmentId) } }] : []),
+            { $lookup: { from: "taskimages", localField: "_id", foreignField: "taskChecklistItemId", as: "images" } },
             {
                 $addFields: {
-                    bucket: { $dateToString: { format: DATE_FORMATS[groupBy], date: "$createAt" } },
+                    bucket: { $dateToString: { format: DATE_FORMATS[groupBy], date: "$createdAt" } },
                     qualifyingImageCount: {
                         $cond: [
                             '$requiresLivePhoto',
                             { $size: { $filter: { input: '$images', cond: { $eq: ['$$this.captureMethod', 'LIVE'] } } } },
                             { $size: '$images' },
-
-
                         ],
                     },
                 },
             },
             {
-                $group : {
-                    _id : "$bucket",
-                    totalItem : { $sum : 1},
-                    doneItems : { $sum : { $cond : ["$isDone", 1,0]},
-                    itemsRequiringPhotos : { $sum : [{ $gt : ["$requiredImageCount", 0]}, 1, 0]}},
-                    photoCompliantItems : {
-                        $sum : {
-                            $cond : [
-                                { $and : [{ $gt : ['$requiredImageCount', 0]}, { $gte : ["$qualifyingImageCount", "$requiredImageCount"]}]},
-                                1,0
-
-                            ]
-                        }
-                    }
-
-                }
+                $group: {
+                    _id: "$bucket",
+                    totalItems: { $sum: 1 },
+                    doneItems: { $sum: { $cond: ["$isDone", 1, 0] } },
+                    itemsRequiringPhotos: { $sum: { $cond: [{ $gt: ["$requiredImageCount", 0] }, 1, 0] } },
+                    photoCompliantItems: {
+                        $sum: {
+                            $cond: [
+                                { $and: [{ $gt: ['$requiredImageCount', 0] }, { $gte: ["$qualifyingImageCount", "$requiredImageCount"] }] },
+                                1, 0,
+                            ],
+                        },
+                    },
+                },
             },
-
-            { $sort : {_id : 1}},
+            { $sort: { _id: 1 } },
         ]);
 
         return rows.map(r => ({
-            bucket : r._id as string,
-            totalItems : r.totalItems as number,
-            doneItems : r.doneItems as number,
-            completionRate : r.totalItems ? Math.round((r.doneItems/r.totalItems)* 1000) / 10 : null,
-            itemsRequiringPhotos : r.itemsRequiringPhotos as number,
-            qualityRate : r.itemsRequiringPhots ? Math.round((r.photoCompliantItems / r.itemsRequiringPhots) * 1000) / 10 : null,
-
+            bucket: r._id as string,
+            totalItems: r.totalItems as number,
+            doneItems: r.doneItems as number,
+            completionRate: r.totalItems ? Math.round((r.doneItems / r.totalItems) * 1000) / 10 : null,
+            itemsRequiringPhotos: r.itemsRequiringPhotos as number,
+            qualityRate: r.itemsRequiringPhotos ? Math.round((r.photoCompliantItems / r.itemsRequiringPhotos) * 1000) / 10 : null,
         }));
-
     },
 
 };
