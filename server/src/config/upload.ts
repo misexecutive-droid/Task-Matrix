@@ -8,12 +8,19 @@ import fs from "node:fs"
 // started from.
 const UPLOAD_DIR = path.resolve("uploads", "tasks")
 
+// Same idea, but for evidence photos uploaded against a Ticket's checklist items (see
+// checklistImages module) — kept in its own folder, separate from task evidence.
+const TICKET_UPLOAD_DIR = path.resolve("uploads", "tickets")
+
 
 // A fresh clone of this repo won't have an uploads/ folder yet — we don't (and shouldn't) commit
 // an empty folder of user-uploaded content to git, so create it at startup if it's missing.
 
 if (!fs.existsSync(UPLOAD_DIR)) {
     fs.mkdirSync(UPLOAD_DIR, { recursive: true })
+}
+if (!fs.existsSync(TICKET_UPLOAD_DIR)) {
+    fs.mkdirSync(TICKET_UPLOAD_DIR, { recursive: true })
 }
 
 // Only these image types are ever accepted. This is a real security control, not a nicety:
@@ -55,6 +62,29 @@ export const taskImageUpload = multer({
 
             return cb(null, false)
 
+        }
+        cb(null, true)
+    }
+})
+
+const ticketStorage = multer.diskStorage({
+    destination: (_req, _file, cb) => cb(null, TICKET_UPLOAD_DIR),
+    filename: (_req, file, cb) => {
+        const randomName = crypto.randomBytes(16).toString("hex");
+        const ext = path.extname(file.originalname).toLowerCase();
+        cb(null, `${randomName}${ext}`)
+    },
+});
+
+export const checklistImageUpload = multer({
+    storage: ticketStorage,
+    limits: {
+        fileSize: 5 * 1024 * 1024,
+        files: 10
+    },
+    fileFilter: (_req, file, cb) => {
+        if (!ALLOWED_MIME_TYPES.includes(file.mimetype)) {
+            return cb(null, false)
         }
         cb(null, true)
     }

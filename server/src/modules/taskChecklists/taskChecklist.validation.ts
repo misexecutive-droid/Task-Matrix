@@ -13,6 +13,7 @@ export const createTaskChecklistSchema = z.object({
       assigneeId : objectId.optional(),
       dueAt : z.string().datetime().optional(),
       requiredImageCount : z.number().int().min(0).optional(),
+      maxImageCount : z.number().int().min(0).optional(),
       requiresLivePhoto : z.boolean().optional(),
       remarks : z.string().max(2000).optional(),
     })).optional(),
@@ -35,6 +36,7 @@ export const updateTaskChecklistItemSchema = z.object({
     assigneeId : objectId.nullable().optional(),
     dueAt : z.string().datetime().nullable().optional(),
     requiredImageCount : z.number().int().min(0).optional(),
+    maxImageCount : z.number().int().min(0).nullable().optional(),
     requiresLivePhoto : z.boolean().optional(),
     isDone : z.literal(false).optional()
 })

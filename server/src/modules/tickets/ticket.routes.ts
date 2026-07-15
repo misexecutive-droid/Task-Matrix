@@ -14,3 +14,4 @@ ticketRouter.patch('/:id', ticketController.update);
 ticketRouter.delete('/:id', requireRole('ADMIN'), ticketController.remove);
 
 ticketRouter.post('/:ticketId/checklists', requireRole('ADMIN'), checklistController.addToTicket);
+ticketRouter.post('/:ticketId/checklists/from-template/:templateId', requireRole('ADMIN'), checklistController.addFromTemplateToTicket);

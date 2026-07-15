@@ -139,6 +139,20 @@ export const ticketService = {
     const before = ticket.toObject();
 
     if (input.status === "CLOSED" && before.status !== "CLOSED") {
+      // Same rule as tasks (see taskService.update): closing a ticket is blocked until every
+      // not-done checklist item has remarks explaining why — no remarks needed while it's still
+      // open, only at the point someone tries to call it closed.
+      const withItems = await Ticket.findById(id).populate({ path: "checklists", populate: { path: "items" } });
+      const incomplete = (withItems as any).checklists
+        .flatMap((cl: any) => cl.items)
+        .filter((item: any) => !item.isDone && !item.remarks?.trim());
+
+      if (incomplete.length) {
+        throw AppError.badRequest(
+          `Add remarks explaining why these checklist items aren't done before closing this ticket: ${incomplete.map((i: any) => i.label).join(", ")}`,
+        );
+      }
+
       ticket.closedAt = new Date();
     } else if (input.status && input.status !== "CLOSED" && before.status === "CLOSED") {
       ticket.closedAt = null;

@@ -10,8 +10,10 @@ export { Category } from './Category.js';
 export { Ticket } from './Ticket.js';
 export { Checklist } from './Checklist.js';
 export { ChecklistItem } from './ChecklistItem.js';
+export { ChecklistImage } from './ChecklistImage.js';
 export { Project } from './Project.js';
 export { Task } from './Task.js';
 export { AuditLog } from "./AuditLog.js"
 // note: imports from the typo'd filename "Notificaiton.js" but re-exports it under the correct name "Notification"
 export { Notification } from "./Notificaiton.js"
+export { Settings } from "./Settings.js"

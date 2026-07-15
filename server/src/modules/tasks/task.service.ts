@@ -32,13 +32,34 @@ export const taskService = {
 
     async update(id: string, input: UpdateTaskInput, user: AccessTokenPayload) {
 
+        // Closing out a task means every checklist item is either actually done, or explicitly
+        // explained — an item left not-done with no remarks gives no way to tell "forgot about
+        // it" from "couldn't finish it, here's why". So this is the one place that's enforced:
+        // no remarks required while the item just sits open, but marking the whole task "done"
+        // is blocked until every not-done item says why.
+        if (input.status === "done") {
+            const existing = await Task.findOne({ _id: id, ...visiblityFilter(user) })
+                .populate({ path: "checklists", populate: { path: "items" } });
+            if (!existing) throw AppError.notFound("Task not found");
+
+            const incomplete = (existing as any).checklists
+                .flatMap((cl: any) => cl.items)
+                .filter((item: any) => !item.isDone && !item.remarks?.trim());
+
+            if (incomplete.length) {
+                throw AppError.badRequest(
+                    `Add remarks explaining why these checklist items aren't done before marking this task done: ${incomplete.map((i: any) => i.label).join(", ")}`,
+                );
+            }
+        }
+
         const task = await Task.findOneAndUpdate(
-            { _id: id, ...visiblityFilter(user) }, 
-            input, 
-            { new: true, runValidators: true }, 
+            { _id: id, ...visiblityFilter(user) },
+            input,
+            { new: true, runValidators: true },
 
         );
-        if (!task) throw AppError.notFound("Task not found") 
+        if (!task) throw AppError.notFound("Task not found")
         return task;
     },
 

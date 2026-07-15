@@ -2,6 +2,8 @@ import { Task } from "../../models/Task.js"
 import { TaskChecklist } from "../../models/TaskChecklist.js"
 import { TaskChecklistItem } from "../../models/TaskChecklistItem.js"
 import { TaskImage } from "../../models/TaskImage.js"
+import { ChecklistTemplate } from "../../models/ChecklistTemplate.js"
+import { ChecklistTemplateItem } from "../../models/ChecklistTemplateItem.js"
 import { AppError } from "../../utils/AppError.js"
 import type { AccessTokenPayload } from "../../middleware/auth/auth.js"
 import type { CreateTaskChecklistInput, UpdateTaskChecklistItemInput } from "./taskChecklist.validation.js"
@@ -43,6 +45,37 @@ export const taskChecklistService = {
         if (input.items?.length) {
             await TaskChecklistItem.insertMany(
                 input.items.map((item) => ({ ...item, taskChecklistId: checklist._id })),
+            );
+        }
+
+        return populateChecklist(TaskChecklist.findById(checklist._id));
+    },
+
+    // Stamp out a real checklist under this task from a reusable, admin-authored template —
+    // same result as createForTask, just sourced from ChecklistTemplate/ChecklistTemplateItem
+    // instead of hand-typed input. assigneeId/dueAt are left unset (templates don't carry them);
+    // an admin fills those in afterwards through the normal updateItem action.
+    async createFromTemplate(taskId: string, templateId: string, user: AccessTokenPayload) {
+        const task = await Task.findById(taskId);
+        if (!task) throw AppError.notFound("Task not found");
+        assertCanManage(user, task);
+
+        const template = await ChecklistTemplate.findById(templateId);
+        if (!template) throw AppError.notFound("Checklist template not found");
+        if (template.appliesTo !== "TASK") throw AppError.badRequest("This template applies to tickets, not tasks");
+
+        const templateItems = await ChecklistTemplateItem.find({ templateId }).sort({ order: 1 });
+
+        const checklist = await TaskChecklist.create({ title: template.name, taskId });
+        if (templateItems.length) {
+            await TaskChecklistItem.insertMany(
+                templateItems.map((item) => ({
+                    label: item.label,
+                    requiredImageCount: item.requiredImageCount,
+                    maxImageCount: item.maxImageCount,
+                    requiresLivePhoto: item.requiresLivePhoto,
+                    taskChecklistId: checklist._id,
+                })),
             );
         }
 

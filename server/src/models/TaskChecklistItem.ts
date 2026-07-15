@@ -10,6 +10,7 @@ const taskChecklistItemSchema = new Schema(
         taskChecklistId : { type : Schema.Types.ObjectId, ref : "TaskChecklist" , required : true, index:true},
 
         requiredImageCount : { type : Number , default : 0 , min : 0},
+        maxImageCount : { type : Number , default : null , min : 0},
         requiresLivePhoto : { type : Boolean , default : false},
         remarks : { type : String , default : null },
     },

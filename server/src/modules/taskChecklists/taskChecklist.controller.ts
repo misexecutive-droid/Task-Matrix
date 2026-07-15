@@ -12,6 +12,13 @@ export const taskChecklistController = {
         res.status(201).json({ success: true, data: checklist })
     }),
 
+    // POST /tasks/:taskId/checklists/from-template/:templateId -- create a checklist under a
+    // task by copying an admin-authored ChecklistTemplate's items.
+    createFromTemplate: asyncHandler(async (req: Request, res: Response) => {
+        const checklist = await taskChecklistService.createFromTemplate(req.params.taskId, req.params.templateId, req.user!)
+        res.status(201).json({ success: true, data: checklist })
+    }),
+
     // PATCH /task-checklist-items/:id -- edit and item's metadata (label, assignee , due date)
     // photo requirements , or reopen it with { isDone : false}
 

@@ -11,10 +11,21 @@ const ChecklistItemSchema = new Schema(
         completedAt : { type : Date , default : null}, // when the item was actually marked done (set automatically below)
         // checklistId: reference to the parent Checklist this item belongs to.
         // index: true speeds up queries that look up items by checklistId.
-        checklistId : { type : Schema.Types.ObjectId , ref : "Checklist" , required : true , index : true}
+        checklistId : { type : Schema.Types.ObjectId , ref : "Checklist" , required : true , index : true},
+
+        requiredImageCount : { type : Number , default : 0 , min : 0},
+        maxImageCount : { type : Number , default : null , min : 0},
+        requiresLivePhoto : { type : Boolean , default : false},
+        remarks : { type : String , default : null },
     },
-    { timestamps : true } // adds createdAt/updatedAt automatically (note: no toJSON/toObject virtuals here, unlike other schemas)
+    { timestamps : true, toJSON : { virtuals : true} , toObject : { virtuals : true} }
 )
+
+ChecklistItemSchema.virtual("images", {
+    ref : "ChecklistImage",
+    localField : "_id",
+    foreignField : "checklistItemId",
+})
 
 // pre('save') hook: runs automatically right before saving. Whenever isDone changes,
 // this sets completedAt to "now" if it was just marked done, or clears it back to null

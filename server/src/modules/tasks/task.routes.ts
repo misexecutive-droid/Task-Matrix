@@ -19,3 +19,4 @@ taskRouter.post("/", requireRole("ADMIN"), taskController.create)
 
 
 taskRouter.post("/:taskId/checklists", requireRole("ADMIN"), taskChecklistController.createForTask) // POST /tasks/:taskId/checklists -> create a checklist under this task
+taskRouter.post("/:taskId/checklists/from-template/:templateId", requireRole("ADMIN"), taskChecklistController.createFromTemplate)

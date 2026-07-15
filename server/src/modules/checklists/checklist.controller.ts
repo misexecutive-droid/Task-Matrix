@@ -3,7 +3,7 @@ import type { Request, Response } from 'express';
 // The service layer does the real database work; the controller just wires HTTP <-> service.
 import { checklistService } from './checklist.service.js';
 // Zod schemas that validate/shape incoming request bodies before we trust them.
-import { createChecklistSchema, updateChecklistItemSchema } from './checklist.validation.js';
+import { createChecklistSchema, updateChecklistItemSchema, updateRemarksSchema } from './checklist.validation.js';
 // A wrapper that catches errors thrown inside async route handlers and forwards them to
 // Express's error-handling middleware, so we don't need try/catch in every handler below.
 import { asyncHandler } from '../../utils/asyncHandler.js';
@@ -22,6 +22,13 @@ export const checklistController = {
     res.status(201).json({ success: true, data: checklist });
   }),
 
+  // Handles: POST /tickets/:ticketId/checklists/from-template/:templateId — create a checklist
+  // under a ticket by copying an admin-authored ChecklistTemplate's items.
+  addFromTemplateToTicket: asyncHandler(async (req: Request, res: Response) => {
+    const checklist = await checklistService.addFromTemplateToTicket(req.params.ticketId, req.params.templateId);
+    res.status(201).json({ success: true, data: checklist });
+  }),
+
   // Handles: DELETE /checklists/:id - deletes a whole checklist (and cascades to its items,
   // see checklist.service.ts removeChecklist).
   removeChecklist: asyncHandler(async (req: Request, res: Response) => {
@@ -31,11 +38,25 @@ export const checklistController = {
   }),
 
   // Handles: PATCH /checklist-items/:id - updates one item inside a checklist
-  // (e.g. toggling isDone, changing label/assignee/dueAt).
+  // (e.g. toggling isDone, changing label/assignee/dueAt, photo requirements).
   updateItem: asyncHandler(async (req: Request, res: Response) => {
     // Only fields allowed by updateChecklistItemSchema get through (all optional, see validation file).
     const input = updateChecklistItemSchema.parse(req.body);
-    const item = await checklistService.updateItem(req.params.id, input);
+    const item = await checklistService.updateItem(req.params.id, input, req.user!);
+    res.json({ success: true, data: item });
+  }),
+
+  // Handles: POST /checklist-items/:id/complete — the ONLY way to mark an item done. No body
+  // needed: the server checks the item's own uploaded images against its own requirements.
+  completeItem: asyncHandler(async (req: Request, res: Response) => {
+    const item = await checklistService.completeItem(req.params.id, req.user!);
+    res.json({ success: true, data: item });
+  }),
+
+  // Handles: PATCH /checklist-items/:id/remarks — the assignee's own notes about their work.
+  updateRemarks: asyncHandler(async (req: Request, res: Response) => {
+    const { remarks } = updateRemarksSchema.parse(req.body);
+    const item = await checklistService.updateRemarks(req.params.id, remarks, req.user!);
     res.json({ success: true, data: item });
   }),
 
