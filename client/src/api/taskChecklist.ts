@@ -23,6 +23,7 @@ export type TaskChecklistItem = {
   completedAt:        string | null;
   taskChecklistId:    string;
   requiredImageCount: number;
+  maxImageCount:      number | null;
   requiresLivePhoto:  boolean;
   remarks:            string | null;
   images:             TaskImage[];
@@ -42,6 +43,7 @@ export type CreateTaskChecklistItemPayload = {
   assigneeId?:         string;
   dueAt?:              string;
   requiredImageCount?: number;
+  maxImageCount?:      number;
   requiresLivePhoto?:  boolean;
   remarks?:            string;
 };
@@ -56,6 +58,7 @@ export type UpdateTaskChecklistItemPayload = {
   assigneeId?:         string | null;
   dueAt?:              string | null;
   requiredImageCount?: number;
+  maxImageCount?:      number | null;
   requiresLivePhoto?:  boolean;
   isDone?:             false;
 };

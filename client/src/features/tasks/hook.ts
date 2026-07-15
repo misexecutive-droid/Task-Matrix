@@ -1,14 +1,18 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import { useAuth } from "../../context/AuthContext";
 import { taskApi } from "../../api/task";
 import { userApi } from "../../api/users"; // NEW — needed for the assignee picker
 import { taskChecklistApi } from "../../api/taskChecklist";
+import { checklistTemplateApi } from "../../api/checklistTemplates";
 import type { CreateTaskPayload, UpdateTaskPayload } from "../../api/task";
 import type {
     CreateTaskChecklistPayload,
     UpdateTaskChecklistItemPayload,
     CaptureMethod,
 } from "../../api/taskChecklist";
+
+const errorMessage = (err: unknown, fallback: string) => (err instanceof Error ? err.message : fallback);
 
 const TASK_KEYS = {
     // NEW: the cache key now includes which user's tasks we're looking at, so "my tasks" and
@@ -50,7 +54,9 @@ export const useCreateTaskMutation = () => {
             // NEW: invalidate every query starting with 'tasks', regardless of which user it was
             // scoped to — a new task could affect "my tasks" and (if assigned) someone else's view too.
             queryClient.invalidateQueries({ queryKey: ['tasks'] });
+            toast.success('Task created');
         },
+        onError: (err) => toast.error(errorMessage(err, 'Failed to create task')),
     });
 };
 
@@ -63,7 +69,9 @@ export const useUpdateTaskMutation = () => {
         onSuccess: (updatedTask) => {
             queryClient.setQueryData(TASK_KEYS.detail(updatedTask.id), updatedTask);
             queryClient.invalidateQueries({ queryKey: ['tasks'] });
+            toast.success('Task updated');
         },
+        onError: (err) => toast.error(errorMessage(err, 'Failed to update task')),
     });
 };
 
@@ -75,7 +83,9 @@ export const useDeleteTaskMutation = () => {
         onSuccess: (_data, id) => {
             queryClient.removeQueries({ queryKey: TASK_KEYS.detail(id) });
             queryClient.invalidateQueries({ queryKey: ['tasks'] });
+            toast.success('Task deleted');
         },
+        onError: (err) => toast.error(errorMessage(err, 'Failed to delete task')),
     });
 };
 
@@ -99,7 +109,11 @@ export const useAddTaskChecklistMutation = (taskId: string) => {
     return useMutation({
         mutationFn: (payload: CreateTaskChecklistPayload) =>
             taskChecklistApi.create(taskId, payload).then(r => r.data),
-        onSuccess: () => queryClient.invalidateQueries({ queryKey: TASK_KEYS.detail(taskId) }),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: TASK_KEYS.detail(taskId) });
+            toast.success('Checklist added');
+        },
+        onError: (err) => toast.error(errorMessage(err, 'Failed to add checklist')),
     });
 };
 
@@ -107,7 +121,11 @@ export const useDeleteTaskChecklistMutation = (taskId: string) => {
     const queryClient = useQueryClient();
     return useMutation({
         mutationFn: (id: string) => taskChecklistApi.deleteChecklist(id),
-        onSuccess: () => queryClient.invalidateQueries({ queryKey: TASK_KEYS.detail(taskId) }),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: TASK_KEYS.detail(taskId) });
+            toast.success('Checklist deleted');
+        },
+        onError: (err) => toast.error(errorMessage(err, 'Failed to delete checklist')),
     });
 };
 
@@ -117,6 +135,7 @@ export const useUpdateTaskChecklistItemMutation = (taskId: string) => {
         mutationFn: ({ id, payload }: { id: string; payload: UpdateTaskChecklistItemPayload }) =>
             taskChecklistApi.updateItem(id, payload).then(r => r.data),
         onSuccess: () => queryClient.invalidateQueries({ queryKey: TASK_KEYS.detail(taskId) }),
+        onError: (err) => toast.error(errorMessage(err, 'Failed to update item')),
     });
 };
 
@@ -125,7 +144,11 @@ export const useUpdateTaskItemRemarksMutation = (taskId: string) => {
     return useMutation({
         mutationFn: ({ id, remarks }: { id: string; remarks: string }) =>
             taskChecklistApi.updateRemarks(id, remarks).then(r => r.data),
-        onSuccess: () => queryClient.invalidateQueries({ queryKey: TASK_KEYS.detail(taskId) }),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: TASK_KEYS.detail(taskId) });
+            toast.success('Remarks saved');
+        },
+        onError: (err) => toast.error(errorMessage(err, 'Failed to save remarks')),
     });
 };
 
@@ -133,7 +156,11 @@ export const useCompleteTaskChecklistItemMutation = (taskId: string) => {
     const queryClient = useQueryClient();
     return useMutation({
         mutationFn: (id: string) => taskChecklistApi.completeItem(id).then(r => r.data),
-        onSuccess: () => queryClient.invalidateQueries({ queryKey: TASK_KEYS.detail(taskId) }),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: TASK_KEYS.detail(taskId) });
+            toast.success('Item marked complete');
+        },
+        onError: (err) => toast.error(errorMessage(err, 'Failed to complete item')),
     });
 };
 
@@ -141,7 +168,11 @@ export const useDeleteTaskChecklistItemMutation = (taskId: string) => {
     const queryClient = useQueryClient();
     return useMutation({
         mutationFn: (id: string) => taskChecklistApi.deleteItem(id),
-        onSuccess: () => queryClient.invalidateQueries({ queryKey: TASK_KEYS.detail(taskId) }),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: TASK_KEYS.detail(taskId) });
+            toast.success('Item deleted');
+        },
+        onError: (err) => toast.error(errorMessage(err, 'Failed to delete item')),
     });
 };
 
@@ -150,7 +181,11 @@ export const useUploadTaskImagesMutation = (taskId: string) => {
     return useMutation({
         mutationFn: ({ itemId, files, captureMethod }: { itemId: string; files: File[]; captureMethod: CaptureMethod }) =>
             taskChecklistApi.uploadImages(itemId, files, captureMethod).then(r => r.data),
-        onSuccess: () => queryClient.invalidateQueries({ queryKey: TASK_KEYS.detail(taskId) }),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: TASK_KEYS.detail(taskId) });
+            toast.success('Photos uploaded');
+        },
+        onError: (err) => toast.error(errorMessage(err, 'Failed to upload photos')),
     });
 };
 
@@ -158,6 +193,33 @@ export const useDeleteTaskImageMutation = (taskId: string) => {
     const queryClient = useQueryClient();
     return useMutation({
         mutationFn: (id: string) => taskChecklistApi.deleteImage(id),
-        onSuccess: () => queryClient.invalidateQueries({ queryKey: TASK_KEYS.detail(taskId) }),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: TASK_KEYS.detail(taskId) });
+            toast.success('Photo deleted');
+        },
+        onError: (err) => toast.error(errorMessage(err, 'Failed to delete photo')),
+    });
+};
+
+// Reusable checklist templates (managed under Admin) that can be applied to a task in one
+// click instead of typing the same checklist out by hand — see features/admin/ChecklistTemplateList.tsx.
+export const useChecklistTemplatesQuery = () => {
+    const { token } = useAuth();
+    return useQuery({
+        queryKey: ['checklist-templates', 'TASK'],
+        queryFn: () => checklistTemplateApi.getAll('TASK').then(r => r.data),
+        enabled: !!token,
+    });
+};
+
+export const useApplyChecklistTemplateMutation = (taskId: string) => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: (templateId: string) => checklistTemplateApi.applyToTask(taskId, templateId),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: TASK_KEYS.detail(taskId) });
+            toast.success('Template applied');
+        },
+        onError: (err) => toast.error(errorMessage(err, 'Failed to apply template')),
     });
 };

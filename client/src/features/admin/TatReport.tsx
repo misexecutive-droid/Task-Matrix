@@ -2,17 +2,18 @@ import { useState } from 'react';
 import { Clock3, AlertTriangle, ListChecks, Loader2 } from 'lucide-react';
 import { useTatReportQuery } from '../tickets/hook';
 import type { TatReportGroupBy } from '../../api/ticket';
+import { Skeleton } from '@/components';
 
 const GROUP_OPTIONS: { key: TatReportGroupBy; label: string }[] = [
-  { key: 'hour',  label: 'Hour'  },
-  { key: 'day',   label: 'Day'   },
-  { key: 'week',  label: 'Week'  },
+  { key: 'hour', label: 'Hour' },
+  { key: 'day', label: 'Day' },
+  { key: 'week', label: 'Week' },
   { key: 'month', label: 'Month' },
 ];
 
 const formatBucket = (bucket: string, groupBy: TatReportGroupBy) => {
-  if (groupBy === 'hour')  return new Date(bucket + ':00').toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric' });
-  if (groupBy === 'week')  return bucket.replace('-W', ' · Wk ');
+  if (groupBy === 'hour') return new Date(bucket + ':00').toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric' });
+  if (groupBy === 'week') return bucket.replace('-W', ' · Wk ');
   if (groupBy === 'month') {
     const [y, m] = bucket.split('-');
     return new Date(Number(y), Number(m) - 1).toLocaleDateString(undefined, { month: 'short', year: 'numeric' });
@@ -47,13 +48,13 @@ export const TatReport = () => {
   const [groupBy, setGroupBy] = useState<TatReportGroupBy>('day');
   const { data: rows, isPending, isError } = useTatReportQuery(groupBy);
 
-  const totalClosed  = (rows ?? []).reduce((s, r) => s + r.count, 0);
+  const totalClosed = (rows ?? []).reduce((s, r) => s + r.count, 0);
   const totalOverdue = (rows ?? []).reduce((s, r) => s + r.overdueCount, 0);
   const avgTat = (() => {
     const withAvg = (rows ?? []).filter(r => r.avgTatHours != null);
     if (!withAvg.length) return null;
     const weighted = withAvg.reduce((s, r) => s + r.avgTatHours! * r.count, 0);
-    const count    = withAvg.reduce((s, r) => s + r.count, 0);
+    const count = withAvg.reduce((s, r) => s + r.count, 0);
     return count ? Math.round((weighted / count) * 10) / 10 : null;
   })();
 
@@ -80,10 +81,35 @@ export const TatReport = () => {
       </div>
 
       {isPending && (
-        <div className="flex items-center justify-center py-16 text-slate-400">
-          <Loader2 size={20} className="animate-spin mr-2" />
-          <span className="text-sm font-display">Loading report…</span>
-        </div>
+        // <div className="flex items-center justify-center py-16 text-slate-400">
+        //   <Loader2 size={20} className="animate-spin mr-2" />
+        //   <span className="text-sm font-display">Loading report…</span>
+        // </div>
+
+        <>
+          <div className="grid grid-cols-3 gap-4">
+            {
+              Array.from({ length: 3 }).map((_, i) => (
+                <div key={i} className='flex items-center gap-3 px-4 py-3 rounded-lg border border-slate-200/70 bg-white'>
+                  <Skeleton className='size-[18px] rounded-full' />
+                  <div className='flex flex-col gap-1.5'>
+                    <Skeleton className='h-5 w-12' />
+                    <Skeleton className='h-3 w-20' />
+
+                  </div>
+
+                </div>
+              ))
+            }
+
+          </div>
+
+          <div className='rounded-lg border border-slate-200/70 bg-white p-4'>
+            <Skeleton className="h-3 w-32 mb-3" />
+            <Skeleton className="h-40 w-full" />
+
+          </div>
+        </>
       )}
 
       {isError && (

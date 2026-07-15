@@ -1,7 +1,7 @@
-import { X, Clock, Loader2 } from 'lucide-react';
+import { X, Clock } from 'lucide-react';
 import { useTaskQuery } from './hook';
 import { TaskChecklistPanel } from './TaskChecklistPanel';
-import { Button } from '../../components';
+import { Button, Skeleton } from '../../components';
 import { useAuth } from '../../context/AuthContext';
 import type { Task } from '../../api/task';
 
@@ -48,8 +48,10 @@ export const TaskDetail = ({ task: initialTask, onClose }: TaskDetailProps) => {
 
           {isPending && (
             <div className="flex items-center justify-center py-8 text-text-muted">
-              <Loader2 size={18} className="animate-spin mr-2" />
-              <span className="text-sm font-display">Loading…</span>
+              {/* <Loader2 size={18} className="animate-spin mr-2" />
+              <span className="text-sm font-display">Loading…</span> */}
+
+              <Skeleton className="h-1 w-full rounded-full"/>
             </div>
           )}
 

@@ -2,6 +2,14 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "../../context/AuthContext";
 import { adminApi, type CreateUserPayload, type UpdateUserPayload } from "../../api/admin";
 import { departmentApi, type CreateDepartmentPayload, type UpdateDepartmentPayload } from "../../api/departments";
+import {
+    checklistTemplateApi,
+    type ChecklistTemplateTarget,
+    type CreateChecklistTemplatePayload,
+    type UpdateChecklistTemplatePayload,
+    type CreateChecklistTemplateItemPayload,
+    type UpdateChecklistTemplateItemPayload,
+} from "../../api/checklistTemplates";
 
 const USER_KEYS = {
     all: ["admin-users"] as const,
@@ -96,4 +104,72 @@ export const useDeleteDepartmentMutation = () => {
         onSuccess: () => queryClient.invalidateQueries({ queryKey: DEPARTMENT_KEY.all })
     })
 }
+
+
+const CHECKLIST_TEMPLATE_KEY = {
+    all: (appliesTo?: ChecklistTemplateTarget) => ["checklist-templates", appliesTo ?? "all"] as const,
+};
+
+export const useChecklistTemplatesQuery = (appliesTo?: ChecklistTemplateTarget) => {
+    const { token } = useAuth();
+    return useQuery({
+        queryKey: CHECKLIST_TEMPLATE_KEY.all(appliesTo),
+        queryFn: () => checklistTemplateApi.getAll(appliesTo).then(r => r.data),
+        enabled: !!token,
+    })
+};
+
+const invalidateAllTemplateLists = (queryClient: ReturnType<typeof useQueryClient>) =>
+    queryClient.invalidateQueries({ queryKey: ["checklist-templates"] });
+
+export const useCreateChecklistTemplateMutation = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: (payload: CreateChecklistTemplatePayload) => checklistTemplateApi.create(payload).then(r => r.data),
+        onSuccess: () => invalidateAllTemplateLists(queryClient),
+    })
+};
+
+export const useUpdateChecklistTemplateMutation = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: ({ id, payload }: { id: string; payload: UpdateChecklistTemplatePayload }) =>
+            checklistTemplateApi.update(id, payload).then(r => r.data),
+        onSuccess: () => invalidateAllTemplateLists(queryClient),
+    })
+};
+
+export const useDeleteChecklistTemplateMutation = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: (id: string) => checklistTemplateApi.delete(id),
+        onSuccess: () => invalidateAllTemplateLists(queryClient),
+    })
+};
+
+export const useAddChecklistTemplateItemMutation = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: ({ templateId, payload }: { templateId: string; payload: CreateChecklistTemplateItemPayload }) =>
+            checklistTemplateApi.addItem(templateId, payload).then(r => r.data),
+        onSuccess: () => invalidateAllTemplateLists(queryClient),
+    })
+};
+
+export const useUpdateChecklistTemplateItemMutation = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: ({ id, payload }: { id: string; payload: UpdateChecklistTemplateItemPayload }) =>
+            checklistTemplateApi.updateItem(id, payload).then(r => r.data),
+        onSuccess: () => invalidateAllTemplateLists(queryClient),
+    })
+};
+
+export const useDeleteChecklistTemplateItemMutation = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: (id: string) => checklistTemplateApi.deleteItem(id),
+        onSuccess: () => invalidateAllTemplateLists(queryClient),
+    })
+};
 

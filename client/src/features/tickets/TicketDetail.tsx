@@ -1,7 +1,7 @@
-import { X, Clock, User, Loader2, Trash2 } from 'lucide-react';
+import { X, Clock, User, Trash2 } from 'lucide-react';
 import { useTicketQuery, useUpdateTicketMutation, useDeleteTicketMutation, useAssignableUsersQuery } from './hook';
 import { ChecklistPanel } from './ChecklistPanel';
-import { Button } from '../../components';
+import { Button, Skeleton } from '../../components';
 import { useAuth } from "../../context/AuthContext";
 import type { Ticket, TicketStatus } from '../../api/ticket';
 
@@ -85,9 +85,29 @@ export const TicketDetail = ({ ticket: initialTicket, onClose }: TicketDetailPro
 
           {isPending && (
             <div className="flex items-center justify-center py-8 text-text-muted">
-              <Loader2 size={18} className="animate-spin mr-2" />
-              <span className="text-sm font-display">Loading…</span>
+              <Skeleton className="h-1 w-full rounded-full" />
             </div>
+
+            // <>
+            //   <div className="grid grid-cols-3 gap-4">
+            //     {Array.from({ length: 3 }).map((_, i) => (
+            //       <div key={i} className="flex items-center gap-3 px-4 py-3 rounded-lg border border-slate-200/70 bg-white">
+            //         <Skeleton className="size-[18px] rounded-full" />
+
+            //         <div className="flex flex-col gap-1.5">
+            //           <Skeleton className="h-5 w-12" />
+            //           <Skeleton className="h-3 w-20" />
+            //         </div>
+            //       </div>
+            //     ))}
+            //   </div>
+            //   <div className="rounded-lg border border-slate-200/70 bg-white p-4">
+            //     <Skeleton className='h-3 w-32 mb-3' />
+            //     <Skeleton className='h-40 w-full' />
+            //   </div>
+
+
+            // </>
           )}
 
           <div className="flex flex-wrap gap-2 items-center">

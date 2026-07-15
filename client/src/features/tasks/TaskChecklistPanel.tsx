@@ -14,6 +14,8 @@ import {
   useUploadTaskImagesMutation,
   useDeleteTaskImageMutation,
   useAssignableUsersQuery,
+  useChecklistTemplatesQuery,
+  useApplyChecklistTemplateMutation,
 } from './hook';
 import type { TaskChecklist, TaskChecklistItem, CaptureMethod } from '../../api/taskChecklist';
 
@@ -78,6 +80,11 @@ const ItemRow = ({
               ].join(' ')}>
                 {qualifying}/{item.requiredImageCount} photo{item.requiredImageCount !== 1 ? 's' : ''}
                 {item.requiresLivePhoto ? ' (live)' : ''}
+              </span>
+            )}
+            {item.maxImageCount != null && (
+              <span className="text-xs text-text-muted font-display">
+                max {item.maxImageCount}
               </span>
             )}
             {item.isDone && item.completedAt && (
@@ -288,11 +295,12 @@ type ItemDraft = {
   assigneeId:         string;
   dueAt:              string;
   requiredImageCount: string;
+  maxImageCount:      string;
   requiresLivePhoto:  boolean;
 };
 
 const emptyItemDraft = (): ItemDraft => ({
-  label: '', assigneeId: '', dueAt: '', requiredImageCount: '0', requiresLivePhoto: false,
+  label: '', assigneeId: '', dueAt: '', requiredImageCount: '0', maxImageCount: '', requiresLivePhoto: false,
 });
 
 export const TaskChecklistPanel = ({ taskId, checklists, isAdmin, currentUserId }: TaskChecklistPanelProps) => {
@@ -301,7 +309,15 @@ export const TaskChecklistPanel = ({ taskId, checklists, isAdmin, currentUserId 
   const [itemDrafts, setItemDrafts] = useState<ItemDraft[]>([emptyItemDraft()]);
 
   const { data: assignableUsers } = useAssignableUsersQuery();
+  const { data: templates } = useChecklistTemplatesQuery();
   const addChecklist = useAddTaskChecklistMutation(taskId);
+  const applyTemplate = useApplyChecklistTemplateMutation(taskId);
+  const [templateId, setTemplateId] = useState('');
+
+  const handleApplyTemplate = () => {
+    if (!templateId) return;
+    applyTemplate.mutate(templateId, { onSuccess: () => setTemplateId('') });
+  };
 
   const updateDraft = (i: number, patch: Partial<ItemDraft>) =>
     setItemDrafts(drafts => drafts.map((d, idx) => (idx === i ? { ...d, ...patch } : d)));
@@ -321,6 +337,7 @@ export const TaskChecklistPanel = ({ taskId, checklists, isAdmin, currentUserId 
         assigneeId:         d.assigneeId || undefined,
         dueAt:              d.dueAt ? new Date(d.dueAt).toISOString() : undefined,
         requiredImageCount: Number(d.requiredImageCount) || 0,
+        maxImageCount:      d.maxImageCount ? Number(d.maxImageCount) : undefined,
         requiresLivePhoto:  d.requiresLivePhoto,
       }));
     addChecklist.mutate(
@@ -331,18 +348,49 @@ export const TaskChecklistPanel = ({ taskId, checklists, isAdmin, currentUserId 
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-2 flex-wrap">
         <h3 className="text-sm font-display font-semibold text-text">Checklists</h3>
         {isAdmin && !adding && (
-          <button
-            onClick={() => setAdding(true)}
-            className="flex items-center gap-1 text-xs font-display text-primary-600 hover:text-primary-700 transition-colors cursor-pointer"
-          >
-            <Plus size={12} />
-            Add checklist
-          </button>
+          <div className="flex items-center gap-2">
+            {!!templates?.length && (
+              <div className="flex items-center gap-1.5">
+                <select
+                  value={templateId}
+                  onChange={e => setTemplateId(e.target.value)}
+                  className="px-2 py-1 text-xs bg-surface text-text rounded border border-border cursor-pointer"
+                >
+                  <option value="">Apply template…</option>
+                  {templates.map(t => (
+                    <option key={t.id} value={t.id}>{t.name}</option>
+                  ))}
+                </select>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={handleApplyTemplate}
+                  disabled={!templateId}
+                  isLoading={applyTemplate.isPending}
+                >
+                  Apply
+                </Button>
+              </div>
+            )}
+            <button
+              onClick={() => setAdding(true)}
+              className="flex items-center gap-1 text-xs font-display text-primary-600 hover:text-primary-700 transition-colors cursor-pointer"
+            >
+              <Plus size={12} />
+              Add checklist
+            </button>
+          </div>
         )}
       </div>
+
+      {applyTemplate.isError && (
+        <p className="text-xs text-danger">
+          {applyTemplate.error instanceof Error ? applyTemplate.error.message : 'Failed to apply template.'}
+        </p>
+      )}
 
       {adding && (
         <div className="flex flex-col gap-3 p-3 border border-border rounded-lg bg-surface-hover">
@@ -387,6 +435,15 @@ export const TaskChecklistPanel = ({ taskId, checklists, isAdmin, currentUserId 
                     onChange={e => updateDraft(i, { requiredImageCount: e.target.value })}
                     className="w-16 px-2 py-1 text-xs bg-surface text-text rounded border border-border"
                     title="Required photo count"
+                  />
+                  <input
+                    type="number"
+                    min={0}
+                    value={draft.maxImageCount}
+                    onChange={e => updateDraft(i, { maxImageCount: e.target.value })}
+                    placeholder="Max"
+                    className="w-16 px-2 py-1 text-xs bg-surface text-text rounded border border-border placeholder:text-text-light"
+                    title="Maximum photo count"
                   />
                   <label className="flex items-center gap-1 text-xs text-text-secondary px-1">
                     <input

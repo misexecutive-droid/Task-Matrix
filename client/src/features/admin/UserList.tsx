@@ -1,15 +1,15 @@
 import { useState } from 'react';
 import { Plus, Loader2, AlertCircle, Trash2 } from 'lucide-react';
-import { Button } from '../../components';
+import { Button, Skeleton } from '../../components';
 import { useUsersQuery, useDeleteUserMutation, useUpdateUserMutation } from './hooks';
 import { UserForm } from './UserForm';
 import type { Role } from '../../api/admin';
 
 const ROLE_STYLES: Record<Role, string> = {
-  ADMIN:   'bg-red-50     text-red-600',
+  ADMIN: 'bg-red-50     text-red-600',
   MANAGER: 'bg-indigo-50  text-indigo-600',
-  AGENT:   'bg-amber-50   text-amber-600',
-  USER:    'bg-slate-100  text-slate-600',
+  AGENT: 'bg-amber-50   text-amber-600',
+  USER: 'bg-slate-100  text-slate-600',
 };
 
 export const UserList = () => {
@@ -37,8 +37,18 @@ export const UserList = () => {
 
       {isPending && (
         <div className="flex items-center justify-center py-16 text-slate-400">
-          <Loader2 size={20} className="animate-spin mr-2" />
-          <span className="text-sm font-display">Loading users…</span>
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="flex item-center jutify-between gap-4 px-4 py-3 rounded-lg border border-border bg-surface">
+              <div className='flex-1 min-w-0 flex flex-col gap-1.5'>
+                <Skeleton className="h-4 w-40" />
+                <Skeleton className='h-3 w-28' />
+
+              </div>
+
+              <Skeleton className="h-5 w-16 rounded-full shrink-0" />
+              <Skeleton className="h-5 w-16 rounded-full shrink-0" />
+            </div>
+          ))}
         </div>
       )}
 

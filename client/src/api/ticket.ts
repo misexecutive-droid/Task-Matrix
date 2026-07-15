@@ -13,14 +13,33 @@ export type TatReportRow = {
   overdueCount : number;
 }
 
+export type CaptureMethod = 'LIVE' | 'GALLERY';
+
+export type ChecklistImage = {
+  id:               string;
+  url:              string;
+  originalFilename: string | null;
+  mimeType:         string;
+  sizeBytes:        number;
+  captureMethod:    CaptureMethod;
+  checklistItemId:  string;
+  uploadedBy:       string;
+  createdAt:        string;
+};
+
 export type ChecklistItem = {
-  id:          string;
-  label:       string;
-  isDone:      boolean;
-  assigneeId:  string | null;
-  dueAt:       string | null;
-  completedAt: string | null;
-  checklistId: string;
+  id:                 string;
+  label:              string;
+  isDone:             boolean;
+  assigneeId:         string | null;
+  dueAt:              string | null;
+  completedAt:        string | null;
+  checklistId:        string;
+  requiredImageCount: number;
+  maxImageCount:      number | null;
+  requiresLivePhoto:  boolean;
+  remarks:            string | null;
+  images:             ChecklistImage[];
 };
 
 export type Checklist = {
@@ -76,16 +95,29 @@ export type CreateTicketPayload = {
 
 export type UpdateTicketPayload = Partial<Omit<CreateTicketPayload, 'assigneeId'> & { status: TicketStatus; assigneeId: string | null }>;
 
+export type CreateChecklistItemPayload = {
+  label:               string;
+  assigneeId?:         string;
+  dueAt?:              string;
+  requiredImageCount?: number;
+  maxImageCount?:      number;
+  requiresLivePhoto?:  boolean;
+  remarks?:            string;
+};
+
 export type CreateChecklistPayload = {
   title:  string;
-  items?: { label: string }[];
+  items?: CreateChecklistItemPayload[];
 };
 
 export type UpdateChecklistItemPayload = {
-  label?:      string;
-  isDone?:     boolean;
-  assigneeId?: string;
-  dueAt?:      string;
+  label?:              string;
+  assigneeId?:         string | null;
+  dueAt?:              string | null;
+  requiredImageCount?: number;
+  maxImageCount?:      number | null;
+  requiresLivePhoto?:  boolean;
+  isDone?:             false;
 };
 
 export const ticketApi = {
@@ -113,8 +145,30 @@ export const ticketApi = {
   updateChecklistItem: (id: string, payload: UpdateChecklistItemPayload) =>
     apiFetch<ApiResponse<ChecklistItem>>(`/checklist-items/${id}`, { method: 'PATCH', body: JSON.stringify(payload) }),
 
+  updateChecklistItemRemarks: (id: string, remarks: string) =>
+    apiFetch<ApiResponse<ChecklistItem>>(`/checklist-items/${id}/remarks`, {
+      method: 'PATCH',
+      body:   JSON.stringify({ remarks }),
+    }),
+
+  completeChecklistItem: (id: string) =>
+    apiFetch<ApiResponse<ChecklistItem>>(`/checklist-items/${id}/complete`, { method: 'POST' }),
+
   deleteChecklistItem: (id: string) =>
     apiFetch<ApiResponse<{ deleted: boolean }>>(`/checklist-items/${id}`, { method: 'DELETE' }),
+
+  uploadChecklistImages: (itemId: string, files: File[], captureMethod: CaptureMethod) => {
+    const formData = new FormData();
+    files.forEach(f => formData.append('images', f));
+    formData.append('captureMethod', captureMethod);
+    return apiFetch<ApiResponse<ChecklistImage[]>>(`/checklist-items/${itemId}/images`, {
+      method: 'POST',
+      body:   formData,
+    });
+  },
+
+  deleteChecklistImage: (id: string) =>
+    apiFetch<ApiResponse<{ deleted: boolean }>>(`/checklist-images/${id}`, { method: 'DELETE' }),
 
   getTatReport : ( groupBy : TatReportGroupBy = "day") =>
     apiFetch<ApiResponse<TatReportRow[]>>(`/tickets/reports/tat?groupBy=${groupBy}`),
