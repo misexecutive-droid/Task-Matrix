@@ -10,12 +10,41 @@ import {
     type CreateChecklistTemplateItemPayload,
     type UpdateChecklistTemplateItemPayload,
 } from "../../api/checklistTemplates";
+import { settingApi , type UpdateSettingsPayload } from "../../api/settings";
+import { toast } from "sonner";
+
+const errorMessage = (err: unknown, fallback: string) => (err instanceof Error ? err.message : fallback);
 
 const USER_KEYS = {
     all: ["admin-users"] as const,
     detail: (id: string) => ["admin-users", id] as const,
 };
 
+const SETTINGS_KEY = {
+    all : ["settings"] as const,
+};
+
+export const useSettingsQuery = () => {
+    const { token } = useAuth();
+    return useQuery({
+        queryKey : SETTINGS_KEY.all,
+        queryFn : () => settingApi.get().then(r => r.data),
+        enabled : !!token,
+    })
+};
+
+export const useUpdateSettingsMutation = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn : (payload : UpdateSettingsPayload) => settingApi.update(payload).then(r => r.data),
+        onSuccess : (updated ) => {
+            queryClient.setQueryData(SETTINGS_KEY.all, updated)
+            toast.success("Settings updated")
+        },
+
+        onError: (err) => toast.error(errorMessage(err, "Failed to update settings")),
+    })
+}
 export const useUsersQuery = () => {
     const { token } = useAuth();
     return useQuery({

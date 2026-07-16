@@ -4,6 +4,7 @@ import { z } from 'zod/v4';
 import { X } from 'lucide-react';
 import { Input, Button } from '../../components';
 import { useCreateTaskMutation, useAssignableUsersQuery } from './hook';
+import { useDepartmentsQuery } from '../tickets/hook';
 
 // ── Schema ─────────────────────────────────────────────────────
 const taskSchema = z.object({
@@ -15,6 +16,7 @@ const taskSchema = z.object({
   // so we accept a plain optional string here and convert '' -> undefined manually in onSubmit,
   // the same pattern already used for departmentId/assigneeId in TicketForm.tsx.
   assigneeId:  z.string().optional(),
+  departmentId: z.string().optional(),
 });
 
 type TaskFields = z.infer<typeof taskSchema>;
@@ -26,6 +28,7 @@ interface TaskFormProps {
 export const TaskForm = ({ onClose }: TaskFormProps) => {
   const mutation = useCreateTaskMutation();
   const { data: assignableUsers } = useAssignableUsersQuery(); // NEW
+  const { data: departments } = useDepartmentsQuery();
 
   const {
     register,
@@ -44,6 +47,7 @@ export const TaskForm = ({ onClose }: TaskFormProps) => {
         // of the JSON body entirely, rather than sending assigneeId: "" (which would fail the
         // server's ObjectId regex check and come back as a 400 Validation error).
         assigneeId: data.assigneeId !== '' ? data.assigneeId : undefined,
+        departmentId: data.departmentId !== '' ? data.departmentId : undefined,
         // The <input type="date"> gives a plain "YYYY-MM-DD" (or "" when empty), but the server
         // requires a full ISO-8601 datetime (z.string().datetime() in task.validation.ts) — so
         // convert to an ISO string here, or omit the field entirely when left blank.
@@ -147,6 +151,23 @@ export const TaskForm = ({ onClose }: TaskFormProps) => {
                 <option key={u.id} value={u.id}>
                   {u.firstName} {u.lastName ?? ''} ({u.role})
                 </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Department (optional) — used to group tasks by department in TaskList.tsx */}
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="departmentId" className="text-sm font-display font-medium text-text-secondary">
+              Department <span className="text-text-light">(optional)</span>
+            </label>
+            <select
+              id="departmentId"
+              className="w-full px-3 h-11 sm:h-10 text-sm bg-surface text-text rounded-sm border border-border focus:outline-none focus:ring-4 focus:border-primary-600 focus:ring-primary-600/15 transition-colors cursor-pointer"
+              {...register('departmentId')}
+            >
+              <option value="">No department</option>
+              {departments?.map(d => (
+                <option key={d.id} value={d.id}>{d.name}</option>
               ))}
             </select>
           </div>

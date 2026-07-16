@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Plus, Loader2, AlertCircle, Trash2 } from 'lucide-react';
+import { Plus, AlertCircle, Trash2 } from 'lucide-react';
 import { Button, Skeleton } from '../../components';
 import { useUsersQuery, useDeleteUserMutation, useUpdateUserMutation } from './hooks';
 import { UserForm } from './UserForm';

@@ -28,15 +28,25 @@ const handleQueryRetry = (failureCount: number, error: any) => {
   return failureCount < 3;
 };
 
-export const useTicketsQuery = (page = 1) => {
+// export const useTicketsQuery = (page = 1) => {
+//   const { token } = useAuth();
+//   return useQuery({
+//     queryKey: KEYS.all(page),
+//     queryFn: () => ticketApi.getAll(page),
+//     enabled: !!token,
+//     retry: handleQueryRetry,
+//   });
+// };
+
+export const useTicketsQuery = (page = 1 , limit = 20) => {
   const { token } = useAuth();
   return useQuery({
-    queryKey: KEYS.all(page),
-    queryFn: () => ticketApi.getAll(page),
-    enabled: !!token,
-    retry: handleQueryRetry,
-  });
-};
+    queryKey : KEYS.all(page),
+    queryFn : () => ticketApi.getAll(page ,limit),
+    enabled : !!token,
+    retry : handleQueryRetry
+  })
+}
 
 export const useTicketQuery = (id: string) => {
   const { token } = useAuth();

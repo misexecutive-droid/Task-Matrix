@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Clock3, AlertTriangle, ListChecks, Loader2 } from 'lucide-react';
+import { Clock3, AlertTriangle, ListChecks } from 'lucide-react';
 import { useTatReportQuery } from '../tickets/hook';
 import type { TatReportGroupBy } from '../../api/ticket';
 import { Skeleton } from '@/components';
@@ -81,11 +81,6 @@ export const TatReport = () => {
       </div>
 
       {isPending && (
-        // <div className="flex items-center justify-center py-16 text-slate-400">
-        //   <Loader2 size={20} className="animate-spin mr-2" />
-        //   <span className="text-sm font-display">Loading report…</span>
-        // </div>
-
         <>
           <div className="grid grid-cols-3 gap-4">
             {

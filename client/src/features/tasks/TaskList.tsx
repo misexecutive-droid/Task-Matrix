@@ -2,11 +2,36 @@ import React, { useState } from "react";
 import { Plus, CheckCheck, Clock, Circle, AlertCircle, Loader2, LayoutList, Kanban } from "lucide-react";
 import { Button, Skeleton } from "../../components";
 import { useTasksQuery, useUpdateTaskMutation, useDeleteTaskMutation, useAssignableUsersQuery } from "./hook";
+import { useDepartmentsQuery } from "../tickets/hook";
 import type { Task } from '../../api/task';
 import { TaskForm } from "./TaskForm";
 import { TaskDetail } from "./TaskDetail";
 import { TaskBoard } from "./TaskBoard";
 import { useAuth } from "../../context/AuthContext"
+
+// Groups tasks by departmentId, sorted alphabetically by department name with "No department"
+// always last. Used by the list view below — the board view keeps its own status-column grouping.
+const groupByDepartment = (tasks: Task[], departmentNames: Map<string, string>) => {
+    const groups = new Map<string, { departmentId: string | null; departmentName: string; tasks: Task[] }>();
+
+    for (const task of tasks) {
+        const key = task.departmentId ?? '__none__';
+        if (!groups.has(key)) {
+            groups.set(key, {
+                departmentId: task.departmentId,
+                departmentName: task.departmentId ? (departmentNames.get(task.departmentId) ?? 'Unknown department') : 'No department',
+                tasks: [],
+            });
+        }
+        groups.get(key)!.tasks.push(task);
+    }
+
+    return [...groups.values()].sort((a, b) => {
+        if (a.departmentId === null) return 1;
+        if (b.departmentId === null) return -1;
+        return a.departmentName.localeCompare(b.departmentName);
+    });
+};
 
 export const PRIORITY_MAP = {
     low: { label: 'Low', className: 'bg-surface-hover text-text-muted' },
@@ -122,16 +147,20 @@ export const TaskList = ({ userId }: TaskListProps = {}) => {
     const [selected, setSelected] = useState<Task | null>(null);
     const { data: tasks, isPending, isError } = useTasksQuery(userId);
     const { data: assignableUsers } = useAssignableUsersQuery(); // NEW
+    const { data: departments } = useDepartmentsQuery();
     const [filter, setFilter] = useState<Task['status'] | 'all'>('all');
     const [view, setView] = useState<'list' | 'board'>('board');
 
     const assigneeNames = new Map(
         (assignableUsers ?? []).map(u => [u.id, `${u.firstName} ${u.lastName ?? ''}`.trim()]),
     );
+    const departmentNames = new Map((departments ?? []).map(d => [d.id, d.name]));
 
     const filtered = filter === 'all'
         ? (tasks ?? [])
         : (tasks ?? []).filter(t => t.status === filter);
+
+    const departmentGroups = groupByDepartment(filtered, departmentNames);
 
     const FILTERS: { key: Task['status'] | 'all'; label: string }[] = [
         { key: 'all', label: 'All' },
@@ -255,15 +284,25 @@ export const TaskList = ({ userId }: TaskListProps = {}) => {
             )}
 
             {!isPending && !isError && !isEmpty && view === 'list' && (
-                <div className="flex flex-col gap-2">
-                    {filtered.map(task => (
-                        <TaskRow
-                            key={task.id}
-                            task={task}
-                            isAdmin={isAdmin}
-                            onOpen={setSelected}
-                            assigneeName={task.assigneeId ? assigneeNames.get(task.assigneeId) : undefined}
-                        />
+                <div className="flex flex-col gap-5">
+                    {departmentGroups.map(group => (
+                        <div key={group.departmentId ?? '__none__'} className="flex flex-col gap-2">
+                            <div className="flex items-center gap-2">
+                                <h3 className="text-xs font-display font-semibold text-text-muted uppercase tracking-wide">
+                                    {group.departmentName}
+                                </h3>
+                                <span className="text-xs text-text-light font-display">{group.tasks.length}</span>
+                            </div>
+                            {group.tasks.map(task => (
+                                <TaskRow
+                                    key={task.id}
+                                    task={task}
+                                    isAdmin={isAdmin}
+                                    onOpen={setSelected}
+                                    assigneeName={task.assigneeId ? assigneeNames.get(task.assigneeId) : undefined}
+                                />
+                            ))}
+                        </div>
                     ))}
                 </div>
             )}

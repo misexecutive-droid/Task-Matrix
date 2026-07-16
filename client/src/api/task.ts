@@ -2,32 +2,37 @@ import { apiFetch } from './http';
 import type { TaskChecklist } from './taskChecklist';
 
 export type Task = {
-    id:          string;
-    title:       string;
-    description: string | null;
-    status:      'todo' | 'in_progress' | 'done';
-    priority:    'low' | 'medium' | 'high';
-    dueDate:     string | null;
-    projectId:   string | null;
-    assigneeId:  string | null;
-    userId:      string;
-    createdAt:   string;
+    id:           string;
+    title:        string;
+    description:  string | null;
+    status:       'todo' | 'in_progress' | 'done';
+    priority:     'low' | 'medium' | 'high';
+    dueDate:      string | null;
+    projectId:    string | null;
+    assigneeId:   string | null;
+    departmentId: string | null;
+    userId:       string;
+    createdAt:    string;
     // Only populated by GET /tasks/:id (task detail), not the list endpoint.
     checklists?: TaskChecklist[];
 };
 
 export type CreateTaskPayload = {
-    title:        string;
-    description?: string;
-    status?:      Task['status'];
-    priority?:    Task['priority'];
-    dueDate?:     string;
-    projectId?:   string;
-    assigneeId?:  string; 
+    title:         string;
+    description?:  string;
+    status?:       Task['status'];
+    priority?:     Task['priority'];
+    dueDate?:      string;
+    projectId?:    string;
+    assigneeId?:   string;
+    departmentId?: string;
 };
 
 
-export type UpdateTaskPayload = Partial<Omit<CreateTaskPayload, 'assigneeId'>> & { assigneeId?: string | null };
+export type UpdateTaskPayload = Partial<Omit<CreateTaskPayload, 'assigneeId' | 'departmentId'>> & {
+    assigneeId?: string | null;
+    departmentId?: string | null;
+};
 
 export const taskApi = {
     getAll: (userId?: string) => apiFetch<Task[]>(userId ? `/tasks?userId=${userId}` : '/tasks'),

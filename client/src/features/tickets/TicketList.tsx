@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Plus, Ticket as TicketIcon, AlertCircle } from 'lucide-react';
 import { Button, PageNav, Skeleton } from '../../components';
-import { useTicketsQuery } from './hook';
+import { useTicketsQuery, useDepartmentsQuery } from './hook';
 import { TicketCard } from './TicketCard';
 import { TicketForm } from './TicketForm';
 import { TicketDetail } from './TicketDetail';
@@ -18,6 +18,30 @@ const STATUS_FILTERS: { key: TicketStatus | 'ALL' | 'OVERDUE'; label: string }[]
   { key: 'OVERDUE', label: 'Overdue' },
 ];
 
+// Groups tickets by departmentId, sorted alphabetically by department name with
+// "No department" always last — same convention as tasks/TaskList.tsx's groupByDepartment.
+const groupByDepartment = (tickets: Ticket[], departmentNames: Map<string, string>) => {
+  const groups = new Map<string, { departmentId: string | null; departmentName: string; tickets: Ticket[] }>();
+
+  for (const ticket of tickets) {
+    const key = ticket.departmentId ?? '__none__';
+    if (!groups.has(key)) {
+      groups.set(key, {
+        departmentId: ticket.departmentId,
+        departmentName: ticket.departmentId ? (departmentNames.get(ticket.departmentId) ?? 'Unknown department') : 'No department',
+        tickets: [],
+      });
+    }
+    groups.get(key)!.tickets.push(ticket);
+  }
+
+  return [...groups.values()].sort((a, b) => {
+    if (a.departmentId === null) return 1;
+    if (b.departmentId === null) return -1;
+    return a.departmentName.localeCompare(b.departmentName);
+  });
+};
+
 
 export const TicketList = () => {
   const { user } = useAuth();
@@ -29,6 +53,8 @@ export const TicketList = () => {
   const { data, isPending, isError } = useTicketsQuery(page);
   const tickets = data?.data ?? [];
   const meta = data?.meta;
+  const { data: departments } = useDepartmentsQuery();
+  const departmentNames = new Map((departments ?? []).map(d => [d.id, d.name]));
 
   const [statusFilter, setStatusFilter] = useState<TicketStatus | 'ALL' | 'OVERDUE'>('ALL');
   const filtered = statusFilter === 'ALL'
@@ -36,6 +62,8 @@ export const TicketList = () => {
     : statusFilter === 'OVERDUE'
       ? tickets.filter(t => t.isOverdue && t.status !== 'CLOSED')
       : tickets.filter(t => t.status === statusFilter);
+
+  const departmentGroups = groupByDepartment(filtered, departmentNames);
 
 
   return (
@@ -111,11 +139,21 @@ export const TicketList = () => {
         </div>
       )}
 
-      {/* List */}
+      {/* List, grouped by department */}
       {!isPending && !isError && filtered.length > 0 && (
-        <div className="flex flex-col gap-2">
-          {filtered.map(ticket => (
-            <TicketCard key={ticket.id} ticket={ticket} onClick={setSelected} />
+        <div className="flex flex-col gap-5">
+          {departmentGroups.map(group => (
+            <div key={group.departmentId ?? '__none__'} className="flex flex-col gap-2">
+              <div className="flex items-center gap-2">
+                <h3 className="text-xs font-display font-semibold text-text-muted uppercase tracking-wide">
+                  {group.departmentName}
+                </h3>
+                <span className="text-xs text-text-light font-display">{group.tickets.length}</span>
+              </div>
+              {group.tickets.map(ticket => (
+                <TicketCard key={ticket.id} ticket={ticket} onClick={setSelected} />
+              ))}
+            </div>
           ))}
         </div>
       )}
