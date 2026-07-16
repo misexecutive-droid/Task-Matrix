@@ -14,5 +14,5 @@ checklistItemRouter.use(authenticate);
 checklistItemRouter.patch('/:id', checklistController.updateItem);
 checklistItemRouter.patch('/:id/remarks', checklistController.updateRemarks);
 checklistItemRouter.post('/:id/complete', checklistController.completeItem);
-checklistItemRouter.post('/:id/images', checklistImageUpload.array('images', 10), checklistImageController.upload);
 checklistItemRouter.delete('/:id', requireRole("ADMIN"), checklistController.removeItem);
+checklistItemRouter.post('/:id/images', checklistImageUpload, checklistImageController.upload);

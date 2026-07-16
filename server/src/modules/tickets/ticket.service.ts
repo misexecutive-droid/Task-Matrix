@@ -5,6 +5,7 @@ import type { CreateTicketInput, UpdateTicketInput } from "./ticket.validation.j
 import { auditService } from "../audit/audit.service.js"
 import { emitTicketEvent } from "../../sockets/ticketEvent.js"
 import { notificationService } from "../notifications/notification.service.js"
+import { settingsService } from "../settings/settings.service.js"
 
 const populateTicket = (query: any) =>
   query
@@ -103,7 +104,8 @@ export const ticketService = {
   // Create a brand new ticket.
   async create(input: CreateTicketInput, user: AccessTokenPayload) {
     // Spread the validated input fields plus stamp on `userId` = whoever is creating it (so we always know who raised the ticket, regardless of what the client sent).
-    const ticket = await Ticket.create({ ...input, userId: user.sub })
+    const tatHours = input.tatHours ?? settingsService.getCached().defaultTatHours;
+    const ticket = await Ticket.create({ ...input, tatHours, userId: user.sub })
     // Write an audit log entry recording that this ticket was created, by whom, and what its initial state (`after`) looked like. There's no `before` because it didn't exist yet.
     await auditService.record({
       entityType: "Ticket",
@@ -123,7 +125,6 @@ export const ticketService = {
       storeId: ticket.storeId?.toString() ?? null,
     }, populated);
 
-    // If the ticket was created with an assignee already set, fire off a notification (e.g. push/email/in-app) letting that person know they've been assigned something.
     if (ticket.assigneeId) {
       await notificationService.notifyTicketAssigned(ticket)
     }

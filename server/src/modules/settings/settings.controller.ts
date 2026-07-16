@@ -4,7 +4,7 @@ import { updateSettingsSchema } from "./settings.validation.js";
 import { asyncHandler } from "../../utils/asyncHandler.js";
 
 export const settingsController = {
-    //
+    
 
     get : asyncHandler(async (_req : Request , res : Response) => {
         const settings = await settingsService.get()

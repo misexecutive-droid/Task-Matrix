@@ -1,5 +1,5 @@
 import { Settings } from "../../models/Settings.js"
-// import type { UpdateSettingsInput } from "./settings.validation.js"
+import type { UpdateSettingsInput } from "./settings.validation.js"
 
 // In-memory cache of the single Settings document. Anything that needs settings synchronously
 // (e.g. building a multer instance per upload request, see config/upload.ts) reads this cache

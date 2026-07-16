@@ -15,5 +15,6 @@ taskChecklistItemRouter.use(authenticate)
 taskChecklistItemRouter.patch('/:id', taskChecklistController.updateItem)
 taskChecklistItemRouter.patch('/:id/remarks', taskChecklistController.updateRemarks)
 taskChecklistItemRouter.post('/:id/complete', taskChecklistController.completeItem)
-taskChecklistItemRouter.post('/:id/images', taskImageUpload.array('images', 10), taskImageController.upload)
 taskChecklistItemRouter.delete('/:id', requireRole("ADMIN"),taskChecklistController.removeItem)
+taskChecklistItemRouter.post('/:id/images', taskImageUpload, taskImageController.upload)
+

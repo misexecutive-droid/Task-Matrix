@@ -20,6 +20,7 @@ import { taskImageRouter } from "./modules/taskImages/taskImage.routes.js"
 import { checklistImageRouter } from "./modules/checklistImages/checklistImage.routes.js"
 import { checklistTemplateRouter, checklistTemplateItemRouter } from "./modules/checklistTemplates/checklistTemplate.routes.js"
 import { notificationRouter } from "./modules/notifications/notification.routes.js"
+import { settingsRouter } from "./modules/settings/settings.routes.js"
 
 class App {
     public app: Application;
@@ -63,6 +64,8 @@ class App {
         this.app.use('/task-images', taskImageRouter);
 
         this.app.use("/audit-logs", auditRouter)
+
+        this.app.use("/settings" , settingsRouter)
 
         this.app.use("/notifications", notificationRouter)
         this.app.use((_req: Request, res: Response) => res.status(404).json({ success: false, message: 'Not found' }))

@@ -2,6 +2,8 @@ import multer from "multer";
 import path from "node:path";
 import crypto from "node:crypto"
 import fs from "node:fs"
+import type { Request, Response, NextFunction } from "express"
+import { settingsService } from "../modules/settings/settings.service.js";
 
 // Where uploaded task-evidence images actually get saved on disk. path.resolve() makes this an
 // absolute path, so it works the same regardless of which directory the Node process was
@@ -23,49 +25,14 @@ if (!fs.existsSync(TICKET_UPLOAD_DIR)) {
     fs.mkdirSync(TICKET_UPLOAD_DIR, { recursive: true })
 }
 
-// Only these image types are ever accepted. This is a real security control, not a nicety:
-// without an allowlist, someone could upload a file with a dangerous extension disguised behind
-// an image-sounding name.
-
-const ALLOWED_MIME_TYPES = ["image/jpeg", "image/png", "image/webp"];
-
 const storage = multer.diskStorage({
     destination: (_req, _file, cb) => cb(null, UPLOAD_DIR),
-
-
-    // NEVER use the original filename someone uploaded — generate a random one instead. This
-    // avoids two real problems: (1) path traversal, where a crafted filename like
-    // "../../../server.ts" could try to write outside the upload folder, and (2) collisions,
-    // where two different people both uploading "photo.jpg" would silently overwrite each other.
-
     filename: (_req, file, cb) => {
         const randomName = crypto.randomBytes(16).toString("hex");
         const ext = path.extname(file.originalname).toLowerCase();
         cb(null, `${randomName}${ext}`)
     },
-
 });
-
-export const taskImageUpload = multer({
-    storage,
-    limits: {
-        fileSize: 5 * 1024 * 1024,
-        files: 10
-    },
-
-    fileFilter: (_req, file, cb) => {
-        if (!ALLOWED_MIME_TYPES.includes(file.mimetype)) {
-
-            // Passing `false` (not throwing an error) tells multer "silently skip this one file,
-            // don't abort the whole request" — the route handler is responsible for noticing if
-            // fewer files came through than the client thought it sent.
-
-            return cb(null, false)
-
-        }
-        cb(null, true)
-    }
-})
 
 const ticketStorage = multer.diskStorage({
     destination: (_req, _file, cb) => cb(null, TICKET_UPLOAD_DIR),
@@ -74,18 +41,34 @@ const ticketStorage = multer.diskStorage({
         const ext = path.extname(file.originalname).toLowerCase();
         cb(null, `${randomName}${ext}`)
     },
-});
-
-export const checklistImageUpload = multer({
-    storage: ticketStorage,
-    limits: {
-        fileSize: 5 * 1024 * 1024,
-        files: 10
-    },
-    fileFilter: (_req, file, cb) => {
-        if (!ALLOWED_MIME_TYPES.includes(file.mimetype)) {
-            return cb(null, false)
-        }
-        cb(null, true)
-    }
 })
+
+// Builds a brand-new multer instance using whatever's currently in the settings cache. This is
+// cheap (no I/O — multer() just wires up config objects), so it's fine to call fresh on every
+// request instead of caching the instance: it means admin-edited upload limits/mime types take
+// effect immediately, with no server restart needed.
+const buildImageUpload = ( storageEngine : multer.StorageEngine) => {
+    const settings = settingsService.getCached();
+    return multer({
+        storage : storageEngine,
+        limits : {
+            fileSize : settings.maxUploadSizeMb * 1024 * 1024,
+            files : settings.maxUploadFiles,
+        },
+
+        fileFilter:(_req, file, cb) => {
+            if(!settings.allowedImageTypes.includes(file.mimetype)){
+                return cb(null, false)
+            }
+
+            cb(null, true)
+        }
+
+    })
+}
+
+export const taskImageUpload = (req : Request , res : Response , next : NextFunction) => 
+    buildImageUpload(storage).array("images" , settingsService.getCached().maxUploadFiles)(req,res,next)
+
+export const checklistImageUpload = (req : Request , res : Response , next : NextFunction) => 
+    buildImageUpload(ticketStorage).array("images", settingsService.getCached().maxUploadFiles)(req,res,next)

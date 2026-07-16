@@ -10,7 +10,8 @@ export const createTaskSchema = z.object({
     priority : z.enum(TASK_PRIORITIES).optional(), // if provided, priority must be one of the fixed allowed values (e.g. "low", "high")
     dueDate : z.string().datetime().optional(), // if provided, must be a valid ISO date-time string
     projectId : objectId.optional(), // optional link to the Project this task belongs to (this is how Tasks relate to Projects)
-    assigneeId : objectId.optional() // NEW — optional id of the user this task is being handed to
+    assigneeId : objectId.optional(), // NEW — optional id of the user this task is being handed to
+    departmentId : objectId.optional() // NEW — optional id of the department this task is tagged to, same idea as Ticket's departmentId
 });
 
 
@@ -24,7 +25,8 @@ export const complianceReportQuerySchema = z.object({
 })
 
 export const updateTaskSchema = createTaskSchema.partial().extend({
-    assigneeId : objectId.nullable().optional()
+    assigneeId : objectId.nullable().optional(),
+    departmentId : objectId.nullable().optional() // NEW — allow clearing it back to "no department" via null
 });
 
 export type CreateTaskInput = z.infer<typeof createTaskSchema>;
