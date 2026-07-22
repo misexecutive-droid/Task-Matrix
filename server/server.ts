@@ -22,9 +22,6 @@ class ServerBootstrap {
     this.httpServer = http.createServer(this.appInstance.app);
     initSocket(this.httpServer);
 
-    this.httpServer = http.createServer(this.appInstance.app)
-    initSocket(this.httpServer)
-    
     startSlaSweep();
 
     this.httpServer.listen(env.PORT, () => {

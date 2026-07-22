@@ -25,7 +25,22 @@ export const loginSchema = z.object({
     password : z.string().min(1)
 })
 
+// Schema for "forgot password" — just the email of the account to send a reset link to.
+export const forgotPasswordSchema = z.object({
+    email : z.string().email(),
+})
+
+// Schema for actually resetting the password once the user has clicked the emailed link.
+// `token` is the raw reset token from the URL; same minimum-length rule as registration for
+// the new password itself.
+export const resetPasswordSchema = z.object({
+    token : z.string().min(1),
+    password : z.string().min(8),
+})
+
 // TypeScript trick: z.infer<> reads the Zod schema and generates a matching TypeScript type
 // automatically, so we don't hand-write an interface that could drift out of sync with the schema.
 export type RegisterInput = z.infer<typeof registerSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
+export type ForgotPasswordInput = z.infer<typeof forgotPasswordSchema>;
+export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>;

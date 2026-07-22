@@ -1,6 +1,7 @@
 import type { Request , Response} from 'express'
 import { userService } from './user.service.js'
 import { asyncHandler } from '../../utils/asyncHandler.js'
+import { createUserSchema, updateUserSchema } from './user.validation.js'
 
 // Controllers are the layer that talks directly to Express (reads the request, sends the
 // response). They don't contain business logic themselves - they just call into the
@@ -24,20 +25,24 @@ export const userController = {
     }),
 
     create : asyncHandler(async (req : Request , res : Response) => {
-        // `req.body` is the JSON payload the admin sent (email, password, role, etc).
+        // `req.body` is the JSON payload the admin sent (email, password, role, etc), validated
+        // against createUserSchema before it ever reaches the service layer.
         // `req.user!.sub` is the id of the currently logged-in admin, taken from their access token.
         // The `!` tells TypeScript "trust me, req.user will be set here" because the `authenticate`
         // middleware (in the routes file) already guarantees this route only runs for logged-in users.
         // We pass the admin's id along so the service can record who performed this action (for auditing).
-        const user = await userService.create(req.body , req.user!.sub);
+        const input = createUserSchema.parse(req.body);
+        const user = await userService.create(input , req.user!.sub);
         // 201 = "Created" - the standard HTTP status code for successfully creating a new resource.
         res.status(201).json({ success : true , data : user})
     }),
 
     update : asyncHandler(async (req : Request , res : Response) => {
         // Same pattern as create: which user to update (from the URL), what fields to change
-        // (from the body), and who is making the change (the logged-in admin's id).
-        const user = await userService.update(req.params.id , req.body , req.user!.sub);
+        // (from the body, validated against updateUserSchema), and who is making the change
+        // (the logged-in admin's id).
+        const input = updateUserSchema.parse(req.body);
+        const user = await userService.update(req.params.id , input , req.user!.sub);
         res.json({ success : true , data : user})
     }),
 

@@ -36,9 +36,16 @@ const envSchema = z.object({
     // AWS access key ID for authenticating with AWS. Defaults to an empty string (optional/not configured).
     AWS_ACCESS_KEY_ID : z.string().default(''),
     // AWS secret access key for authenticating with AWS. Defaults to an empty string (optional/not configured).
-    AWS_SECRET_ACCESS_KEY : z.string().default('')
+    AWS_SECRET_ACCESS_KEY : z.string().default(''),
 
-
+    // SMTP config used for sending real emails (password reset links, etc — see config/mailer.ts).
+    // All optional/defaulted empty: when SMTP_HOST is blank, the mailer falls back to a throwaway
+    // Ethereal test inbox instead, so email sending always works even with no real credentials set.
+    SMTP_HOST : z.string().default(''),
+    SMTP_PORT : z.coerce.number().default(587),
+    SMTP_USER : z.string().default(''),
+    SMTP_PASS : z.string().default(''),
+    MAIL_FROM : z.string().default(''),
 
 });
 

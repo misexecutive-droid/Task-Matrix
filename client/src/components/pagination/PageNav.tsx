@@ -10,7 +10,6 @@ import {
 
 type PageToken = number | 'ellipsis';
 
-// 1 … current-1, current, current+1 … total — collapses to plain runs when small.
 const getPageList = (current: number, total: number): PageToken[] => {
   const delta = 1;
   const left = Math.max(2, current - delta);
@@ -32,7 +31,6 @@ interface PageNavProps {
   className?: string;
 }
 
-// Drop-in stateful pagination: <PageNav page={page} totalPages={meta.totalPages} onPageChange={setPage} />
 export const PageNav = ({ page, totalPages, onPageChange, className }: PageNavProps) => {
   if (totalPages <= 1) return null;
 

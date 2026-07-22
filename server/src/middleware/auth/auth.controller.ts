@@ -4,8 +4,8 @@ import { env } from "../../config/env.js";
 // The service layer holds the actual business logic (checking passwords, issuing tokens, etc).
 // The controller's job is just to translate HTTP requests <-> service calls <-> HTTP responses.
 import { authService } from "./auth.service.js";
-// Zod schema used to validate/parse the login request body before we trust it.
-import { loginSchema } from "./auth.validation.js";
+// Zod schemas used to validate/parse each request body before we trust it.
+import { loginSchema, registerSchema, forgotPasswordSchema, resetPasswordSchema } from "./auth.validation.js";
 // A wrapper that catches errors thrown inside async route handlers and forwards them to
 // Express's error-handling middleware (errorHandler.ts), so we don't need try/catch everywhere.
 import { asyncHandler } from "../../utils/asyncHandler.js";
@@ -48,6 +48,15 @@ const sendAuthResponse = (res: Response, result: { accessToken: string; refreshT
 
 // The actual route handler functions, grouped into one object for easy importing in auth.routes.ts.
 export const authController = {
+    // Handles POST /auth/register - creates a brand new self-signed-up account (always role "USER")
+    // and immediately logs it in, same as a fresh login would.
+    register: asyncHandler(async (req: Request, res: Response) => {
+        const input = registerSchema.parse(req.body);
+        const result = await authService.register(input);
+        res.status(201);
+        sendAuthResponse(res, result);
+    }),
+
     // Handles POST /auth/login
     login: asyncHandler(async (req: Request, res: Response) => {
         // Validate & parse the incoming body against loginSchema - throws a ZodError (-> 400) if invalid.
@@ -76,5 +85,21 @@ export const authController = {
         res.clearCookie(REFRESH_COOKIE, { path: '/auth' });
         // Let the frontend know the logout succeeded.
         res.json({ success: true });
-    })
+    }),
+
+    // Handles POST /auth/forgot-password. Always responds with the same generic success message
+    // regardless of whether the email actually belongs to an account - this is what prevents an
+    // attacker from using this endpoint to discover which emails are registered.
+    forgotPassword: asyncHandler(async (req: Request, res: Response) => {
+        const input = forgotPasswordSchema.parse(req.body);
+        await authService.forgotPassword(input.email);
+        res.json({ success: true, message: 'If that email is registered, a reset link has been sent.' });
+    }),
+
+    // Handles POST /auth/reset-password - the user arrives here from the link in their email.
+    resetPassword: asyncHandler(async (req: Request, res: Response) => {
+        const input = resetPasswordSchema.parse(req.body);
+        await authService.resetPassword(input);
+        res.json({ success: true });
+    }),
 };

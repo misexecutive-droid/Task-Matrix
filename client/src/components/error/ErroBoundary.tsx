@@ -1,23 +1,38 @@
-import { useRouteError , isRouteErrorResponse } from 'react-router';
+import { useRouteError, isRouteErrorResponse } from 'react-router';
+import { ErrorScreen } from './ErrorScreen';
 
-function MyErrorBoundary(){
-    const error = useRouteError();
-    console.log("Detailed error:", error);
+function MyErrorBoundary() {
+  const error = useRouteError();
+  if (import.meta.env.DEV) console.error('Route error:', error);
 
-    if(isRouteErrorResponse(error)){
-        return (
-            <div className="flex flex-col items-center justify-center h-screen">
-                <h1 className="text-4xl font-bold text-red-600">Error {error.status}</h1>
-                <p className="text-lg text-gray-700">{error.statusText}</p>
-            </div>
-        );
+  if (isRouteErrorResponse(error)) {
+    if (error.status === 404) {
+      return (
+        <ErrorScreen
+          code={404}
+          title="Page not found"
+          message="The page you're looking for doesn't exist or may have been moved."
+        />
+      );
     }
+
     return (
-        <div className="flex flex-col items-center justify-center h-screen">
-            <h1 className="text-4xl font-bold text-red-600">An unexpected error occurred</h1>
-            <p className="text-lg text-gray-700">{error instanceof Error ? error.message : 'Unknown error'}</p>
-        </div>
+      <ErrorScreen
+        code={error.status}
+        title="Something went wrong"
+        message={error.statusText || 'An unexpected error occurred while loading this page.'}
+        onRetry={() => window.location.reload()}
+      />
     );
+  }
+
+  return (
+    <ErrorScreen
+      title="Something went wrong"
+      message={error instanceof Error ? error.message : 'An unexpected error occurred.'}
+      onRetry={() => window.location.reload()}
+    />
+  );
 }
 
 export default MyErrorBoundary;

@@ -1,6 +1,8 @@
 import { createBrowserRouter, RouterProvider, Navigate, Outlet } from 'react-router';
 import { useAuth } from './context/AuthContext';
 import { LoginForm } from './features/auth/LoginForm';
+import { ForgotPasswordForm } from './features/auth/ForgotPasswordForm';
+import { ResetPasswordForm } from './features/auth/ResetPasswordForm';
 import { Dashboard } from './features/dashboard';
 import { TaskList } from './features/tasks';
 import { PublicLayout } from './components/layout';
@@ -11,6 +13,7 @@ import { UserList } from './features/admin/UserList';
 import { DepartmentList } from "./features/admin/DepartmentList"
 import { ChecklistTemplateList } from "./features/admin/ChecklistTemplateList"
 import { TatReport } from "./features/admin/TatReport"
+import { MyErrorBoundary, NotFoundPage } from './components/error';
 
 const ProtectedRoute = () => {
   const { token } = useAuth();
@@ -31,26 +34,30 @@ const AdminRoute = () => {
 const router = createBrowserRouter([
   {
     element: <PublicLayout />,
+    errorElement: <MyErrorBoundary />,
     children: [
       {
         element: <AuthRoute />,
         children: [
           { path: '/login', element: <LoginForm /> },
+          { path: '/forgot-password', element: <ForgotPasswordForm /> },
+          { path: '/reset-password', element: <ResetPasswordForm /> },
         ],
       },
     ],
   },
   {
     element: <ProtectedRoute />,
+    errorElement: <MyErrorBoundary />,
     children: [
       {
         element: <Dashboard />,
         children: [
-          { path: '/', element: <p className="font-display text-slate-900">Welcome to TaskMatrix</p> },
+          { path: '/', element: <p className="font-display text-text">Welcome to TaskMatrix</p> },
           { path: '/tasks', element: <TaskList /> },
-          { path: '/projects', element: <p className="font-display text-slate-600">Projects — coming soon</p> },
-          { path: '/calendar', element: <p className="font-display text-slate-600">Calendar — coming soon</p> },
-          { path: '/settings', element: <p className="font-display text-slate-600">Settings — coming soon</p> },
+          { path: '/projects', element: <p className="font-display text-text-secondary">Projects — coming soon</p> },
+          { path: '/calendar', element: <p className="font-display text-text-secondary">Calendar — coming soon</p> },
+          { path: '/settings', element: <p className="font-display text-text-secondary">Settings — coming soon</p> },
           { path: '/tickets', element: <TicketList /> },
           { path: '/dashboard', element: <Navigate to="/" replace /> },
         ],
@@ -66,11 +73,12 @@ const router = createBrowserRouter([
               { path: '/admin/departments', element: <DepartmentList /> },
               { path: '/admin/checklist-templates', element: <ChecklistTemplateList /> },
               { path: '/admin/tickets', element: <TicketList /> },
-              { path: '/admin/settings', element: <p className="font-display text-slate-600">Settings — coming soon</p> },
+              { path: '/admin/settings', element: <p className="font-display text-text-secondary">Settings — coming soon</p> },
             ],
           },
         ],
       },
+      { path: '*', element: <NotFoundPage /> },
     ],
   },
 ]);
@@ -80,3 +88,4 @@ export default function App() {
   useNotificationSocket();
   return <RouterProvider router={router} />;
 }
+  

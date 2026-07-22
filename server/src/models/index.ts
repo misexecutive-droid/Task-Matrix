@@ -2,6 +2,7 @@
 // so other files can do `import { User, Ticket } from '../models'` instead of importing
 // each model from its own individual file.
 export { RefreshToken } from './RefreshToken.js';
+export { PasswordResetToken } from './PasswordResetToken.js';
 export { User } from './User.js';
 export type { Role, UserDoc } from './User.js'; // re-exporting the TypeScript types too, not just the model
 export { Store } from './Store.js';

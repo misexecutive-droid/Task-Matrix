@@ -130,7 +130,7 @@ export const SignupForm = () => {
                                 variant="primary"
                                 size="lg"
                                 isLoading={mutation.isPending}
-                                className="mt-1 w-full font-light bg-gradient-to-r from-blue-800 via-indigo-600 to-blue-700 hover:from-blue-700 hover:via-indigo-700 hover:to-blue-800 text-white shadow-lg transition-all duration-300"
+                                className="mt-1 w-full font-light bg-gradient-to-r from-primary-800 via-primary-600 to-primary-700 hover:from-primary-700 hover:via-primary-500 hover:to-primary-600 text-white shadow-lg transition-all duration-300"
                             >
                                 Create account
                             </Button>

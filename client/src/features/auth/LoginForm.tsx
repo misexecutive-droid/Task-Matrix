@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Eye, EyeOff } from "lucide-react";
+import { Link } from "react-router";
 import { Input, Button,  } from "../../components";
 import { loginSchema, type LoginFields } from "./Schemas";
 import { useLoginMutation } from "./hooks";
@@ -112,13 +113,13 @@ export const LoginForm = () => {
                 {...register("password")}
               />
               <div className="flex justify-end">
-                <a
-                  href="#"
+                <Link
+                  to="/forgot-password"
                   className="font-display text-xs text-primary-600 hover:text-primary-500 transition-colors"
                   style={{ transitionDuration: "var(--transition-fast)" }}
                 >
                   Forgot password?
-                </a>
+                </Link>
               </div>
             </div>
 
@@ -139,7 +140,7 @@ export const LoginForm = () => {
               variant="primary"
               size="lg"
               isLoading={mutation.isPending}
-              className="mt-1 w-full font-light bg-gradient-to-r from-blue-800 via-indigo-600 to-blue-700 hover:from-blue-700 hover:via-indigo-700 hover:to-blue-800 text-white shadow-lg transition-all duration-300"
+              className="mt-1 w-full font-light bg-gradient-to-r from-primary-800 via-primary-600 to-primary-700 hover:from-primary-700 hover:via-primary-500 hover:to-primary-600 text-white shadow-lg transition-all duration-300"
             >
               Sign in
             </Button>

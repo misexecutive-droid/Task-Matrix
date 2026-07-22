@@ -8,10 +8,14 @@ import { env } from '../../config/env.js';
 import { User, type UserDoc } from '../../models/User.js';
 // The Mongoose model for storing refresh tokens (hashed) in the database.
 import { RefreshToken } from '../../models/RefreshToken.js';
+// Same hashed-token pattern, but for one-time password-reset links instead of long-lived sessions.
+import { PasswordResetToken } from '../../models/PasswordResetToken.js';
 // Custom error class used to throw clean, typed HTTP errors (e.g. 401 Unauthorized).
 import { AppError } from '../../utils/AppError.js';
+// Sends the actual reset-link email (real SMTP if configured, an Ethereal test inbox otherwise).
+import { sendMail } from '../../config/mailer.js';
 // TypeScript type describing the shape of a validated login request body.
-import type { LoginInput } from './auth.validation.js';
+import type { LoginInput, RegisterInput, ResetPasswordInput } from './auth.validation.js';
 
 // Creates a brand new refresh token for a given user, stores its HASH (not the raw value) in the
 // DB, and returns the raw token so it can be sent to the client as a cookie.
@@ -78,6 +82,24 @@ const publicUser = (user: UserDoc) => ({
 // The main authentication service - all the actual "business logic" for login/refresh/logout lives
 // here, separate from the HTTP-handling code in auth.controller.ts.
 export const authService = {
+  // Handles a brand new signup. Every self-registered account starts as a plain "USER" (never
+  // ADMIN/MANAGER/AGENT) with no department/store — those are only ever set by an admin later
+  // via the /users management endpoints, not chosen by the person signing themselves up.
+  async register(input: RegisterInput) {
+    const existing = await User.findOne({ email: input.email });
+    if (existing) throw AppError.conflict('Email already registered');
+
+    const user = new User({ email: input.email, firstName: input.firstName, lastName: input.lastName });
+    // Same virtual-setter pattern as login/user.service.ts's create() — assigning `.password`
+    // triggers the model's pre('validate') hook to hash it before saving.
+    (user as any).password = input.password;
+    await user.save();
+
+    const accessToken = signAccessToken(user);
+    const refreshToken = await issueRefreshToken(user._id.toString());
+    return { accessToken, refreshToken, user: publicUser(user) };
+  },
+
   // Handles a login attempt: check credentials, and if valid, issue a fresh pair of tokens.
   async login(input: LoginInput) {
     // Look up the user by email. `.select('+passwordHash')` is needed because the User model
@@ -140,5 +162,65 @@ export const authService = {
     if (!rawToken) return;
     // Find the matching token by its hash and mark it revoked (soft-delete style, keeps a record around).
     await RefreshToken.updateOne({ tokenHash: hashToken(rawToken) }, { revokedAt: new Date() });
-  }
+  },
+
+  // Handles a "forgot password" request: if the email belongs to a real, active account, generate
+  // a one-time reset token and email a reset link. Always resolves successfully either way (never
+  // reveals whether the email exists) - the controller responds the same generic message regardless,
+  // which is what actually protects against user enumeration; this just makes sure there's nothing
+  // to leak even if that changed later.
+  async forgotPassword(email: string) {
+    const user = await User.findOne({ email, isActive: true });
+    if (!user) return;
+
+    const rawToken = crypto.randomBytes(32).toString('hex');
+    const tokenHash = hashToken(rawToken);
+
+    await PasswordResetToken.create({
+      userId: user._id,
+      tokenHash,
+      // Reset links are short-lived (1 hour) - much shorter than a refresh token, since this one
+      // grants the ability to take over the account entirely if it leaked (e.g. via a shared inbox).
+      expiresAt: new Date(Date.now() + 60 * 60 * 1000),
+    });
+
+    const resetLink = `${env.CLIENT_URL}/reset-password?token=${rawToken}`;
+    // Always logged server-side regardless of whether the email actually sends (dev convenience,
+    // and a fallback if SMTP is ever misconfigured) - see config/mailer.ts for the send itself.
+    console.log(`[auth] Password reset requested for ${email}`);
+    console.log(`[auth] Reset link: ${resetLink}`);
+
+    await sendMail({
+      to: user.email,
+      subject: 'Reset your Task Matrix password',
+      html: `<p>Someone requested a password reset for your Task Matrix account.</p>
+             <p><a href="${resetLink}">Click here to reset your password</a> (expires in 1 hour).</p>
+             <p>If you didn't request this, you can safely ignore this email.</p>`,
+    });
+  },
+
+  // Handles the actual password reset once the user clicks the emailed link and submits a new password.
+  async resetPassword(input: ResetPasswordInput) {
+    const tokenHash = hashToken(input.token);
+    const stored = await PasswordResetToken.findOne({ tokenHash });
+    if (!stored || stored.usedAt || stored.expiresAt < new Date()) {
+      throw AppError.badRequest('Invalid or expired reset link');
+    }
+
+    const user = await User.findById(stored.userId);
+    if (!user || !user.isActive) throw AppError.badRequest('Invalid or expired reset link');
+
+    // Same virtual-setter pattern used everywhere else a password gets set (login/register/create) -
+    // assigning `.password` triggers the pre('validate') hook to hash it before saving.
+    (user as any).password = input.password;
+    await user.save();
+
+    // One-time use: mark this token spent so the same link can't be replayed.
+    stored.usedAt = new Date();
+    await stored.save();
+
+    // Revoke every other active session too - if someone else had a stolen refresh token, this
+    // password reset is exactly the moment to kick them out.
+    await RefreshToken.updateMany({ userId: user._id, revokedAt: null }, { revokedAt: new Date() });
+  },
 };

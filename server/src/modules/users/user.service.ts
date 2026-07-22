@@ -1,23 +1,8 @@
 import { User } from "../../models/User.js"
 import { AppError } from "../../utils/AppError.js"
-import type { Role } from "../../models/User.js"
 import { auditService } from "../audit/audit.service.js"
 import { AccessTokenPayload } from "../../middleware/auth/auth.js"
-
-
-// Shape of the data needed to create a brand new user. Note that `password` is a plain string
-// here (the raw password the admin typed in) - it gets hashed later, it is never saved as-is.
-type CreateUserInput = {
-    email: string; password: string; firstName: string; lastName?: string;
-    role: Role; departmentId?: string; storeId?: string
-}
-
-// Shape of the data allowed when updating a user. `Partial<...>` means every field is optional
-// (you can update just one field at a time). `Omit<CreateUserInput, 'password'>` means you take
-// the same shape as CreateUserInput but WITHOUT the password field - password changes aren't
-// handled through this generic update (there'd normally be a separate "change password" flow).
-// We add `isActive` on top since that's a field you can toggle on update but not set at creation.
-type UpdateUserInput = Partial<Omit<CreateUserInput, 'password'>> & { isActive?: boolean };
+import type { CreateUserInput, UpdateUserInput } from "./user.validation.js"
 
 // The service layer holds the actual business logic and database queries. Routes/controllers
 // call these functions; this is where the real rules live (like "you can't deactivate yourself").
@@ -68,21 +53,6 @@ export const userService = {
     },
 
     async update(id: string, input: UpdateUserInput, actorId: string) {
-        // Self-lockout protection: if you're an admin editing YOUR OWN account (id === actorId)
-        // and you're trying to deactivate it, block that. Otherwise an admin could accidentally
-        // (or maliciously) lock themselves out of the system with no other admin able to help,
-        // since deactivated accounts presumably can't log back in.
-        if (id === actorId && input.isActive === false) {
-            throw AppError.badRequest('You cannot deactivate your own account')
-        }
-        // Similar protection for role changes: if you're editing yourself and trying to change
-        // your role to anything other than ADMIN, block it. This stops an admin from accidentally
-        // demoting themselves (e.g. to a regular user) and losing admin access with nobody able
-        // to grant it back if they were the last admin.
-        if (id === actorId && input.role && input.role !== 'ADMIN') {
-            throw AppError.badRequest('You cannot demote your own account')
-        }
-
         // Grab the "before" snapshot of the user so we can log what changed (for the audit trail).
         const before = await User.findById(id);
         if(!before) throw AppError.notFound("User not found")
@@ -106,11 +76,6 @@ export const userService = {
     },
 
     async remove(id: string, actorId: string) {
-        // Another self-lockout protection: you can never delete your own account through this
-        // endpoint. This prevents an admin from wiping themselves out (possibly leaving the
-        // system with no admins at all, or just locking themselves out by mistake).
-        if (id === actorId) throw AppError.badRequest("You cannot delete your own account ")
-
         // `findByIdAndDelete` finds the user and removes it from the database in one step,
         // returning the document as it looked right before deletion (or null if not found).
         const user = await User.findByIdAndDelete(id);
