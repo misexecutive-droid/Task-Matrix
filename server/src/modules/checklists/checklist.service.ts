@@ -55,7 +55,7 @@ export const checklistService = {
   // Stamp out a real checklist under this ticket from a reusable, admin-authored template —
   // same result as addToTicket, just sourced from ChecklistTemplate/ChecklistTemplateItem
   // instead of hand-typed input (see taskChecklistService.createFromTemplate for the Task-side
-  // equivalent).
+  // equivalent). assigneeId is seeded from the template item's defaultAssigneeId when set.
   async addFromTemplateToTicket(ticketId: string, templateId: string) {
     const template = await ChecklistTemplate.findById(templateId);
     if (!template) throw AppError.notFound('Checklist template not found');
@@ -71,6 +71,7 @@ export const checklistService = {
           requiredImageCount: item.requiredImageCount,
           maxImageCount: item.maxImageCount,
           requiresLivePhoto: item.requiresLivePhoto,
+          assigneeId: item.defaultAssigneeId,
           checklistId: checklist._id,
         })),
       );

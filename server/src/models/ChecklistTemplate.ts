@@ -14,6 +14,9 @@ const checklistTemplateSchema = new Schema(
         // are separate models (TaskChecklist vs Checklist), so a template has to declare which
         // one its items are meant for.
         appliesTo: { type: String, enum: CHECKLIST_TEMPLATE_TARGETS, required: true },
+        // Optional — scopes which users can be picked as an item's defaultAssigneeId (see
+        // ChecklistTemplateItem). Not required: a template can stay department-agnostic.
+        departmentId: { type: Schema.Types.ObjectId, ref: "Department", default: null },
         createdBy: { type: Schema.Types.ObjectId, ref: "User", required: true },
     },
     { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } },

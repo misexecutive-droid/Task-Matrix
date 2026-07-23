@@ -27,6 +27,7 @@ export const checklistTemplateService = {
         const template = await ChecklistTemplate.create({
             name: input.name,
             appliesTo: input.appliesTo,
+            departmentId: input.departmentId ?? null,
             createdBy: user.sub,
         })
 

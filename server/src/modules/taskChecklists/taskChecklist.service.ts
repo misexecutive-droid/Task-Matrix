@@ -53,8 +53,9 @@ export const taskChecklistService = {
 
     // Stamp out a real checklist under this task from a reusable, admin-authored template —
     // same result as createForTask, just sourced from ChecklistTemplate/ChecklistTemplateItem
-    // instead of hand-typed input. assigneeId/dueAt are left unset (templates don't carry them);
-    // an admin fills those in afterwards through the normal updateItem action.
+    // instead of hand-typed input. dueAt is left unset (templates don't carry it); assigneeId is
+    // seeded from the template item's defaultAssigneeId when set — an admin can still change it
+    // afterwards through the normal updateItem action.
     async createFromTemplate(taskId: string, templateId: string, user: AccessTokenPayload) {
         const task = await Task.findById(taskId);
         if (!task) throw AppError.notFound("Task not found");
@@ -74,6 +75,7 @@ export const taskChecklistService = {
                     requiredImageCount: item.requiredImageCount,
                     maxImageCount: item.maxImageCount,
                     requiresLivePhoto: item.requiresLivePhoto,
+                    assigneeId: item.defaultAssigneeId,
                     taskChecklistId: checklist._id,
                 })),
             );
