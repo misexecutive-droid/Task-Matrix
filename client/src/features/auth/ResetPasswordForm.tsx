@@ -47,18 +47,18 @@ export const ResetPasswordForm = () => {
         >
           <div className="flex flex-col gap-3">
             <div className="pb-3 border-b-2 border-primary-500">
-              <h2 className="text-xl sm:text-2xl font-display font-semibold text-slate-900">
+              <h2 className="text-xl sm:text-2xl font-display font-semibold text-text">
                 Choose a new password
               </h2>
             </div>
-            <p className="text-sm text-slate-500 font-display">
+            <p className="text-sm text-text-secondary font-display">
               Enter a new password for your account.
             </p>
           </div>
 
           {!token ? (
             <div className="flex flex-col gap-4">
-              <p className="text-xs text-red-500 text-center">
+              <p className="text-xs text-danger text-center">
                 This reset link is missing or invalid. Request a new one below.
               </p>
               <Link to="/forgot-password" className="font-display text-xs text-primary-600 hover:text-primary-500 transition-colors text-center">
@@ -82,7 +82,7 @@ export const ResetPasswordForm = () => {
                   <button
                     type="button"
                     onClick={() => setShowPassword(v => !v)}
-                    className="text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
+                    className="text-text-light hover:text-text transition-colors cursor-pointer"
                     aria-label={showPassword ? "Hide password" : "Show password"}
                   >
                     {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
@@ -102,7 +102,7 @@ export const ResetPasswordForm = () => {
               />
 
               {mutation.isError && (
-                <p className="text-xs text-red-500 text-center">
+                <p className="text-xs text-danger text-center">
                   {mutation.error instanceof Error ? mutation.error.message : "Failed to reset password."}
                 </p>
               )}

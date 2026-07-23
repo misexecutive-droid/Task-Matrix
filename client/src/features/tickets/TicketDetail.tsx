@@ -1,7 +1,29 @@
-import { X, Clock, User, Trash2 } from 'lucide-react';
+import { useState, useRef } from 'react';
+import {
+  Clock,
+  User,
+  Trash2,
+  UploadCloud,
+  X,
+  Eye,
+  Calendar,
+  Tag,
+  UserCheck,
+  AlignLeft,
+  Paperclip,
+  Sparkles,
+  ChevronDown,
+} from 'lucide-react';
 import { useTicketQuery, useUpdateTicketMutation, useDeleteTicketMutation, useAssignableUsersQuery } from './hook';
 import { ChecklistPanel } from './ChecklistPanel';
-import { Button, Skeleton } from '../../components';
+import { Button, Skeleton, Dropdown, type DropdownAction } from '../../components';
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetFooter,
+} from '@/components/ui/sheet';
 import { useAuth } from "../../context/AuthContext";
 import type { Ticket, TicketStatus } from '../../api/ticket';
 
@@ -13,25 +35,34 @@ const STATUS_OPTIONS: { value: TicketStatus; label: string }[] = [
   { value: 'ON_HOLD', label: 'On Hold' },
 ];
 
-const STATUS_COLORS: Record<TicketStatus, string> = {
-  OPEN: 'bg-surface-hover text-text-secondary',
-  IN_PROGRESS: 'bg-amber-500/10 text-amber-600 dark:text-amber-400',
-  IN_REVIEW: 'bg-blue-500/10 text-blue-600 dark:text-blue-400',
-  CLOSED: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400',
-  ON_HOLD: 'bg-surface-hover text-text-secondary',
+const STATUS_CONFIG: Record<TicketStatus, { bg: string; text: string; border: string }> = {
+  OPEN: { bg: 'bg-slate-500/10', text: 'text-slate-600 dark:text-slate-400', border: 'border-slate-500/20' },
+  IN_PROGRESS: { bg: 'bg-amber-500/10', text: 'text-amber-600 dark:text-amber-400', border: 'border-amber-500/20' },
+  IN_REVIEW: { bg: 'bg-indigo-500/10', text: 'text-indigo-600 dark:text-indigo-400', border: 'border-indigo-500/20' },
+  CLOSED: { bg: 'bg-emerald-500/10', text: 'text-emerald-600 dark:text-emerald-400', border: 'border-emerald-500/20' },
+  ON_HOLD: { bg: 'bg-surface-muted', text: 'text-text-muted', border: 'border-border' },
 };
 
-const PRIORITY_COLORS: Record<Ticket['priority'], string> = {
-  LOW: 'bg-surface-hover text-text-muted',
-  MEDIUM: 'bg-amber-500/10 text-amber-600 dark:text-amber-400',
-  HIGH: 'bg-orange-500/10 text-orange-600 dark:text-orange-400',
-  CRITICAL: 'bg-danger/10 text-danger',
+const PRIORITY_CONFIG: Record<Ticket['priority'], { bg: string; text: string; border: string }> = {
+  LOW: { bg: 'bg-slate-500/10', text: 'text-slate-500', border: 'border-slate-500/20' },
+  MEDIUM: { bg: 'bg-amber-500/10', text: 'text-amber-600 dark:text-amber-400', border: 'border-amber-500/20' },
+  HIGH: { bg: 'bg-orange-500/10', text: 'text-orange-600 dark:text-orange-400', border: 'border-orange-500/20' },
+  CRITICAL: { bg: 'bg-rose-500/10', text: 'text-rose-600 dark:text-rose-400', border: 'border-rose-500/20' },
 };
+
+interface Attachment {
+  id: string;
+  url: string;
+  name: string;
+  size: string;
+}
 
 interface TicketDetailProps {
   ticket: Ticket;
   onClose: () => void;
 }
+
+const SECTION_HEADER = 'text-xs font-mono font-medium text-text-secondary uppercase tracking-wider flex items-center gap-1.5 mb-2';
 
 export const TicketDetail = ({ ticket: initialTicket, onClose }: TicketDetailProps) => {
   const { data: fresh, isPending } = useTicketQuery(initialTicket.id);
@@ -47,171 +78,315 @@ export const TicketDetail = ({ ticket: initialTicket, onClose }: TicketDetailPro
     currentUser?.role === "MANAGER" ||
     (currentUser?.role === "AGENT" && ticket.assigneeId === currentUser?.id) ||
     (currentUser?.role === "USER" && ticket.userId === currentUser?.id);
+  
   const { data: assignableUsers } = useAssignableUsersQuery(ticket.departmentId ?? undefined);
+
+  // Local attachment & image upload state
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const [attachments, setAttachments] = useState<Attachment[]>([]);
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+
+  const handleFileUpload = (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+    setIsUploading(true);
+
+    // Simulate image reader and upload process
+    Array.from(files).forEach((file) => {
+      if (!file.type.startsWith('image/')) return;
+
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const newAttachment: Attachment = {
+          id: Math.random().toString(36).substring(2, 9),
+          url: e.target?.result as string,
+          name: file.name,
+          size: `${(file.size / 1024 / 1024).toFixed(2)} MB`,
+        };
+        setAttachments((prev) => [newAttachment, ...prev]);
+        setIsUploading(false);
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const handleRemoveAttachment = (id: string) => {
+    setAttachments((prev) => prev.filter((item) => item.id !== id));
+  };
 
   const handleDelete = () => {
     deleteMut.mutate(ticket.id, { onSuccess: onClose });
   };
 
+  const isOverdue = ticket.isOverdue && ticket.status !== 'CLOSED';
+  const statusStyle = STATUS_CONFIG[ticket.status];
+  const priorityStyle = PRIORITY_CONFIG[ticket.priority];
+
+  // Status/Assignee dropdown menus — same trigger-button + action-list shape
+  // as the Header account menu, just wired to mutate the ticket instead of navigating.
+  const statusActions: DropdownAction[] = STATUS_OPTIONS.map(s => ({
+    label: s.label,
+    onClick: () => updateMut.mutate({ id: ticket.id, payload: { status: s.value } }),
+  }));
+
+  const assigneeActions: DropdownAction[] = [
+    { label: 'Unassigned', onClick: () => updateMut.mutate({ id: ticket.id, payload: { assigneeId: null } }), icon: User },
+    ...(assignableUsers ?? []).map(u => ({
+      label: `${u.firstName} ${u.lastName ?? ''}`.trim(),
+      onClick: () => updateMut.mutate({ id: ticket.id, payload: { assigneeId: u.id } }),
+      icon: User,
+    })),
+  ];
+
   return (
-    <>
-      <div
-        className="fixed inset-0 z-40 bg-black/30"
-        onClick={onClose}
-      />
-
-      <div
-        className="fixed inset-y-0 right-0 z-50 w-full sm:max-w-lg flex flex-col shadow-2xl bg-surface"
-      >
-        <div className="flex items-start justify-between gap-4 px-4 sm:px-6 py-4 border-b border-border shrink-0">
-          <div className="flex-1 min-w-0">
-            <h2 className="text-base font-display font-semibold text-text leading-snug">
-              {ticket.title}
-            </h2>
-            <p className="text-xs text-text-muted font-display mt-0.5">
-              Created {new Date(ticket.createdAt).toLocaleDateString()}
-            </p>
+    <Sheet open onOpenChange={v => { if (!v) onClose(); }}>
+      <SheetContent className="sm:max-w-xl w-full border-l border-border/60 bg-surface/95 backdrop-blur-md p-0 flex flex-col h-full font-mono">
+        
+        {/* Drawer Header */}
+        <SheetHeader className="p-5 pb-4 border-b border-border/40 bg-surface/50">
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-md bg-primary-500/10 text-primary-500 border border-primary-500/20">
+                  TICK-{ticket.id.slice(0, 6).toUpperCase()}
+                </span>
+                <span className="text-xs text-text-muted flex items-center gap-1">
+                  <Calendar size={12} />
+                  Created {new Date(ticket.createdAt).toLocaleDateString()}
+                </span>
+              </div>
+              <SheetTitle className="text-base font-semibold text-text leading-snug">
+                {ticket.title}
+              </SheetTitle>
+            </div>
           </div>
-          <button
-            onClick={onClose}
-            className="text-text-light hover:text-text transition-colors cursor-pointer shrink-0 mt-0.5"
-            aria-label="Close"
-          >
-            <X size={16} />
-          </button>
-        </div>
+        </SheetHeader>
 
-        <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-5 flex flex-col gap-6">
+        {/* Scrollable Content Body */}
+        <div className="flex-1 overflow-y-auto p-5 flex flex-col gap-6 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
 
           {isPending && (
-            <div className="flex items-center justify-center py-8 text-text-muted">
+            <div className="flex items-center justify-center py-2 text-text-muted">
               <Skeleton className="h-1 w-full rounded-full" />
             </div>
-
-            // <>
-            //   <div className="grid grid-cols-3 gap-4">
-            //     {Array.from({ length: 3 }).map((_, i) => (
-            //       <div key={i} className="flex items-center gap-3 px-4 py-3 rounded-lg border border-slate-200/70 bg-white">
-            //         <Skeleton className="size-[18px] rounded-full" />
-
-            //         <div className="flex flex-col gap-1.5">
-            //           <Skeleton className="h-5 w-12" />
-            //           <Skeleton className="h-3 w-20" />
-            //         </div>
-            //       </div>
-            //     ))}
-            //   </div>
-            //   <div className="rounded-lg border border-slate-200/70 bg-white p-4">
-            //     <Skeleton className='h-3 w-32 mb-3' />
-            //     <Skeleton className='h-40 w-full' />
-            //   </div>
-
-
-            // </>
           )}
 
-          <div className="flex flex-wrap gap-2 items-center">
-            {/* Status Selector */}
-            {canChangeStatus ? (
-              <select
-                value={ticket.status}
-                onChange={e =>
-                  updateMut.mutate({ id: ticket.id, payload: { status: e.target.value as TicketStatus } })
-                }
-                className={`text-xs font-display font-medium px-2.5 py-1 rounded-full border-0 cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary-300 ${STATUS_COLORS[ticket.status]}`}
-              >
-                {STATUS_OPTIONS.map(s => (
-                  <option key={s.value} value={s.value}>{s.label}</option>
-                ))}
-              </select>
-            ) : (
-              <span className={`text-xs font-display font-medium px-2.5 py-1 rounded-full ${STATUS_COLORS[ticket.status]}`}>
-                {STATUS_OPTIONS.find(s => s.value === ticket.status)?.label ?? ticket.status}
-              </span>
-            )}
+          {/* Quick Attributes Card Grid */}
+          <div className="grid grid-cols-2 gap-2.5 p-3 rounded-xl bg-surface-muted/40 border border-border/50">
+            
+            {/* Status Control */}
+            <div className="flex flex-col gap-1 p-2 rounded-lg bg-surface/60 border border-border/40">
+              <label className="text-[10px] uppercase text-text-muted font-semibold flex items-center gap-1">
+                <Tag size={11} /> Status
+              </label>
+              {canChangeStatus ? (
+                <Dropdown
+                  align="start"
+                  items={statusActions}
+                  trigger={
+                    <button
+                      type="button"
+                      className={`inline-flex items-center gap-1 text-xs font-semibold px-2 py-1 rounded-md border cursor-pointer focus:outline-none transition-all w-fit ${statusStyle.bg} ${statusStyle.text} ${statusStyle.border}`}
+                    >
+                      {STATUS_OPTIONS.find(s => s.value === ticket.status)?.label ?? ticket.status}
+                      <ChevronDown size={12} />
+                    </button>
+                  }
+                />
+              ) : (
+                <span className={`text-xs font-semibold px-2 py-1 rounded-md border w-fit ${statusStyle.bg} ${statusStyle.text} ${statusStyle.border}`}>
+                  {STATUS_OPTIONS.find(s => s.value === ticket.status)?.label ?? ticket.status}
+                </span>
+              )}
+            </div>
 
             {/* Priority Badge */}
-            <span className={`text-xs font-display font-medium px-2.5 py-1 rounded-full ${PRIORITY_COLORS[ticket.priority]}`}>
-              {ticket.priority}
-            </span>
+            <div className="flex flex-col gap-1 p-2 rounded-lg bg-surface/60 border border-border/40">
+              <label className="text-[10px] uppercase text-text-muted font-semibold flex items-center gap-1">
+                <Sparkles size={11} /> Priority
+              </label>
+              <span className={`text-xs font-semibold px-2 py-1 rounded-md border w-fit ${priorityStyle.bg} ${priorityStyle.text} ${priorityStyle.border}`}>
+                {ticket.priority}
+              </span>
+            </div>
 
-            {/* Assignee Control */}
-            {canAssign ? (
-              <select
-                value={ticket.assigneeId ?? ''}
-                onChange={e =>
-                  updateMut.mutate({ id: ticket.id, payload: { assigneeId: e.target.value || null } })
-                }
-                className="text-xs font-display px-2.5 py-1 rounded-full border border-border bg-surface text-text cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary-300"
-              >
-                <option value="">Unassigned</option>
-                {assignableUsers?.map(u => (
-                  <option key={u.id} value={u.id}>{u.firstName} {u.lastName ?? ''}</option>
-                ))}
-              </select>
-            ) : (
-              ticket.assignee && (
-                <span className="flex items-center gap-1 text-xs text-text-secondary font-display">
-                  <User size={11} />
-                  {ticket.assignee.firstName}
+            {/* Assignee Selection */}
+            <div className="flex flex-col gap-1 p-2 rounded-lg bg-surface/60 border border-border/40">
+              <label className="text-[10px] uppercase text-text-muted font-semibold flex items-center gap-1">
+                <UserCheck size={11} /> Assignee
+              </label>
+              {canAssign ? (
+                <Dropdown
+                  align="start"
+                  items={assigneeActions}
+                  trigger={
+                    <button
+                      type="button"
+                      className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-md border border-border bg-surface text-text cursor-pointer focus:outline-none w-fit"
+                    >
+                      {ticket.assignee ? `${ticket.assignee.firstName}` : 'Unassigned'}
+                      <ChevronDown size={12} />
+                    </button>
+                  }
+                />
+              ) : (
+                <span className="text-xs text-text-secondary flex items-center gap-1 py-1">
+                  <User size={12} />
+                  {ticket.assignee ? `${ticket.assignee.firstName}` : 'Unassigned'}
                 </span>
-              )
-            )}
+              )}
+            </div>
 
-            {/* Due Date Details */}
-            {ticket.tatDueAt && (
-              <span className={`flex items-center gap-1 text-xs font-display ${ticket.isOverdue && ticket.status !== 'CLOSED' ? 'text-danger' : 'text-text-muted'}`}>
-                <Clock size={11} />
-                Due {new Date(ticket.tatDueAt).toLocaleDateString()}
-              </span>
-            )}
+            {/* SLA / Due Date Info */}
+            <div className="flex flex-col gap-1 p-2 rounded-lg bg-surface/60 border border-border/40">
+              <label className="text-[10px] uppercase text-text-muted font-semibold flex items-center gap-1">
+                <Clock size={11} /> SLA Deadline
+              </label>
+              {ticket.tatDueAt ? (
+                <div className="flex items-center gap-1.5 py-0.5">
+                  <span className={`text-xs font-medium ${isOverdue ? 'text-rose-500 font-bold' : 'text-text-secondary'}`}>
+                    {new Date(ticket.tatDueAt).toLocaleDateString()}
+                  </span>
+                  {isOverdue && (
+                    <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-rose-500/10 text-rose-500 border border-rose-500/20 animate-pulse">
+                      OVERDUE
+                    </span>
+                  )}
+                </div>
+              ) : (
+                <span className="text-xs text-text-muted py-1">No SLA set</span>
+              )}
+            </div>
 
-            {ticket.isOverdue && ticket.status !== 'CLOSED' && (
-              <span className="text-xs font-display font-medium px-2.5 py-1 rounded-full bg-danger/10 text-danger">
-                Overdue
-              </span>
-            )}
-
-            {ticket.tatHours && (
-              <span className="text-xs text-text-muted font-display">
-                TAT: {ticket.tatHours}h
-              </span>
-            )}
           </div>
 
+          {/* Ticket Description */}
           {ticket.description && (
-            <div className="flex flex-col gap-1.5">
-              <h3 className="text-xs font-display font-semibold text-text-muted uppercase tracking-wide">
-                Description
+            <div>
+              <h3 className={SECTION_HEADER}>
+                <AlignLeft size={13} /> Description
               </h3>
-              <p className="text-sm font-display text-text-secondary leading-relaxed whitespace-pre-wrap">
+              <p className="text-xs text-text-secondary leading-relaxed whitespace-pre-wrap p-3 rounded-xl bg-surface-muted/30 border border-border/40">
                 {ticket.description}
               </p>
             </div>
           )}
 
-          <ChecklistPanel ticketId={ticket.id} checklists={ticket.checklists} />
+          {/* Image Attachments Section */}
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center justify-between">
+              <h3 className={SECTION_HEADER}>
+                <Paperclip size={13} /> Attachments & Screenshots
+              </h3>
+              <span className="text-[11px] text-text-muted">{attachments.length} files</span>
+            </div>
+
+            {/* Dropzone Container */}
+            <div
+              onClick={() => fileInputRef.current?.click()}
+              className="group border border-dashed border-border/80 hover:border-primary-500/50 bg-surface/40 hover:bg-primary-500/5 p-4 rounded-xl flex flex-col items-center justify-center cursor-pointer transition-all duration-200"
+            >
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                multiple
+                className="hidden"
+                onChange={(e) => handleFileUpload(e.target.files)}
+              />
+              <div className="p-2 rounded-full bg-surface-muted group-hover:bg-primary-500/10 text-text-muted group-hover:text-primary-500 transition-colors mb-1.5">
+                <UploadCloud size={18} />
+              </div>
+              <p className="text-xs font-medium text-text group-hover:text-primary-500 transition-colors">
+                {isUploading ? 'Processing images...' : 'Click or drop pictures here'}
+              </p>
+              <p className="text-[10px] text-text-muted mt-0.5">PNG, JPG, WEBP up to 10MB</p>
+            </div>
+
+            {/* Attachments Preview Grid */}
+            {attachments.length > 0 && (
+              <div className="grid grid-cols-3 gap-2.5 mt-2">
+                {attachments.map((file) => (
+                  <div
+                    key={file.id}
+                    className="group relative rounded-lg border border-border/60 bg-surface overflow-hidden aspect-square flex items-center justify-center shadow-2xs"
+                  >
+                    <img
+                      src={file.url}
+                      alt={file.name}
+                      className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-300"
+                    />
+                    
+                    {/* Image Overlay Controls */}
+                    <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setPreviewImage(file.url)}
+                        className="p-1.5 rounded-full bg-white/20 text-white hover:bg-white/40 transition-colors cursor-pointer"
+                        title="View image"
+                      >
+                        <Eye size={14} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveAttachment(file.id)}
+                        className="p-1.5 rounded-full bg-rose-500/80 text-white hover:bg-rose-600 transition-colors cursor-pointer"
+                        title="Delete image"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Subtask Checklist Panel */}
+          <div>
+            <ChecklistPanel ticketId={ticket.id} checklists={ticket.checklists} />
+          </div>
 
         </div>
 
-        <div className="flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-border shrink-0">
+        {/* Drawer Footer Actions */}
+        <SheetFooter className="p-4 border-t border-border/40 bg-surface/50 flex items-center justify-between gap-2">
           {isAdmin && (
             <Button
               variant="outline"
               size="sm"
               onClick={handleDelete}
               isLoading={deleteMut.isPending}
-              className="mr-auto text-danger border-danger/30 hover:bg-danger/10 gap-1.5"
+              className="text-rose-500 border-rose-500/30 hover:bg-rose-500/10 gap-1.5 font-mono text-xs"
             >
               <Trash2 size={13} />
-              Delete
+              Delete Ticket
             </Button>
           )}
-          <Button variant="outline" size="sm" onClick={onClose}>
+          <Button variant="outline" size="sm" onClick={onClose} className="font-mono text-xs ml-auto">
             Close
           </Button>
-        </div>
-      </div>
-    </>
+        </SheetFooter>
+
+        {/* Lightbox Image Preview Modal */}
+        {previewImage && (
+          <div
+            className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 animate-fadeIn"
+            onClick={() => setPreviewImage(null)}
+          >
+            <div className="relative max-w-2xl max-h-[85vh] rounded-xl overflow-hidden shadow-2xl border border-white/10">
+              <button
+                onClick={() => setPreviewImage(null)}
+                className="absolute top-3 right-3 p-1.5 rounded-full bg-black/60 text-white hover:bg-black transition-colors"
+              >
+                <X size={16} />
+              </button>
+              <img src={previewImage} alt="Enlarged preview" className="object-contain max-h-[80vh] w-auto" />
+            </div>
+          </div>
+        )}
+
+      </SheetContent>
+    </Sheet>
   );
 };

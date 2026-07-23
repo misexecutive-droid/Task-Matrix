@@ -10,7 +10,7 @@ import type { Task } from '../../api/task';
 const TICKET_STATUS_COLORS: Record<TicketStatus, string> = {
   OPEN: 'bg-surface-hover text-text-secondary',
   IN_PROGRESS: 'bg-amber-500/10 text-amber-600 dark:text-amber-400',
-  IN_REVIEW: 'bg-blue-500/10 text-blue-600 dark:text-blue-400',
+  IN_REVIEW: 'bg-primary-500/10 text-primary-700 dark:text-primary-300',
   CLOSED: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400',
   ON_HOLD: 'bg-surface-hover text-text-secondary',
 };

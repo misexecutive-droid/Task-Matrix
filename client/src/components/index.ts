@@ -7,3 +7,5 @@ export { Breadcrumbs }     from './breadcrumbs';
 export type { BreadcrumbTrailItem } from './breadcrumbs';
 export { PageNav }         from './pagination';
 export { Skeleton }        from './skeleton';
+export { Dropdown }        from './dropdown';
+export type { DropdownAction } from './dropdown';

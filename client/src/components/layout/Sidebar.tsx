@@ -38,7 +38,7 @@ export const Sidebar = ({ isOpen, user, logout, onNavigate }: SidebarProps) => {
       {/* Mobile backdrop — only rendered (and only intercepts clicks) below md, while open */}
       {isOpen && (
         <div
-          className="md:hidden fixed inset-0 z-30 bg-slate-900/40"
+          className="md:hidden fixed inset-0 z-30 bg-black/40"
           onClick={onNavigate}
           aria-hidden="true"
         />

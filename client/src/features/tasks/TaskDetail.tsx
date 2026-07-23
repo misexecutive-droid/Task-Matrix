@@ -1,12 +1,20 @@
-import { X, Clock } from 'lucide-react';
-import { useTaskQuery } from './hook';
+import { Clock, ChevronRight, Loader2, Calendar, CheckCircle2, AlertCircle } from 'lucide-react';
+import { useTaskQuery, useUpdateTaskMutation } from './hook';
 import { TaskChecklistPanel } from './TaskChecklistPanel';
 import { Button, Skeleton } from '../../components';
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetFooter,
+} from '@/components/ui/sheet';
 import { useAuth } from '../../context/AuthContext';
+import { PRIORITY_MAP, STATUS_LABEL, NEXT_STATUS } from './TaskList';
 import type { Task } from '../../api/task';
 
 interface TaskDetailProps {
-  task:    Task;
+  task: Task;
   onClose: () => void;
 }
 
@@ -16,80 +24,140 @@ export const TaskDetail = ({ task: initialTask, onClose }: TaskDetailProps) => {
   const { user } = useAuth();
   const isAdmin = user?.role === 'ADMIN';
 
+  const updateMutation = useUpdateTaskMutation();
+  const priority = PRIORITY_MAP[task.priority];
+  const next = NEXT_STATUS[task.status];
+
+  const isOverdue =
+    task.dueDate &&
+    new Date(task.dueDate) < new Date() &&
+    task.status !== 'done';
+
   return (
-    <>
-      <div
-        className="fixed inset-0 z-40 bg-black/30"
-        onClick={onClose}
-      />
-
-      <div
-        className="fixed inset-y-0 right-0 z-50 w-full sm:max-w-lg flex flex-col shadow-2xl bg-surface"
-      >
-        <div className="flex items-start justify-between gap-4 px-4 sm:px-6 py-4 border-b border-border shrink-0">
-          <div className="flex-1 min-w-0">
-            <h2 className="text-base font-display font-semibold text-text leading-snug">
-              {task.title}
-            </h2>
-            <p className="text-xs text-text-muted font-display mt-0.5">
-              Created {new Date(task.createdAt).toLocaleDateString()}
-            </p>
-          </div>
-          <button
-            onClick={onClose}
-            className="text-text-light hover:text-text transition-colors cursor-pointer shrink-0 mt-0.5"
-            aria-label="Close"
-          >
-            <X size={16} />
-          </button>
-        </div>
-
-        <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-5 flex flex-col gap-6">
-
-          {isPending && (
-            <div className="flex items-center justify-center py-8 text-text-muted">
-              {/* <Loader2 size={18} className="animate-spin mr-2" />
-              <span className="text-sm font-display">Loading…</span> */}
-
-              <Skeleton className="h-1 w-full rounded-full"/>
-            </div>
-          )}
-
-          {task.dueDate && (
-            <div className="flex items-center gap-2">
-              <span className="flex items-center gap-1 text-xs font-display text-text-muted">
-                <Clock size={11} />
-                Due {new Date(task.dueDate).toLocaleDateString()}
+    <Sheet open onOpenChange={(open) => { if (!open) onClose(); }}>
+      <SheetContent className="flex flex-col h-full sm:max-w-md p-0">
+        
+        {/* Header Section */}
+        <SheetHeader className="p-6 pb-4 border-b border-border/50">
+          <div className="flex items-center gap-2 flex-wrap mb-2">
+            {priority && (
+              <span
+                className={`text-[10px] uppercase tracking-wider font-semibold px-2 py-0.5 rounded-full border ${priority.className}`}
+              >
+                {priority.label}
               </span>
+            )}
+            <span className="text-[10px] uppercase tracking-wider font-semibold px-2 py-0.5 rounded-full bg-surface-hover border border-border text-text-secondary">
+              {STATUS_LABEL[task.status]}
+            </span>
+          </div>
+
+          <SheetTitle className="text-xl font-display font-bold text-text leading-snug">
+            {task.title}
+          </SheetTitle>
+        </SheetHeader>
+
+        {/* Scrollable Content Body */}
+        <div className="flex-1 overflow-y-auto px-6 py-5 flex flex-col gap-6">
+          {isPending ? (
+            <div className="space-y-3">
+              <Skeleton className="h-4 w-3/4 rounded-md" />
+              <Skeleton className="h-4 w-1/2 rounded-md" />
+              <Skeleton className="h-20 w-full rounded-xl mt-4" />
             </div>
+          ) : (
+            <>
+              {/* Metadata Panel */}
+              <div className="grid grid-cols-2 gap-3 p-3.5 bg-surface-hover/30 border border-border/60 rounded-xl text-xs font-display">
+                <div className="flex flex-col gap-1">
+                  <span className="text-text-muted text-[11px] font-medium flex items-center gap-1">
+                    <Calendar size={12} /> Created
+                  </span>
+                  <span className="text-text font-medium">
+                    {new Date(task.createdAt).toLocaleDateString(undefined, {
+                      month: 'short',
+                      day: 'numeric',
+                      year: 'numeric',
+                    })}
+                  </span>
+                </div>
+
+                {task.dueDate && (
+                  <div className="flex flex-col gap-1">
+                    <span className="text-text-muted text-[11px] font-medium flex items-center gap-1">
+                      <Clock size={12} /> Due Date
+                    </span>
+                    <span
+                      className={`font-semibold flex items-center gap-1 ${
+                        isOverdue ? 'text-danger' : 'text-text'
+                      }`}
+                    >
+                      {new Date(task.dueDate).toLocaleDateString(undefined, {
+                        month: 'short',
+                        day: 'numeric',
+                      })}
+                      {isOverdue && <AlertCircle size={12} className="text-danger" />}
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              {/* Description Section */}
+              {task.description && (
+                <div className="flex flex-col gap-2">
+                  <h3 className="text-xs font-display font-semibold text-text-muted uppercase tracking-wider">
+                    Description
+                  </h3>
+                  <div className="p-3.5 bg-surface rounded-xl border border-border/60 text-sm font-display text-text-secondary leading-relaxed whitespace-pre-wrap">
+                    {task.description}
+                  </div>
+                </div>
+              )}
+
+              {/* Checklists */}
+              <div className="pt-2">
+                <TaskChecklistPanel
+                  taskId={task.id}
+                  checklists={task.checklists ?? []}
+                  isAdmin={isAdmin}
+                  currentUserId={user?.id}
+                />
+              </div>
+            </>
           )}
-
-          {task.description && (
-            <div className="flex flex-col gap-1.5">
-              <h3 className="text-xs font-display font-semibold text-text-muted uppercase tracking-wide">
-                Description
-              </h3>
-              <p className="text-sm font-display text-text-secondary leading-relaxed whitespace-pre-wrap">
-                {task.description}
-              </p>
-            </div>
-          )}
-
-          <TaskChecklistPanel
-            taskId={task.id}
-            checklists={task.checklists ?? []}
-            isAdmin={isAdmin}
-            currentUserId={user?.id}
-          />
-
         </div>
 
-        <div className="flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-border shrink-0">
-          <Button variant="outline" size="sm" onClick={onClose}>
-            Close
+        {/* Footer Actions */}
+        <SheetFooter className="p-4 border-t border-border/50 bg-surface/50 backdrop-blur-xs flex-row justify-end gap-2.5">
+          {next ? (
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-1.5"
+              disabled={updateMutation.isPending}
+              onClick={() =>
+                updateMutation.mutate({ id: task.id, payload: { status: next } })
+              }
+            >
+              {updateMutation.isPending ? (
+                <Loader2 size={13} className="animate-spin" />
+              ) : (
+                <ChevronRight size={13} />
+              )}
+              Move to {STATUS_LABEL[next]}
+            </Button>
+          ) : (
+            <div className="flex items-center gap-1.5 text-xs font-medium text-emerald-500 mr-auto px-2 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded-lg">
+              <CheckCircle2 size={14} />
+              Completed
+            </div>
+          )}
+
+          <Button variant="primary" size="sm" onClick={onClose}>
+            Done
           </Button>
-        </div>
-      </div>
-    </>
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
   );
 };

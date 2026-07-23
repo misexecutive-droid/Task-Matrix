@@ -2,8 +2,9 @@ import { useState } from 'react';
 import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
 import { NavLink } from 'react-router';
-import { CheckSquare, LogOut, Menu, Moon, PanelLeft, Sun, X } from 'lucide-react';
+import { CheckSquare, ChevronDown, LayoutDashboard, LogOut, Menu, Moon, PanelLeft, Settings, Sun, User, X } from 'lucide-react';
 import { NotificationBell } from '../../features/notifications/NotificationBell';
+import { Dropdown, type DropdownAction } from '../dropdown';
 
 const NAV = [
     { to: '/', label: 'Dashboard' },
@@ -24,6 +25,15 @@ export const Header = ({ onToggleSidebar }: { onToggleSidebar?: () => void }) =>
     const { user, logout } = useAuth();
 
     const [menuOpen, setMenuOpen] = useState(false);
+
+    // Account menu — the same "trigger button + list of links, sign out last"
+    // pattern used everywhere, wired to this app's real destinations.
+    const accountActions: DropdownAction[] = [
+        { label: 'Dashboard', to: '/', icon: LayoutDashboard },
+        { label: 'Settings', to: '/settings', icon: Settings },
+        { label: 'Sign out', onClick: logout, icon: LogOut, variant: 'destructive', separatorBefore: true },
+    ];
+
     return (
         <header className="sticky top-0 z-50 w-full border-b border-border"
             style={{ background: 'var(--glass-bg)', backdropFilter: 'var(--glass-blur)' }}
@@ -78,14 +88,21 @@ export const Header = ({ onToggleSidebar }: { onToggleSidebar?: () => void }) =>
 
                         {
                             user && (
-                                <button
-                                    onClick={logout}
-                                    title="Log out"
-                                    className="hidden md:inline-flex items-center gap-1.5 h-9 px-3 rounded-lg text-sm font-display font-medium text-text-secondary cursor-pointer transition-all duration-150 hover:text-danger hover:bg-danger/10 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-danger/40 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-                                >
-                                    <LogOut size={15} />
-                                    <span>Logout</span>
-                                </button>
+                                <Dropdown
+                                    items={accountActions}
+                                    trigger={
+                                        <button
+                                            title={user.name}
+                                            className="hidden md:inline-flex items-center gap-1.5 h-9 pl-2 pr-2.5 rounded-lg text-sm font-display font-medium text-text-secondary cursor-pointer transition-all duration-150 hover:text-text hover:bg-surface-hover active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                                        >
+                                            <span className="flex items-center justify-center size-6 rounded-full bg-primary-500/10 text-primary-600 dark:text-primary-300 shrink-0">
+                                                <User size={13} />
+                                            </span>
+                                            <span className="max-w-32 truncate">{user.name}</span>
+                                            <ChevronDown size={13} className="text-text-light" />
+                                        </button>
+                                    }
+                                />
                             )
                         }
                         <button

@@ -37,18 +37,18 @@ export const ForgotPasswordForm = () => {
         >
           <div className="flex flex-col gap-3">
             <div className="pb-3 border-b-2 border-primary-500">
-              <h2 className="text-xl sm:text-2xl font-display font-semibold text-slate-900">
+              <h2 className="text-xl sm:text-2xl font-display font-semibold text-text">
                 Reset your password
               </h2>
             </div>
-            <p className="text-sm text-slate-500 font-display">
+            <p className="text-sm text-text-secondary font-display">
               Enter your account email and we'll send you a link to reset your password.
             </p>
           </div>
 
           {mutation.isSuccess ? (
             <div className="flex flex-col gap-4">
-              <p className="text-sm text-slate-600 font-display">
+              <p className="text-sm text-text-secondary font-display">
                 If that email is registered, a reset link is on its way. Check your inbox.
               </p>
               <Link to="/login" className="font-display text-xs text-primary-600 hover:text-primary-500 transition-colors text-center">

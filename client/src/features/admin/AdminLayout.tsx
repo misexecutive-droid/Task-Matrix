@@ -40,7 +40,7 @@ export const AdminLayout = () => {
             <div className='flex flex-1 min-h-0'>
                 {sidebarOpen && (
                     <div
-                        className="md:hidden fixed inset-0 z-30 bg-slate-900/40"
+                        className="md:hidden fixed inset-0 z-30 bg-black/40"
                         onClick={() => setSidebarOpen(false)}
                         aria-hidden="true"
                     />

@@ -59,7 +59,7 @@ export const NEXT_STATUS: Record<Task['status'], Task['status']> = {
 
 // NEW: accepts an optional assigneeName to display, resolved by the parent TaskList
 // (see userMap below) since the API only ever gives us a bare assigneeId, not a full user object.
-const TaskRow = ({ task, assigneeName, isAdmin, onOpen }: { task: Task; assigneeName?: string, isAdmin: boolean, onOpen: (task: Task) => void }) => {
+const TaskRow = ({ task, assigneeName, isAdmin, onOpen, index = 0 }: { task: Task; assigneeName?: string, isAdmin: boolean, onOpen: (task: Task) => void, index?: number }) => {
     const updateMutation = useUpdateTaskMutation();
     const deleteMutation = useDeleteTaskMutation();
 
@@ -70,7 +70,10 @@ const TaskRow = ({ task, assigneeName, isAdmin, onOpen }: { task: Task; assignee
     const priority = PRIORITY_MAP[task.priority];
 
     return (
-        <div className="flex items-center gap-3 px-4 py-3 rounded-lg border border-border bg-surface hover:border-border-hover transition-colors group">
+        <div
+            className="flex items-center gap-3 px-4 py-3 rounded-lg border border-border bg-surface hover:border-border-hover hover:shadow-sm transition-all group animate-step-in"
+            style={{ animationDelay: `${Math.min(index, 10) * 35}ms` }}
+        >
             <button
                 onClick={cycleStatus}
                 disabled={updateMutation.isPending}
@@ -283,29 +286,33 @@ export const TaskList = ({ userId }: TaskListProps = {}) => {
                 </div>
             )}
 
-            {!isPending && !isError && !isEmpty && view === 'list' && (
-                <div className="flex flex-col gap-5">
-                    {departmentGroups.map(group => (
-                        <div key={group.departmentId ?? '__none__'} className="flex flex-col gap-2">
-                            <div className="flex items-center gap-2">
-                                <h3 className="text-xs font-display font-semibold text-text-muted uppercase tracking-wide">
-                                    {group.departmentName}
-                                </h3>
-                                <span className="text-xs text-text-light font-display">{group.tasks.length}</span>
+            {!isPending && !isError && !isEmpty && view === 'list' && (() => {
+                let rowIndex = 0;
+                return (
+                    <div className="flex flex-col gap-5">
+                        {departmentGroups.map(group => (
+                            <div key={group.departmentId ?? '__none__'} className="flex flex-col gap-2">
+                                <div className="flex items-center gap-2">
+                                    <h3 className="text-xs font-display font-semibold text-text-muted uppercase tracking-wide">
+                                        {group.departmentName}
+                                    </h3>
+                                    <span className="text-xs text-text-light font-display">{group.tasks.length}</span>
+                                </div>
+                                {group.tasks.map(task => (
+                                    <TaskRow
+                                        key={task.id}
+                                        task={task}
+                                        isAdmin={isAdmin}
+                                        onOpen={setSelected}
+                                        index={rowIndex++}
+                                        assigneeName={task.assigneeId ? assigneeNames.get(task.assigneeId) : undefined}
+                                    />
+                                ))}
                             </div>
-                            {group.tasks.map(task => (
-                                <TaskRow
-                                    key={task.id}
-                                    task={task}
-                                    isAdmin={isAdmin}
-                                    onOpen={setSelected}
-                                    assigneeName={task.assigneeId ? assigneeNames.get(task.assigneeId) : undefined}
-                                />
-                            ))}
-                        </div>
-                    ))}
-                </div>
-            )}
+                        ))}
+                    </div>
+                );
+            })()}
 
             {!isPending && !isError && !isEmpty && view === 'board' && (
                 <TaskBoard

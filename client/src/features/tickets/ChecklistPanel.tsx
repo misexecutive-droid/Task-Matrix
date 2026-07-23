@@ -53,45 +53,61 @@ const ItemRow = ({
     uploadImages.mutate({ itemId: item.id, files: Array.from(files), captureMethod });
   };
 
+  // Photo requirement badge shown in the eyebrow row — green once enough
+  // qualifying photos are attached, amber while still short of the requirement.
+  const photosSatisfied = item.requiredImageCount > 0 && qualifying >= item.requiredImageCount;
+
   return (
-    <div className="flex flex-col gap-2 px-3 py-3 border-t border-border first:border-t-0">
-      <div className="flex items-start gap-2.5">
-        {item.isDone
-          ? <CheckSquare size={16} className="text-primary-600 shrink-0 mt-0.5" />
-          : <Square size={16} className="text-text-light shrink-0 mt-0.5" />}
+    // Card wrapper: each checklist item is its own bordered card (not a divided
+    // row anymore) — eyebrow, header, hero image strip, body, action row, same
+    // shape as TicketCard's Hero-Card layout.
+    <div className="flex flex-col gap-3 p-3 rounded-lg border border-border bg-surface font-mono">
+
+      {/* Eyebrow row: small icon square + the photo-requirement status, mirroring
+          the reference card's small icon + label row above the main header. */}
+      {item.requiredImageCount > 0 && (
+        <div className="flex items-center gap-1.5">
+          <span className={[
+            'flex items-center justify-center size-4 rounded shrink-0',
+            photosSatisfied ? 'bg-emerald-500' : 'bg-amber-500',
+          ].join(' ')}>
+            <Camera size={10} className="text-white" />
+          </span>
+          <span className="text-xs font-mono text-text-muted truncate">
+            {qualifying}/{item.requiredImageCount} photo{item.requiredImageCount !== 1 ? 's' : ''}
+            {item.requiresLivePhoto ? ' (live only)' : ''}
+            {item.maxImageCount != null ? ` · max ${item.maxImageCount}` : ''}
+          </span>
+        </div>
+      )}
+
+      {/* Header: checkbox icon in a tinted square (done = green, pending = neutral)
+          + item label as title + due/completed date as subtitle. This is a
+          status indicator only — completing an item goes through the dedicated
+          "Mark complete" action below (server-side validates photo requirements
+          etc.), so the icon itself isn't clickable. Admin-only reopen/delete
+          controls sit in the top-right corner. */}
+      <div className="flex items-start gap-3">
+        <span
+          className={[
+            'flex items-center justify-center size-9 rounded-lg shrink-0',
+            item.isDone ? 'bg-primary-500/10 text-primary-600' : 'bg-surface-hover text-text-light',
+          ].join(' ')}
+        >
+          {item.isDone ? <CheckSquare size={18} /> : <Square size={18} />}
+        </span>
 
         <div className="flex-1 min-w-0">
-          <p className={`text-sm font-display ${item.isDone ? 'line-through text-text-muted' : 'text-text'}`}>
+          <p className={`text-sm font-mono font-semibold leading-snug ${item.isDone ? 'line-through text-text-muted' : 'text-text'}`}>
             {item.label}
           </p>
-          <div className="flex flex-wrap items-center gap-2 mt-0.5">
-            {item.dueAt && (
-              <span className="text-xs text-text-muted font-display">
-                Due {new Date(item.dueAt).toLocaleDateString()}
-              </span>
-            )}
-            {item.requiredImageCount > 0 && (
-              <span className={[
-                'text-xs font-display px-1.5 py-0.5 rounded-full',
-                qualifying >= item.requiredImageCount
-                  ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
-                  : 'bg-amber-500/10 text-amber-600 dark:text-amber-400',
-              ].join(' ')}>
-                {qualifying}/{item.requiredImageCount} photo{item.requiredImageCount !== 1 ? 's' : ''}
-                {item.requiresLivePhoto ? ' (live)' : ''}
-              </span>
-            )}
-            {item.maxImageCount != null && (
-              <span className="text-xs text-text-muted font-display">
-                max {item.maxImageCount}
-              </span>
-            )}
-            {item.isDone && item.completedAt && (
-              <span className="text-xs text-emerald-600 font-display">
-                Completed {new Date(item.completedAt).toLocaleDateString()}
-              </span>
-            )}
-          </div>
+          <p className="text-xs text-text-muted font-mono truncate">
+            {item.isDone && item.completedAt
+              ? `Completed ${new Date(item.completedAt).toLocaleDateString()}`
+              : item.dueAt
+                ? `Due ${new Date(item.dueAt).toLocaleDateString()}`
+                : 'No due date'}
+          </p>
         </div>
 
         {isAdmin && item.isDone && (
@@ -118,18 +134,21 @@ const ItemRow = ({
         )}
       </div>
 
+      {/* Hero image strip: evidence photos attached to this item — the natural
+          equivalent of the reference card's hero image slot. Only rendered when
+          photos actually exist. */}
       {item.images.length > 0 && (
-        <div className="flex flex-wrap gap-2 pl-[26px]">
+        <div className="flex flex-wrap gap-2">
           {item.images.map(img => (
             <div key={img.id} className="relative group/img">
               <img
                 src={`${UPLOADS_BASE}${img.url}`}
                 alt={img.originalFilename ?? 'evidence'}
-                className="size-14 object-cover rounded-md border border-border"
+                className="size-16 object-cover rounded-md border border-border"
               />
               <span className={[
-                'absolute -top-1 -left-1 text-[9px] font-display px-1 rounded-full text-white',
-                img.captureMethod === 'LIVE' ? 'bg-emerald-500' : 'bg-slate-400',
+                'absolute -top-1 -left-1 text-[9px] font-mono px-1 rounded-full text-white',
+                img.captureMethod === 'LIVE' ? 'bg-emerald-500' : 'bg-text-light',
               ].join(' ')}>
                 {img.captureMethod === 'LIVE' ? 'Live' : 'Gallery'}
               </span>
@@ -147,11 +166,39 @@ const ItemRow = ({
         </div>
       )}
 
+      {/* Body: read-only remarks quote when this viewer can't edit (or the item
+          is already done) — editable textarea + action-pill row otherwise. */}
+      {(!canWork || item.isDone) && item.remarks && (
+        <p className="text-xs text-text-secondary font-mono italic">"{item.remarks}"</p>
+      )}
+
       {canWork && !item.isDone && (
-        <div className="flex flex-col gap-2 pl-[26px]">
-          <div className="flex items-center gap-3">
-            <label className="flex items-center gap-1 text-xs font-display text-primary-600 hover:text-primary-700 cursor-pointer">
-              <Camera size={13} />
+        <div className="flex flex-col gap-2">
+          <textarea
+            value={remarks}
+            onChange={e => setRemarks(e.target.value)}
+            placeholder="Remarks — why isn't this done yet?"
+            rows={2}
+            className="px-2.5 py-1.5 text-xs bg-surface text-text rounded-md border border-border focus:outline-none focus:border-primary-500 placeholder:text-text-light resize-none"
+          />
+
+          {uploadImages.isError && (
+            <p className="text-xs text-danger">
+              {uploadImages.error instanceof Error ? uploadImages.error.message : 'Upload failed.'}
+            </p>
+          )}
+          {completeItem.isError && (
+            <p className="text-xs text-danger">
+              {completeItem.error instanceof Error ? completeItem.error.message : 'Could not complete item.'}
+            </p>
+          )}
+
+          {/* Action-pill row: outlined chips (border + tinted text, no fill) for
+              every item action — take photo, gallery, save remarks, mark
+              complete — mirroring the reference card's row of outlined buttons. */}
+          <div className="flex items-center gap-2 flex-wrap pt-0.5">
+            <label className="flex items-center gap-1.5 text-xs font-mono font-medium px-2.5 py-1 rounded-md border border-primary-500/50 text-primary-600 hover:bg-primary-500/10 cursor-pointer transition-colors">
+              <Camera size={12} />
               Take photo
               <input
                 type="file"
@@ -162,9 +209,9 @@ const ItemRow = ({
                 onChange={e => { handleFiles(e.target.files, 'LIVE'); e.target.value = ''; }}
               />
             </label>
-            <label className="flex items-center gap-1 text-xs font-display text-text-secondary hover:text-text cursor-pointer">
-              <ImageUp size={13} />
-              Choose from gallery
+            <label className="flex items-center gap-1.5 text-xs font-mono font-medium px-2.5 py-1 rounded-md border border-border text-text-secondary hover:bg-surface-hover cursor-pointer transition-colors">
+              <ImageUp size={12} />
+              Gallery
               <input
                 type="file"
                 accept="image/*"
@@ -174,52 +221,26 @@ const ItemRow = ({
               />
             </label>
             {uploadImages.isPending && <Loader2 size={13} className="animate-spin text-text-muted" />}
-          </div>
 
-          {uploadImages.isError && (
-            <p className="text-xs text-danger">
-              {uploadImages.error instanceof Error ? uploadImages.error.message : 'Upload failed.'}
-            </p>
-          )}
-
-          <div className="flex gap-2">
-            <textarea
-              value={remarks}
-              onChange={e => setRemarks(e.target.value)}
-              placeholder="Remarks — why isn't this done yet?"
-              rows={2}
-              className="flex-1 px-2.5 py-1.5 text-xs bg-surface text-text rounded-md border border-border focus:outline-none focus:border-primary-500 placeholder:text-text-light resize-none"
-            />
-            <Button
-              size="sm"
-              variant="outline"
+            <button
               onClick={() => updateRemarks.mutate({ id: item.id, remarks })}
-              isLoading={updateRemarks.isPending}
+              disabled={updateRemarks.isPending}
+              className="flex items-center gap-1.5 text-xs font-mono font-medium px-2.5 py-1 rounded-md border border-border text-text-secondary hover:bg-surface-hover cursor-pointer transition-colors disabled:opacity-50"
             >
-              Save
-            </Button>
-          </div>
+              {updateRemarks.isPending && <Loader2 size={12} className="animate-spin" />}
+              Save remarks
+            </button>
 
-          <div>
-            <Button
-              size="sm"
-              variant="primary"
+            <button
               onClick={() => completeItem.mutate(item.id)}
-              isLoading={completeItem.isPending}
+              disabled={completeItem.isPending}
+              className="flex items-center gap-1.5 text-xs font-mono font-medium px-2.5 py-1 rounded-md border border-emerald-500/50 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10 cursor-pointer transition-colors disabled:opacity-50 ml-auto"
             >
+              {completeItem.isPending && <Loader2 size={12} className="animate-spin" />}
               Mark complete
-            </Button>
-            {completeItem.isError && (
-              <p className="text-xs text-danger mt-1">
-                {completeItem.error instanceof Error ? completeItem.error.message : 'Could not complete item.'}
-              </p>
-            )}
+            </button>
           </div>
         </div>
-      )}
-
-      {(!canWork || item.isDone) && item.remarks && (
-        <p className="text-xs text-text-secondary font-display pl-[26px] italic">"{item.remarks}"</p>
       )}
     </div>
   );
@@ -238,7 +259,7 @@ const ChecklistBlock = ({
   const doneCount = checklist.items.filter(i => i.isDone).length;
 
   return (
-    <div className="border border-border rounded-lg overflow-hidden">
+    <div className="border border-border rounded-lg overflow-hidden font-mono">
 
       <div className="flex items-center justify-between px-3 py-2.5 bg-surface-hover">
         <button
@@ -248,10 +269,10 @@ const ChecklistBlock = ({
           {open
             ? <ChevronDown size={14} className="text-text-muted shrink-0" />
             : <ChevronRight size={14} className="text-text-muted shrink-0" />}
-          <span className="text-sm font-display font-medium text-text truncate">
+          <span className="text-sm font-mono font-medium text-text truncate">
             {checklist.title}
           </span>
-          <span className="text-xs text-text-muted font-display shrink-0 ml-1">
+          <span className="text-xs text-text-muted font-mono shrink-0 ml-1">
             {doneCount}/{checklist.items.length}
           </span>
         </button>
@@ -271,9 +292,11 @@ const ChecklistBlock = ({
       </div>
 
       {open && (
-        <div>
+        // Padding + gap here (rather than on the outer block) since each item
+        // is now its own rounded card and needs breathing room, not divider lines.
+        <div className="flex flex-col gap-2 p-2">
           {checklist.items.length === 0 && (
-            <p className="px-3 py-2.5 text-xs text-text-muted font-display">No items yet.</p>
+            <p className="px-1 py-1.5 text-xs text-text-muted font-mono">No items yet.</p>
           )}
           {checklist.items.map(item => (
             <ItemRow
@@ -349,9 +372,9 @@ export const ChecklistPanel = ({ ticketId, checklists }: ChecklistPanelProps) =>
   };
 
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-col gap-3 font-mono">
       <div className="flex items-center justify-between gap-2 flex-wrap">
-        <h3 className="text-sm font-display font-semibold text-text">Checklists</h3>
+        <h3 className="text-sm font-mono font-semibold text-text">Checklists</h3>
         {isAdmin && !adding && (
           <div className="flex items-center gap-2">
             {!!templates?.length && (
@@ -379,7 +402,7 @@ export const ChecklistPanel = ({ ticketId, checklists }: ChecklistPanelProps) =>
             )}
             <button
               onClick={() => setAdding(true)}
-              className="flex items-center gap-1 text-xs font-display text-primary-600 hover:text-primary-700 transition-colors cursor-pointer"
+              className="flex items-center gap-1 text-xs font-mono text-primary-600 hover:text-primary-700 transition-colors cursor-pointer"
             >
               <Plus size={12} />
               Add checklist
@@ -462,7 +485,7 @@ export const ChecklistPanel = ({ ticketId, checklists }: ChecklistPanelProps) =>
 
           <button
             onClick={() => setItemDrafts(d => [...d, emptyItemDraft()])}
-            className="flex items-center gap-1 text-xs font-display text-primary-600 hover:text-primary-700 cursor-pointer w-fit"
+            className="flex items-center gap-1 text-xs font-mono text-primary-600 hover:text-primary-700 cursor-pointer w-fit"
           >
             <Plus size={12} />
             Add another item
@@ -486,7 +509,7 @@ export const ChecklistPanel = ({ ticketId, checklists }: ChecklistPanelProps) =>
       )}
 
       {checklists.length === 0 && !adding && (
-        <p className="text-xs text-text-muted font-display py-2">No checklists yet.</p>
+        <p className="text-xs text-text-muted font-mono py-2">No checklists yet.</p>
       )}
 
       {checklists.map(cl => (
