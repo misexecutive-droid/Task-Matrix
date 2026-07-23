@@ -122,7 +122,7 @@ export const SettingsPage = () => {
         />
 
         {mutation.isError && (
-          <p className="text-xs text-red-500 text-center">
+          <p className="text-xs text-danger text-center">
             {mutation.error instanceof Error ? mutation.error.message : 'Failed to save settings.'}
           </p>
         )}

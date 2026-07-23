@@ -53,7 +53,8 @@ const TaskBoardCard = ({ task, assigneeName, isAdmin, onOpen, index = 0 }: TaskB
       {/* Top Row: Priority Badge & Admin Actions */}
       <div className="flex items-start justify-between mb-2">
         {priority && (
-          <span className={`flex items-center gap-1 text-[10px] uppercase tracking-wider font-semibold px-2 py-0.5 rounded-full border ${priority.className}`}>
+          <span className={`flex items-center gap-1.5 text-[10px] uppercase tracking-wider font-semibold px-2 py-0.5 rounded-full border shadow-2xs ${priority.className}`}>
+            <span className="size-1.5 rounded-full bg-current shrink-0" />
             {priority.label}
           </span>
         )}
@@ -80,7 +81,7 @@ const TaskBoardCard = ({ task, assigneeName, isAdmin, onOpen, index = 0 }: TaskB
       </div>
 
       {/* Task Title */}
-      <h4 className="text-sm font-display font-medium text-text group-hover:text-primary-600 transition-colors line-clamp-2 leading-relaxed mb-4">
+      <h4 className="text-sm font-mono font-medium text-text group-hover:text-primary-600 transition-colors line-clamp-2 leading-relaxed mb-4">
         {task.title}
       </h4>
 
@@ -98,8 +99,8 @@ const TaskBoardCard = ({ task, assigneeName, isAdmin, onOpen, index = 0 }: TaskB
 
         {/* User Avatar instead of a text pill */}
         {assigneeName ? (
-          <div 
-            className="flex items-center justify-center size-6 rounded-full bg-primary-500/10 border border-primary-500/20 text-primary-700 text-[10px] font-bold shrink-0 shadow-sm"
+          <div
+            className="flex items-center justify-center size-6 rounded-full bg-gradient-to-br from-primary-500 to-primary-700 text-white text-[10px] font-bold shrink-0 shadow-sm ring-2 ring-surface"
             title={`Assigned to ${assigneeName}`}
           >
             {getInitials(assigneeName)}
@@ -157,10 +158,17 @@ export const TaskBoard = ({ tasks, assigneeNames, isAdmin, onOpen }: TaskBoardPr
         const columnTasks = tasks.filter(t => t.status === status);
 
         return (
-          <div 
-            key={status} 
-            className="flex flex-col rounded-2xl bg-surface-hover/40 border border-border/60 min-w-0"
+          <div
+            key={status}
+            className="flex flex-col rounded-2xl bg-surface-hover/40 border border-border/60 min-w-0 overflow-hidden"
           >
+            {/* Status Accent Bar */}
+            <div className={`h-1 shrink-0 ${
+              status === 'done' ? 'bg-gradient-to-r from-emerald-500 to-emerald-400' :
+              status === 'in_progress' ? 'bg-gradient-to-r from-amber-500 to-amber-400' :
+              'bg-gradient-to-r from-primary-500 to-primary-400'
+            }`} />
+
             {/* Column Header */}
             <div className="flex items-center justify-between px-4 py-3 border-b border-border/50">
               <div className="flex items-center gap-2.5">
@@ -171,7 +179,7 @@ export const TaskBoard = ({ tasks, assigneeNames, isAdmin, onOpen }: TaskBoardPr
                 }`}>
                   {STATUS_ICON[status]}
                 </div>
-                <h3 className="text-sm font-display font-semibold text-text">
+                <h3 className="text-sm font-mono font-semibold text-text">
                   {STATUS_LABEL[status]}
                 </h3>
               </div>

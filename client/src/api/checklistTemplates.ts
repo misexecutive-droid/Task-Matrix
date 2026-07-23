@@ -9,15 +9,19 @@ export type ChecklistTemplateItem = {
   requiredImageCount: number;
   maxImageCount:      number | null;
   requiresLivePhoto:  boolean;
+  // Seed value carried over as the created checklist item's assigneeId when this template is
+  // applied to a task/ticket — scoped to the parent template's departmentId.
+  defaultAssigneeId:  string | null;
   templateId:         string;
 };
 
 export type ChecklistTemplate = {
-  id:        string;
-  name:      string;
-  appliesTo: ChecklistTemplateTarget;
-  createdBy: string;
-  items:     ChecklistTemplateItem[];
+  id:           string;
+  name:         string;
+  appliesTo:    ChecklistTemplateTarget;
+  departmentId: string | null;
+  createdBy:    string;
+  items:        ChecklistTemplateItem[];
 };
 
 export type ApiResponse<T> = { success: boolean; data: T };
@@ -28,18 +32,21 @@ export type CreateChecklistTemplateItemPayload = {
   requiredImageCount?: number;
   maxImageCount?:      number;
   requiresLivePhoto?:  boolean;
+  defaultAssigneeId?:  string;
 };
 
 export type CreateChecklistTemplatePayload = {
-  name:      string;
-  appliesTo: ChecklistTemplateTarget;
-  items?:    CreateChecklistTemplateItemPayload[];
+  name:         string;
+  appliesTo:    ChecklistTemplateTarget;
+  departmentId?: string;
+  items?:       CreateChecklistTemplateItemPayload[];
 };
 
-export type UpdateChecklistTemplatePayload = { name: string };
+export type UpdateChecklistTemplatePayload = { name?: string; departmentId?: string | null };
 
-export type UpdateChecklistTemplateItemPayload = Omit<Partial<CreateChecklistTemplateItemPayload>, 'maxImageCount'> & {
-  maxImageCount?: number | null;
+export type UpdateChecklistTemplateItemPayload = Omit<Partial<CreateChecklistTemplateItemPayload>, 'maxImageCount' | 'defaultAssigneeId'> & {
+  maxImageCount?:     number | null;
+  defaultAssigneeId?: string | null;
 };
 
 export const checklistTemplateApi = {

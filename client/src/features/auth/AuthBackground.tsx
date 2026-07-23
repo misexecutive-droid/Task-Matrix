@@ -15,11 +15,11 @@ const AuthBackground = ({
                 style={{ background: 'var(--bg-dark)' }}>
 
                 <span className="absolute inset-6 border border-primary-400/20 rounded-xl pointer-events-none" />
-                <span className="absolute -left-28 top-1/2 -translate-y-1/2 size-80 rounded-full border border-gold-400/25 pointer-events-none" />
-                <span className="absolute -left-40 top-1/2 -translate-y-1/2 size-[28rem] rounded-full border border-gold-400/15 pointer-events-none" />
+                <span className="absolute -left-28 top-1/2 -translate-y-1/2 size-80 rounded-full border border-coral-400/25 pointer-events-none" />
+                <span className="absolute -left-40 top-1/2 -translate-y-1/2 size-[28rem] rounded-full border border-coral-400/15 pointer-events-none" />
                 <span className="absolute -right-14 top-12 size-56 rounded-full border border-primary-400/20 pointer-events-none" />
                 <span className="absolute -right-20 bottom-12 size-40 rounded-full border border-primary-400/15 pointer-events-none" />
-                <span className="absolute -right-6 top-1/2 -translate-y-1/2 size-24 rounded-full bg-gold-500/15 pointer-events-none" />
+                <span className="absolute -right-6 top-1/2 -translate-y-1/2 size-24 rounded-full bg-coral-500/15 pointer-events-none" />
 
 
             </aside>

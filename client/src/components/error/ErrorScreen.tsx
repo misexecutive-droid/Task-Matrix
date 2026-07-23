@@ -20,7 +20,7 @@ export const ErrorScreen = ({ code, title, message, onRetry }: ErrorScreenProps)
       style={{ background: 'var(--bg-body)' }}
     >
       <span className="absolute -top-24 -left-24 size-72 rounded-full bg-primary-400/10 blur-3xl pointer-events-none" />
-      <span className="absolute -bottom-24 -right-24 size-72 rounded-full bg-gold-400/20 blur-3xl pointer-events-none" />
+      <span className="absolute -bottom-24 -right-24 size-72 rounded-full bg-coral-400/20 blur-3xl pointer-events-none" />
       <span className="absolute top-1/3 right-16 size-40 rounded-full bg-primary-300/10 blur-2xl pointer-events-none" />
 
       <div

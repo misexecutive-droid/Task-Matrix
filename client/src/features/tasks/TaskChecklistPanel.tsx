@@ -70,7 +70,7 @@ const ItemRow = ({
         </span>
 
         <div className="flex-1 min-w-0">
-          <p className={`text-base font-display font-medium leading-tight ${item.isDone ? 'line-through text-text-muted' : 'text-text'}`}>
+          <p className={`text-base font-mono font-medium leading-tight ${item.isDone ? 'line-through text-text-muted' : 'text-text'}`}>
             {item.label}
           </p>
           
@@ -131,7 +131,7 @@ const ItemRow = ({
               />
               <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-transparent opacity-0 group-hover/img:opacity-100 transition-opacity" />
               
-              <span className={`absolute top-1 left-1 text-[9px] font-display font-medium px-1.5 py-0.5 rounded shadow-sm text-white backdrop-blur-md ${
+              <span className={`absolute top-1 left-1 text-[9px] font-mono font-medium px-1.5 py-0.5 rounded shadow-sm text-white backdrop-blur-md ${
                 img.captureMethod === 'LIVE' ? 'bg-emerald-500/90' : 'bg-gray-800/90'
               }`}>
                 {img.captureMethod === 'LIVE' ? 'Live' : 'Gallery'}
@@ -246,14 +246,14 @@ const ChecklistBlock = ({
             {open ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
           </div>
           <div className="flex-1 min-w-0">
-            <h4 className="text-sm font-display font-semibold text-text truncate">
+            <h4 className="text-sm font-mono font-semibold text-text truncate">
               {checklist.title}
             </h4>
             <div className="flex items-center gap-2 mt-1 max-w-[200px]">
               <div className="h-1.5 flex-1 bg-surface-hover rounded-full overflow-hidden border border-border/50">
-                <div 
-                  className="h-full bg-primary-500 transition-all duration-500" 
-                  style={{ width: `${progress}%` }} 
+                <div
+                  className="h-full bg-gradient-to-r from-primary-500 to-primary-400 transition-all duration-500"
+                  style={{ width: `${progress}%` }}
                 />
               </div>
               <span className="text-[10px] text-text-muted font-medium w-8">
@@ -302,7 +302,7 @@ export const TaskChecklistPanel = ({ taskId, checklists, isAdmin, currentUserId 
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between gap-4 flex-wrap pb-2 border-b border-border/50">
-        <h3 className="text-lg font-display font-semibold text-text">Checklists</h3>
+        <h3 className="text-lg font-mono font-semibold text-text">Checklists</h3>
         {isAdmin && !adding && (
           <Button
             size="sm"

@@ -2,18 +2,20 @@ import { Header } from './Header';
 import { Footer } from './Footer';
 import { Outlet } from 'react-router';
 
-const PublicLayout = () => {
-    return (
-        <>
-            <div className="flex flex-col min-h-svh" style={{background : 'var(--bg-body)'}}>
-                <Header />
-                <main className="flex-1">
-                    <Outlet/>
-                </main>
-                <Footer />
-            </div>
-        </>
-    )
-}
+export const PublicLayout = () => {
+  return (
+    <div className="flex flex-col min-h-svh bg-background text-text transition-colors duration-200">
+      <Header />
 
-export { PublicLayout };
+      <main 
+        id="main-content" 
+        className="flex-1 w-full focus-visible:outline-none"
+        tabIndex={-1}
+      >
+        <Outlet />
+      </main>
+
+      <Footer />
+    </div>
+  );
+};

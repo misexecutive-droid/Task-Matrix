@@ -9,6 +9,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog';
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 import { useCreateUserMutation } from './hooks';
 
 const userSchema = z.object({
@@ -31,11 +32,15 @@ export const UserForm = ({ onClose }: UserFormProps) => {
   const {
     register,
     handleSubmit,
+    watch,
+    setValue,
     formState: { errors },
   } = useForm<UserFields>({
     resolver: zodResolver(userSchema),
     defaultValues: { role: 'USER' },
   });
+
+  const role = watch('role');
 
   const onSubmit = (data: UserFields) => {
     mutation.mutate(data, { onSuccess: () => onClose() });
@@ -56,16 +61,17 @@ export const UserForm = ({ onClose }: UserFormProps) => {
 
           <div className="flex flex-col gap-1.5">
             <label htmlFor="role" className="text-sm font-display text-text-secondary">Role</label>
-            <select
-              id="role"
-              className="w-full px-3 h-11 sm:h-10 text-sm bg-surface text-text rounded-sm border border-border focus:outline-none focus:ring-4 focus:border-primary-600 focus:ring-primary-600/15 transition-colors cursor-pointer"
-              {...register('role')}
-            >
-              <option value="USER">User</option>
-              <option value="AGENT">Agent</option>
-              <option value="MANAGER">Manager</option>
-              <option value="ADMIN">Admin</option>
-            </select>
+            <Select value={role} onValueChange={v => setValue('role', v as UserFields['role'])}>
+              <SelectTrigger id="role" className="w-full h-11 sm:h-10 text-sm">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="USER">User</SelectItem>
+                <SelectItem value="AGENT">Agent</SelectItem>
+                <SelectItem value="MANAGER">Manager</SelectItem>
+                <SelectItem value="ADMIN">Admin</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           {mutation.isError && (

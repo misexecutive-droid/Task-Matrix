@@ -4,7 +4,7 @@ import { LoginForm } from './features/auth/LoginForm';
 import { ForgotPasswordForm } from './features/auth/ForgotPasswordForm';
 import { ResetPasswordForm } from './features/auth/ResetPasswordForm';
 import { Dashboard } from './features/dashboard';
-import { TaskList } from './features/tasks';
+import { HomePage } from './features/dashboard/HomePage';
 import { PublicLayout } from './components/layout';
 import { TicketList, useTicketSocket } from './features/tickets';
 import { useNotificationSocket } from './features/notifications/useNotificationSocket';
@@ -13,6 +13,9 @@ import { UserList } from './features/admin/UserList';
 import { DepartmentList } from "./features/admin/DepartmentList"
 import { ChecklistTemplateList } from "./features/admin/ChecklistTemplateList"
 import { TatReport } from "./features/admin/TatReport"
+import { AdminTaskList } from './features/admin/AdminTaskList';
+import { SettingsPage } from './features/admin/SettingsPage';
+import { ChecklistDefinitionList, ChecklistDefinitionDetail, MyChecklists, ChecklistInstanceDetail } from './features/checklist';
 import { MyErrorBoundary, NotFoundPage } from './components/error';
 
 const ProtectedRoute = () => {
@@ -53,16 +56,17 @@ const router = createBrowserRouter([
       {
         element: <Dashboard />,
         children: [
-          { path: '/', element: <p className="font-display text-text">Welcome to TaskMatrix</p> },
-          { path: '/tasks', element: <TaskList /> },
+          { path: '/', element: <HomePage /> },
           { path: '/projects', element: <p className="font-display text-text-secondary">Projects — coming soon</p> },
           { path: '/calendar', element: <p className="font-display text-text-secondary">Calendar — coming soon</p> },
           { path: '/settings', element: <p className="font-display text-text-secondary">Settings — coming soon</p> },
           { path: '/tickets', element: <TicketList /> },
+          { path: '/checklists', element: <MyChecklists /> },
+          { path: '/checklists/:instanceId', element: <ChecklistInstanceDetail /> },
           { path: '/dashboard', element: <Navigate to="/" replace /> },
         ],
       },
-      {
+      { 
         element: <AdminRoute />,
         children: [
           {
@@ -72,8 +76,11 @@ const router = createBrowserRouter([
               { path: '/admin/users', element: <UserList /> },
               { path: '/admin/departments', element: <DepartmentList /> },
               { path: '/admin/checklist-templates', element: <ChecklistTemplateList /> },
+              { path: '/admin/scheduled-checklists', element: <ChecklistDefinitionList /> },
+              { path: '/admin/scheduled-checklists/:definitionId', element: <ChecklistDefinitionDetail /> },
               { path: '/admin/tickets', element: <TicketList /> },
-              { path: '/admin/settings', element: <p className="font-display text-text-secondary">Settings — coming soon</p> },
+              { path: '/admin/tasks', element: <AdminTaskList /> },
+              { path: '/admin/settings', element: <SettingsPage /> },
             ],
           },
         ],

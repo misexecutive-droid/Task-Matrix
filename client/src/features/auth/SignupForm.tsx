@@ -43,11 +43,11 @@ export const SignupForm = () => {
                 {/* Right Form Container */}
                 <main className="flex flex-1 items-center justify-center px-4 sm:px-8 py-10 sm:py-14 relative overflow-hidden">
                     <span className="absolute -top-28 -right-28 size-80 rounded-full border border-primary-300/15 pointer-events-none" />
-                    <span className="absolute -top-12 -right-12 size-44 rounded-full border border-gold-300/25 pointer-events-none" />
+                    <span className="absolute -top-12 -right-12 size-44 rounded-full border border-coral-300/25 pointer-events-none" />
                     <span className="absolute top-16 -right-20 size-56 rounded-full bg-primary-100/20 pointer-events-none" />
                     <span className="absolute -bottom-28 -left-28 size-80 rounded-full border border-primary-300/15 pointer-events-none" />
-                    <span className="absolute -bottom-12 -left-12 size-44 rounded-full border border-gold-300/25 pointer-events-none" />
-                    <span className="absolute bottom-16 -left-20 size-56 rounded-full bg-gold-100/25 pointer-events-none" />
+                    <span className="absolute -bottom-12 -left-12 size-44 rounded-full border border-coral-300/25 pointer-events-none" />
+                    <span className="absolute bottom-16 -left-20 size-56 rounded-full bg-coral-100/25 pointer-events-none" />
                     <span className="absolute left-10 top-[38%] size-2.5 rounded-full bg-primary-400/25 pointer-events-none" />
                     <span className="absolute right-14 bottom-[28%] size-2 rounded-full bg-primary-400/20 pointer-events-none" />
 

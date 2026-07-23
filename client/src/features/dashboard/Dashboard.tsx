@@ -27,7 +27,7 @@ export const Dashboard = () => {
           
           <div className="pointer-events-none absolute inset-0 overflow-hidden">
             <div className="absolute -top-32 -right-32 size-125 rounded-full bg-primary-400/10 blur-3xl" />
-            <div className="absolute top-1/2 -left-48 size-100 rounded-full bg-gold-400/10 blur-3xl" />
+            <div className="absolute top-1/2 -left-48 size-100 rounded-full bg-coral-400/10 blur-3xl" />
             <div className="absolute bottom-0 right-1/3 size-87.5 rounded-full bg-primary-300/8 blur-3xl" />
           </div>
 

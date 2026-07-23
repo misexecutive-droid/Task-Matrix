@@ -54,7 +54,7 @@ export const NewChecklistForm = ({ taskId, onDone }: NewChecklistFormProps) => {
     <div className="flex flex-col gap-4 p-5 border border-border rounded-xl bg-surface shadow-md">
       {!!templates?.length && (
         <div className="flex items-center justify-between gap-2 pb-4 border-b border-border/50">
-          <span className="text-sm font-medium text-text-secondary">Or apply a template</span>
+          <span className="text-sm font-mono font-medium text-text-secondary">Or apply a template</span>
           <div className="flex items-center gap-2 bg-surface-hover p-1 rounded-lg border border-border">
             <select
               value={templateId}
@@ -86,7 +86,7 @@ export const NewChecklistForm = ({ taskId, onDone }: NewChecklistFormProps) => {
       )}
 
       <div>
-        <label className="block text-sm font-medium text-text mb-1">Checklist Title</label>
+        <label className="block text-sm font-mono font-medium text-text mb-1">Checklist Title</label>
         <input
           autoFocus
           value={title}
@@ -97,7 +97,7 @@ export const NewChecklistForm = ({ taskId, onDone }: NewChecklistFormProps) => {
       </div>
 
       <div className="flex flex-col gap-3 mt-2">
-        <h4 className="text-sm font-medium text-text-secondary">Tasks ({itemDrafts.length})</h4>
+        <h4 className="text-sm font-mono font-medium text-text-secondary">Tasks ({itemDrafts.length})</h4>
         {itemDrafts.map((draft, i) => (
           <ItemDraftRow
             key={i}
