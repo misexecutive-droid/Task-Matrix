@@ -86,10 +86,11 @@ export const authService = {
   // ADMIN/MANAGER/AGENT) with no department/store — those are only ever set by an admin later
   // via the /users management endpoints, not chosen by the person signing themselves up.
   async register(input: RegisterInput) {
-    const existing = await User.findOne({ email: input.email });
+    const email = input.email.trim().toLowerCase();
+    const existing = await User.findOne({ email });
     if (existing) throw AppError.conflict('Email already registered');
 
-    const user = new User({ email: input.email, firstName: input.firstName, lastName: input.lastName });
+    const user = new User({ email, firstName: input.firstName, lastName: input.lastName });
     // Same virtual-setter pattern as login/user.service.ts's create() — assigning `.password`
     // triggers the model's pre('validate') hook to hash it before saving.
     (user as any).password = input.password;
@@ -102,10 +103,14 @@ export const authService = {
 
   // Handles a login attempt: check credentials, and if valid, issue a fresh pair of tokens.
   async login(input: LoginInput) {
-    // Look up the user by email. `.select('+passwordHash')` is needed because the User model
-    // likely excludes passwordHash from queries by default (for safety) - we explicitly opt back
-    // in here since we need it to verify the password.
-    const user = await User.findOne({ email: input.email }).select('+passwordHash');
+    // The schema lowercases/trims email on SAVE only (see User.ts), never on a query filter -
+    // so this lookup has to normalize the same way, or a merely differently-cased/padded email
+    // (which is how the account is actually stored) silently fails to match.
+    const email = input.email.trim().toLowerCase();
+    // `.select('+passwordHash')` is needed because the User model excludes passwordHash from
+    // queries by default (for safety) - we explicitly opt back in here since we need it to
+    // verify the password.
+    const user = await User.findOne({ email }).select('+passwordHash');
     // If no user was found, OR the account has been deactivated, reject with a generic message.
     // Using the same "Invalid credentials" message for "no such user" and "wrong password" stops
     // attackers from being able to tell whether a given email is registered (user enumeration).
@@ -169,8 +174,8 @@ export const authService = {
   // reveals whether the email exists) - the controller responds the same generic message regardless,
   // which is what actually protects against user enumeration; this just makes sure there's nothing
   // to leak even if that changed later.
-  async forgotPassword(email: string) {
-    const user = await User.findOne({ email, isActive: true });
+  async forgotPassword(rawEmail: string) {
+    const user = await User.findOne({ email: rawEmail.trim().toLowerCase(), isActive: true });
     if (!user) return;
 
     const rawToken = crypto.randomBytes(32).toString('hex');
@@ -187,7 +192,7 @@ export const authService = {
     const resetLink = `${env.CLIENT_URL}/reset-password?token=${rawToken}`;
     // Always logged server-side regardless of whether the email actually sends (dev convenience,
     // and a fallback if SMTP is ever misconfigured) - see config/mailer.ts for the send itself.
-    console.log(`[auth] Password reset requested for ${email}`);
+    console.log(`[auth] Password reset requested for ${user.email}`);
     console.log(`[auth] Reset link: ${resetLink}`);
 
     await sendMail({

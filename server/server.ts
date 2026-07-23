@@ -6,6 +6,7 @@ import { connectDB, disconnectDB } from "./src/config/db.js";
 import { env } from "./src/config/env.js";
 import { initSocket } from "./src/sockets/socket.js";
 import { startSlaSweep } from "./src/jobs/slaSweep.job.js";
+import { startChecklistInstanceGenerator } from "./src/jobs/checklistInstanceGenerator.job.js";
 import { settingsService } from "./src/modules/settings/settings.service.js";
 
 class ServerBootstrap {
@@ -23,6 +24,7 @@ class ServerBootstrap {
     initSocket(this.httpServer);
 
     startSlaSweep();
+    startChecklistInstanceGenerator();
 
     this.httpServer.listen(env.PORT, () => {
       console.log(`Server listening on http://localhost:${env.PORT}`);
