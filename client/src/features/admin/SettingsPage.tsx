@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Settings as SettingsIcon, CheckSquare } from 'lucide-react';
 import { Input, Button, Form, Skeleton } from '../../components';
 import { useSettingsQuery, useUpdateSettingsMutation } from './hooks';
 
@@ -44,7 +44,13 @@ export const SettingsPage = () => {
   if (isPending) {
     return (
       <div className="flex flex-col gap-6 max-w-lg">
-        <Skeleton className="h-6 w-40" />
+        <div className="flex items-center gap-3">
+          <Skeleton className="size-10 rounded-xl shrink-0" />
+          <div className="flex flex-col gap-1.5">
+            <Skeleton className="h-5 w-24" />
+            <Skeleton className="h-3 w-56" />
+          </div>
+        </div>
         <div className="flex flex-col gap-4">
           {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-10 w-full" />)}
         </div>
@@ -54,11 +60,16 @@ export const SettingsPage = () => {
 
   return (
     <div className="flex flex-col gap-6 max-w-lg">
-      <div>
-        <h1 className="text-xl font-display font-semibold text-text">Settings</h1>
-        <p className="text-sm text-text-muted mt-0.5">
-          System-wide defaults for ticket SLA and file uploads.
-        </p>
+      <div className="flex items-center gap-3">
+        <div className="size-10 rounded-xl bg-gradient-to-br from-primary-600 to-primary-500 flex items-center justify-center shrink-0 shadow-sm shadow-primary-600/20">
+          <SettingsIcon size={18} className="text-white" />
+        </div>
+        <div>
+          <h1 className="text-xl font-display font-semibold text-text">Settings</h1>
+          <p className="text-sm text-text-muted mt-0.5">
+            System-wide defaults for ticket SLA and file uploads.
+          </p>
+        </div>
       </div>
 
       <Form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-5" noValidate>
@@ -98,11 +109,17 @@ export const SettingsPage = () => {
             <div className="flex flex-col gap-1.5">
               <span className="text-sm font-display font-medium text-text-secondary">Allowed image types</span>
               <div className="flex gap-4">
-                {IMAGE_TYPE_OPTIONS.map(opt => (
+                {IMAGE_TYPE_OPTIONS.map(opt => {
+                  const checked = field.value?.includes(opt.value) ?? false;
+                  return (
                   <label key={opt.value} className="flex items-center gap-1.5 text-sm text-text font-display cursor-pointer">
+                    <div className={`flex items-center justify-center size-4 rounded border transition-colors ${checked ? 'bg-primary-500 border-primary-500' : 'bg-surface border-border'}`}>
+                      {checked && <CheckSquare size={11} className="text-white" />}
+                    </div>
                     <input
                       type="checkbox"
-                      checked={field.value?.includes(opt.value) ?? false}
+                      className="hidden"
+                      checked={checked}
                       onChange={e => {
                         const next = e.target.checked
                           ? [...(field.value ?? []), opt.value]
@@ -112,7 +129,8 @@ export const SettingsPage = () => {
                     />
                     {opt.label}
                   </label>
-                ))}
+                  );
+                })}
               </div>
               {errors.allowedImageTypes && (
                 <span className="text-xs font-medium text-danger">{errors.allowedImageTypes.message}</span>

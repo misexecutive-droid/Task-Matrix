@@ -5,7 +5,7 @@ import { taskApi } from "../../api/task";
 import { userApi } from "../../api/users"; // NEW — needed for the assignee picker
 import { taskChecklistApi } from "../../api/taskChecklist";
 import { checklistTemplateApi } from "../../api/checklistTemplates";
-import type { CreateTaskPayload, UpdateTaskPayload } from "../../api/task";
+import type { CreateTaskPayload, UpdateTaskPayload, VerifyTaskPayload, Task } from "../../api/task";
 import type {
     CreateTaskChecklistPayload,
     UpdateTaskChecklistItemPayload,
@@ -72,6 +72,32 @@ export const useUpdateTaskMutation = () => {
             toast.success('Task updated');
         },
         onError: (err) => toast.error(errorMessage(err, 'Failed to update task')),
+    });
+};
+
+// Powers the PC verification queue — tasks waiting on a given status (pending_verification),
+// scoped server-side to whatever the requester is allowed to see (PC/ADMIN get their department).
+export const useTasksByStatusQuery = (status: Task['status']) => {
+    const { token } = useAuth();
+    return useQuery({
+        queryKey: ['tasks', 'by-status', status],
+        queryFn: () => taskApi.getAll(undefined, status),
+        enabled: !!token,
+    });
+};
+
+export const useVerifyTaskMutation = () => {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: ({ id, payload }: { id: string; payload: VerifyTaskPayload }) =>
+            taskApi.verify(id, payload),
+        onSuccess: (updatedTask) => {
+            queryClient.setQueryData(TASK_KEYS.detail(updatedTask.id), updatedTask);
+            queryClient.invalidateQueries({ queryKey: ['tasks'] });
+            toast.success(updatedTask.status === 'done' ? 'Task verified and marked done' : 'Task sent back');
+        },
+        onError: (err) => toast.error(errorMessage(err, 'Failed to verify task')),
     });
 };
 

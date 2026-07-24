@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { NavLink, Outlet, useLocation } from 'react-router'
+import { AnimatePresence, motion } from 'framer-motion'
 import { LayoutDashboard, Users, Building2, TicketCheck, Settings, ListChecks , ClipboardList, Repeat } from 'lucide-react'
 import { useAuth } from "../../context/AuthContext"
 import { Header } from "../../components/layout"
@@ -12,8 +13,8 @@ const NAV = [
     { to: '/admin/checklist-templates', icon: ListChecks, label: 'Checklists', end: false },
     { to: '/admin/scheduled-checklists', icon: Repeat, label: 'Recurring Checklists', end: false },
     { to: '/admin/tickets', icon: TicketCheck, label: 'Tickets', end: false },
-    { to : '/admin/tasks' , icon : ClipboardList , label : 'Tasks', end : false},
-    { to: "/admin/settings", icon: Settings, label: "Settings", end: false }
+    { to: '/admin/tasks', icon: ClipboardList, label: 'Tasks', end: false },
+    { to: '/admin/settings', icon: Settings, label: 'Settings', end: false },
 ]
 
 
@@ -97,7 +98,17 @@ export const AdminLayout = () => {
                         items={[{ label: 'Admin', to: '/admin' }, { label: currentNav?.label ?? 'Overview' }]}
                         className="mb-5"
                     />
-                    <Outlet />
+                    <AnimatePresence mode="wait">
+                        <motion.div
+                            key={location.pathname}
+                            initial={{ opacity: 0, y: 8 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -8 }}
+                            transition={{ duration: 0.2, ease: 'easeOut' }}
+                        >
+                            <Outlet />
+                        </motion.div>
+                    </AnimatePresence>
                 </main>
             </div>
         </div>

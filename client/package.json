@@ -28,6 +28,7 @@
     "framer-motion": "^12.42.2",
     "lucide-react": "^1.22.0",
     "react": "^19.2.6",
+    "react-aria-components": "^1.19.0",
     "react-dom": "^19.2.6",
     "react-hook-form": "^7.80.0",
     "react-router": "^8.0.1",

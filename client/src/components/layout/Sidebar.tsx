@@ -9,6 +9,7 @@ import {
   TicketCheck,
   ShieldCheck,
   ClipboardCheck,
+  ShieldQuestion,
 } from 'lucide-react';
 
 const NAV = [
@@ -37,10 +38,13 @@ export const Sidebar = ({ isOpen, user, logout, onNavigate }: SidebarProps) => {
     .join('')
     .toUpperCase();
 
-  const navItems =
-    user?.role === 'ADMIN'
-      ? [...NAV, { to: '/admin/users', icon: ShieldCheck, label: 'Admin' }]
-      : NAV;
+  const navItems = [
+    ...NAV,
+    ...(user?.role === 'PC' || user?.role === 'ADMIN'
+      ? [{ to: '/verify', icon: ShieldQuestion, label: 'Verification Queue' }]
+      : []),
+    ...(user?.role === 'ADMIN' ? [{ to: '/admin/users', icon: ShieldCheck, label: 'Admin' }] : []),
+  ];
 
   const handleNavClick = () => {
     if (window.innerWidth < 768) onNavigate?.();

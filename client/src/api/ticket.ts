@@ -68,6 +68,10 @@ export type Ticket = {
   assignee:       { id: string; email: string; firstName: string; role: string } | null;
   checklists:     Checklist[];
   isOverdue:      boolean;
+  verifiedBy:       string | null;
+  verifiedAt:       string | null;
+  verificationNote: string | null;
+  verifier:         { id: string; email: string; firstName: string; role: string } | null;
 };
 
 export type PaginatedResponse<T> = {
@@ -95,6 +99,8 @@ export type CreateTicketPayload = {
 
 export type UpdateTicketPayload = Partial<Omit<CreateTicketPayload, 'assigneeId'> & { status: TicketStatus; assigneeId: string | null }>;
 
+export type VerifyTicketPayload = { action: 'APPROVE' | 'REJECT'; note?: string };
+
 export type CreateChecklistItemPayload = {
   label:               string;
   assigneeId?:         string;
@@ -121,8 +127,10 @@ export type UpdateChecklistItemPayload = {
 };
 
 export const ticketApi = {
-  getAll: (page = 1, limit = 20) =>
-    apiFetch<PaginatedResponse<Ticket>>(`/tickets?page=${page}&limit=${limit}`),
+  getAll: (page = 1, limit = 20, status?: TicketStatus) =>
+    apiFetch<PaginatedResponse<Ticket>>(
+      `/tickets?page=${page}&limit=${limit}${status ? `&status=${status}` : ''}`,
+    ),
 
   getOne: (id: string) =>
     apiFetch<ApiResponse<Ticket>>(`/tickets/${id}`),
@@ -132,6 +140,9 @@ export const ticketApi = {
 
   update: (id: string, payload: UpdateTicketPayload) =>
     apiFetch<ApiResponse<Ticket>>(`/tickets/${id}`, { method: 'PATCH', body: JSON.stringify(payload) }),
+
+  verify: (id: string, payload: VerifyTicketPayload) =>
+    apiFetch<ApiResponse<Ticket>>(`/tickets/${id}/verify`, { method: 'PATCH', body: JSON.stringify(payload) }),
 
   delete: (id: string) =>
     apiFetch<ApiResponse<{ deleted: boolean }>>(`/tickets/${id}`, { method: 'DELETE' }),

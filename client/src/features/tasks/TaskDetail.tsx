@@ -1,20 +1,22 @@
-import { 
-  Clock, 
-  ChevronRight, 
-  Loader2, 
-  Calendar, 
-  CheckCircle2, 
-  AlertCircle, 
-  User, 
-  Building2, 
-  FileText, 
-  Layers, 
-  Tag, 
-  ArrowRight,
-  Sparkles
+import {
+  Clock,
+  ChevronRight,
+  Loader2,
+  Calendar,
+  CheckCircle2,
+  AlertCircle,
+  User,
+  Building2,
+  FileText,
+  Layers,
+  Tag,
+  ShieldQuestion,
+  ShieldCheck,
+  ShieldX,
 } from 'lucide-react';
 import { useTaskQuery, useUpdateTaskMutation } from './hook';
 import { TaskChecklistPanel } from './TaskChecklistPanel';
+import { TaskVerifyActions } from './TaskVerifyActions';
 import { Button, Skeleton } from '../../components';
 import {
   Sheet,
@@ -37,6 +39,7 @@ export const TaskDetail = ({ task: initialTask, onClose }: TaskDetailProps) => {
   const task = fresh ?? initialTask;
   const { user } = useAuth();
   const isAdmin = user?.role === 'ADMIN';
+  const isVerifier = user?.role === 'PC' || user?.role === 'ADMIN';
 
   const updateMutation = useUpdateTaskMutation();
   const priority = PRIORITY_MAP[task.priority];
@@ -53,10 +56,12 @@ export const TaskDetail = ({ task: initialTask, onClose }: TaskDetailProps) => {
 
         {/* Ambient Top Status Accent Bar */}
         <div className={`h-1.5 shrink-0 transition-all duration-300 ${
-          task.status === 'done' 
+          task.status === 'done'
             ? 'bg-gradient-to-r from-emerald-500 via-teal-400 to-emerald-500' :
-          task.status === 'in_progress' 
+          task.status === 'in_progress'
             ? 'bg-gradient-to-r from-amber-500 via-orange-400 to-amber-500' :
+          task.status === 'pending_verification'
+            ? 'bg-gradient-to-r from-indigo-500 via-blue-400 to-indigo-500' :
             'bg-gradient-to-r from-primary-500 via-indigo-500 to-purple-500'
         }`} />
 
@@ -185,6 +190,23 @@ export const TaskDetail = ({ task: initialTask, onClose }: TaskDetailProps) => {
                 )}
               </div>
 
+              {/* Verification outcome banner — shows the PC's note from the last approve/reject */}
+              {task.verificationNote && (
+                <div className={`flex items-start gap-2 p-3 rounded-xl border text-xs ${
+                  task.status === 'done'
+                    ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-400'
+                    : 'bg-amber-500/10 border-amber-500/20 text-amber-600 dark:text-amber-400'
+                }`}>
+                  {task.status === 'done' ? <ShieldCheck size={14} className="shrink-0 mt-0.5" /> : <ShieldX size={14} className="shrink-0 mt-0.5" />}
+                  <div>
+                    <p className="font-semibold">
+                      {task.status === 'done' && task.verifiedBy ? 'Verified' : 'Sent back for changes'}
+                    </p>
+                    <p className="mt-0.5 text-text-secondary">{task.verificationNote}</p>
+                  </div>
+                </div>
+              )}
+
               {/* Checklists Panel */}
               <div className="space-y-2 pt-2 border-t border-border/30">
                 <div className="flex items-center gap-1.5 text-[11px] font-semibold text-text-muted uppercase tracking-wider select-none mb-1">
@@ -201,13 +223,26 @@ export const TaskDetail = ({ task: initialTask, onClose }: TaskDetailProps) => {
           )}
         </div>
 
+        {/* PC/Admin verification actions — only shown while the task is awaiting review */}
+        {isVerifier && task.status === 'pending_verification' && (
+          <div className="px-4 pt-3 pb-1 border-t border-border/40 bg-surface/80 backdrop-blur-md">
+            <TaskVerifyActions task={task} />
+          </div>
+        )}
+
         {/* Footer Actions */}
         <SheetFooter className="p-4 border-t border-border/40 bg-surface/80 backdrop-blur-md flex-row items-center justify-between gap-3">
           <div>
-            {!next && (
+            {task.status === 'done' && (
               <div className="flex items-center gap-1.5 text-xs font-semibold text-emerald-400 px-3 py-1.5 bg-emerald-500/10 border border-emerald-500/25 rounded-lg shadow-2xs">
                 <CheckCircle2 size={14} className="text-emerald-400 shrink-0" />
                 <span>Task Completed</span>
+              </div>
+            )}
+            {task.status === 'pending_verification' && !isVerifier && (
+              <div className="flex items-center gap-1.5 text-xs font-semibold text-indigo-400 px-3 py-1.5 bg-indigo-500/10 border border-indigo-500/25 rounded-lg shadow-2xs">
+                <ShieldQuestion size={14} className="text-indigo-400 shrink-0" />
+                <span>Awaiting verification</span>
               </div>
             )}
           </div>
@@ -232,9 +267,9 @@ export const TaskDetail = ({ task: initialTask, onClose }: TaskDetailProps) => {
               </Button>
             )}
 
-            <Button 
-              variant="primary" 
-              size="sm" 
+            <Button
+              variant="primary"
+              size="sm"
               onClick={onClose}
               className="h-9 px-4 text-xs font-mono bg-gradient-to-r from-primary-500 to-indigo-600 hover:from-primary-600 hover:to-indigo-700 text-white shadow-md shadow-primary-500/20 rounded-lg active:scale-[0.98] transition-all"
             >

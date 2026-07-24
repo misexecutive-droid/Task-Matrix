@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Clock3, AlertTriangle, ListChecks } from 'lucide-react';
+import { Clock3, AlertTriangle, ListChecks, BarChart3 } from 'lucide-react';
 import { useTatReportQuery } from '../tickets/hook';
 import type { TatReportGroupBy } from '../../api/ticket';
 import { Skeleton } from '@/components';
@@ -30,12 +30,12 @@ const BarChart = ({ rows, barClassName, unit }: {
   return (
     <div className="flex items-end gap-1.5 h-40 px-1">
       {rows.map(r => (
-        <div key={r.bucket} className="flex-1 flex flex-col items-center justify-end gap-1 group min-w-0">
-          <span className="text-[10px] font-display text-text-muted opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+        <div key={r.bucket} className="flex-1 h-full flex flex-col items-center justify-end gap-1 group min-w-0">
+          <span className="text-[10px] font-display font-medium text-text-secondary opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
             {r.value}{unit}
           </span>
           <div
-            className={`w-full rounded-t-sm transition-all ${barClassName}`}
+            className={`w-full rounded-t-sm transition-all group-hover:brightness-110 ${barClassName}`}
             style={{ height: `${Math.max(2, (r.value / max) * 100)}%` }}
           />
         </div>
@@ -60,9 +60,14 @@ export const TatReport = () => {
 
   return (
     <div className="flex flex-col gap-6 max-w-4xl">
-      <div>
-        <h1 className="text-xl font-display font-semibold text-text">Ticket TAT report</h1>
-        <p className="text-sm text-text-muted mt-0.5">Turnaround time on closed tickets, grouped by period.</p>
+      <div className="flex items-center gap-3">
+        <div className="size-10 rounded-xl bg-gradient-to-br from-primary-600 to-primary-500 flex items-center justify-center shrink-0 shadow-sm shadow-primary-600/20">
+          <BarChart3 size={18} className="text-white" />
+        </div>
+        <div>
+          <h1 className="text-xl font-display font-semibold text-text">Ticket TAT report</h1>
+          <p className="text-sm text-text-muted mt-0.5">Turnaround time on closed tickets, grouped by period.</p>
+        </div>
       </div>
 
       <div className="flex gap-1 p-1 bg-surface-hover rounded-lg w-fit">
@@ -85,7 +90,7 @@ export const TatReport = () => {
           <div className="grid grid-cols-3 gap-4">
             {
               Array.from({ length: 3 }).map((_, i) => (
-                <div key={i} className='flex items-center gap-3 px-4 py-3 rounded-lg border border-border bg-surface'>
+                <div key={i} className='flex items-center gap-3 px-4 py-3 rounded-xl border border-border bg-surface shadow-sm'>
                   <Skeleton className='size-[18px] rounded-full' />
                   <div className='flex flex-col gap-1.5'>
                     <Skeleton className='h-5 w-12' />
@@ -99,7 +104,7 @@ export const TatReport = () => {
 
           </div>
 
-          <div className='rounded-lg border border-border bg-surface p-4'>
+          <div className='rounded-xl border border-border bg-surface shadow-sm p-4'>
             <Skeleton className="h-3 w-32 mb-3" />
             <Skeleton className="h-40 w-full" />
 
@@ -116,21 +121,21 @@ export const TatReport = () => {
       {!isPending && !isError && (
         <>
           <div className="grid grid-cols-3 gap-4">
-            <div className="flex items-center gap-3 px-4 py-3 rounded-lg border border-border bg-surface">
+            <div className="flex items-center gap-3 px-4 py-3 rounded-xl border border-border bg-surface shadow-sm">
               <ListChecks size={18} className="text-primary-500" />
               <div>
                 <p className="text-lg font-display font-semibold text-text">{totalClosed}</p>
                 <p className="text-xs text-text-muted font-display">Closed tickets</p>
               </div>
             </div>
-            <div className="flex items-center gap-3 px-4 py-3 rounded-lg border border-border bg-surface">
+            <div className="flex items-center gap-3 px-4 py-3 rounded-xl border border-border bg-surface shadow-sm">
               <Clock3 size={18} className="text-amber-500" />
               <div>
                 <p className="text-lg font-display font-semibold text-text">{avgTat ?? '—'}{avgTat != null ? 'h' : ''}</p>
                 <p className="text-xs text-text-muted font-display">Avg. turnaround</p>
               </div>
             </div>
-            <div className="flex items-center gap-3 px-4 py-3 rounded-lg border border-border bg-surface">
+            <div className="flex items-center gap-3 px-4 py-3 rounded-xl border border-border bg-surface shadow-sm">
               <AlertTriangle size={18} className="text-danger" />
               <div>
                 <p className="text-lg font-display font-semibold text-text">{totalOverdue}</p>
@@ -146,7 +151,7 @@ export const TatReport = () => {
             </div>
           ) : (
             <>
-              <div className="rounded-lg border border-border bg-surface p-4">
+              <div className="rounded-xl border border-border bg-surface shadow-sm p-4">
                 <h3 className="text-xs font-display font-semibold text-text-muted uppercase tracking-wide mb-3">
                   Average TAT (hours)
                 </h3>
@@ -160,7 +165,7 @@ export const TatReport = () => {
                 </div>
               </div>
 
-              <div className="rounded-lg border border-border bg-surface p-4">
+              <div className="rounded-xl border border-border bg-surface shadow-sm p-4">
                 <h3 className="text-xs font-display font-semibold text-text-muted uppercase tracking-wide mb-3">
                   Tickets closed
                 </h3>

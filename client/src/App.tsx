@@ -16,6 +16,7 @@ import { TatReport } from "./features/admin/TatReport"
 import { AdminTaskList } from './features/admin/AdminTaskList';
 import { SettingsPage } from './features/admin/SettingsPage';
 import { ChecklistDefinitionList, ChecklistDefinitionDetail, MyChecklists, ChecklistInstanceDetail } from './features/checklist';
+import { VerificationQueue } from './features/verification';
 import { MyErrorBoundary, NotFoundPage } from './components/error';
 
 const ProtectedRoute = () => {
@@ -32,6 +33,12 @@ const AdminRoute = () => {
   const { token, user } = useAuth();
   if (!token) return <Navigate to="/login" replace />;
   return user?.role === 'ADMIN' ? <Outlet /> : <Navigate to="/" replace />;
+};
+
+const PCRoute = () => {
+  const { token, user } = useAuth();
+  if (!token) return <Navigate to="/login" replace />;
+  return user?.role === 'PC' || user?.role === 'ADMIN' ? <Outlet /> : <Navigate to="/" replace />;
 };
 
 const router = createBrowserRouter([
@@ -64,9 +71,15 @@ const router = createBrowserRouter([
           { path: '/checklists', element: <MyChecklists /> },
           { path: '/checklists/:instanceId', element: <ChecklistInstanceDetail /> },
           { path: '/dashboard', element: <Navigate to="/" replace /> },
+          {
+            element: <PCRoute />,
+            children: [
+              { path: '/verify', element: <VerificationQueue /> },
+            ],
+          },
         ],
       },
-      { 
+      {
         element: <AdminRoute />,
         children: [
           {

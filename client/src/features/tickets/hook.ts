@@ -5,9 +5,11 @@ import { ticketApi } from '../../api/ticket';
 import type {
   CreateTicketPayload,
   UpdateTicketPayload,
+  VerifyTicketPayload,
   CreateChecklistPayload,
   UpdateChecklistItemPayload,
   TatReportGroupBy,
+  TicketStatus,
 } from '../../api/ticket';
 import { userApi } from "../../api/users";
 import { departmentApi } from "../../api/departments";
@@ -82,6 +84,32 @@ export const useUpdateTicketMutation = () => {
       toast.success('Ticket updated');
     },
     onError: (err) => toast.error(errorMessage(err, 'Failed to update ticket')),
+  });
+};
+
+// Powers the PC verification queue — tickets waiting on a given status (IN_REVIEW), scoped
+// server-side to whatever the requester is allowed to see (PC/ADMIN get their whole department).
+export const useTicketsByStatusQuery = (status: TicketStatus, limit = 100) => {
+  const { token } = useAuth();
+  return useQuery({
+    queryKey: ['tickets', 'by-status', status],
+    queryFn: () => ticketApi.getAll(1, limit, status).then(r => r.data),
+    enabled: !!token,
+    retry: handleQueryRetry,
+  });
+};
+
+export const useVerifyTicketMutation = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, payload }: { id: string; payload: VerifyTicketPayload }) =>
+      ticketApi.verify(id, payload).then(r => r.data),
+    onSuccess: (updated) => {
+      queryClient.setQueryData(KEYS.detail(updated.id), updated);
+      queryClient.invalidateQueries({ queryKey: ['tickets'] });
+      toast.success(updated.status === 'CLOSED' ? 'Ticket verified and closed' : 'Ticket sent back');
+    },
+    onError: (err) => toast.error(errorMessage(err, 'Failed to verify ticket')),
   });
 };
 

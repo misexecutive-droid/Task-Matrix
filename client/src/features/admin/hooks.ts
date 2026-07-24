@@ -67,7 +67,11 @@ export const useCreateUserMutation = () => {
     const queryClient = useQueryClient();
     return useMutation({
         mutationFn: (payload: CreateUserPayload) => adminApi.create(payload).then(r => r.data),
-        onSuccess: () => queryClient.invalidateQueries({ queryKey: USER_KEYS.all }),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: USER_KEYS.all });
+            toast.success('User created');
+        },
+        onError: (err) => toast.error(errorMessage(err, 'Failed to create user')),
     });
 };
 
@@ -79,7 +83,9 @@ export const useUpdateUserMutation = () => {
         onSuccess: (updated) => {
             queryClient.setQueryData(USER_KEYS.detail(updated.id), updated);
             queryClient.invalidateQueries({ queryKey: USER_KEYS.all });
+            toast.success('User updated');
         },
+        onError: (err) => toast.error(errorMessage(err, 'Failed to update user')),
     });
 };
 
@@ -90,7 +96,9 @@ export const useDeleteUserMutation = () => {
         onSuccess: (_data, id) => {
             queryClient.removeQueries({ queryKey: USER_KEYS.detail(id) });
             queryClient.invalidateQueries({ queryKey: USER_KEYS.all });
+            toast.success('User deleted');
         },
+        onError: (err) => toast.error(errorMessage(err, 'Failed to delete user')),
     });
 };
 
@@ -112,7 +120,11 @@ export const useCreateDepartmentMutation = () => {
     const queryClient = useQueryClient();
     return useMutation({
         mutationFn: (payload: CreateDepartmentPayload) => departmentApi.create(payload).then(r => r.data),
-        onSuccess: () => queryClient.invalidateQueries({ queryKey: DEPARTMENT_KEY.all })
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: DEPARTMENT_KEY.all });
+            toast.success('Department created');
+        },
+        onError: (err) => toast.error(errorMessage(err, 'Failed to create department')),
     })
 }
 
@@ -121,8 +133,11 @@ export const useUpdateDepartmentMutation = () => {
     return useMutation({
         mutationFn: ({ id, payload }: { id: string; payload: UpdateDepartmentPayload }) =>
             departmentApi.update(id, payload).then(r => r.data),
-
-        onSuccess: () => queryClient.invalidateQueries({ queryKey: DEPARTMENT_KEY.all })
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: DEPARTMENT_KEY.all });
+            toast.success('Department updated');
+        },
+        onError: (err) => toast.error(errorMessage(err, 'Failed to update department')),
     })
 }
 
@@ -130,7 +145,11 @@ export const useDeleteDepartmentMutation = () => {
     const queryClient = useQueryClient();
     return useMutation({
         mutationFn: (id: string) => departmentApi.delete(id),
-        onSuccess: () => queryClient.invalidateQueries({ queryKey: DEPARTMENT_KEY.all })
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: DEPARTMENT_KEY.all });
+            toast.success('Department deleted');
+        },
+        onError: (err) => toast.error(errorMessage(err, 'Failed to delete department')),
     })
 }
 
@@ -155,7 +174,11 @@ export const useCreateChecklistTemplateMutation = () => {
     const queryClient = useQueryClient();
     return useMutation({
         mutationFn: (payload: CreateChecklistTemplatePayload) => checklistTemplateApi.create(payload).then(r => r.data),
-        onSuccess: () => invalidateAllTemplateLists(queryClient),
+        onSuccess: () => {
+            invalidateAllTemplateLists(queryClient);
+            toast.success('Template created');
+        },
+        onError: (err) => toast.error(errorMessage(err, 'Failed to create template')),
     })
 };
 
@@ -164,7 +187,11 @@ export const useUpdateChecklistTemplateMutation = () => {
     return useMutation({
         mutationFn: ({ id, payload }: { id: string; payload: UpdateChecklistTemplatePayload }) =>
             checklistTemplateApi.update(id, payload).then(r => r.data),
-        onSuccess: () => invalidateAllTemplateLists(queryClient),
+        onSuccess: () => {
+            invalidateAllTemplateLists(queryClient);
+            toast.success('Template updated');
+        },
+        onError: (err) => toast.error(errorMessage(err, 'Failed to update template')),
     })
 };
 
@@ -172,7 +199,11 @@ export const useDeleteChecklistTemplateMutation = () => {
     const queryClient = useQueryClient();
     return useMutation({
         mutationFn: (id: string) => checklistTemplateApi.delete(id),
-        onSuccess: () => invalidateAllTemplateLists(queryClient),
+        onSuccess: () => {
+            invalidateAllTemplateLists(queryClient);
+            toast.success('Template deleted');
+        },
+        onError: (err) => toast.error(errorMessage(err, 'Failed to delete template')),
     })
 };
 
@@ -181,7 +212,11 @@ export const useAddChecklistTemplateItemMutation = () => {
     return useMutation({
         mutationFn: ({ templateId, payload }: { templateId: string; payload: CreateChecklistTemplateItemPayload }) =>
             checklistTemplateApi.addItem(templateId, payload).then(r => r.data),
-        onSuccess: () => invalidateAllTemplateLists(queryClient),
+        onSuccess: () => {
+            invalidateAllTemplateLists(queryClient);
+            toast.success('Item added');
+        },
+        onError: (err) => toast.error(errorMessage(err, 'Failed to add item')),
     })
 };
 
@@ -191,6 +226,7 @@ export const useUpdateChecklistTemplateItemMutation = () => {
         mutationFn: ({ id, payload }: { id: string; payload: UpdateChecklistTemplateItemPayload }) =>
             checklistTemplateApi.updateItem(id, payload).then(r => r.data),
         onSuccess: () => invalidateAllTemplateLists(queryClient),
+        onError: (err) => toast.error(errorMessage(err, 'Failed to update item')),
     })
 };
 
@@ -198,7 +234,11 @@ export const useDeleteChecklistTemplateItemMutation = () => {
     const queryClient = useQueryClient();
     return useMutation({
         mutationFn: (id: string) => checklistTemplateApi.deleteItem(id),
-        onSuccess: () => invalidateAllTemplateLists(queryClient),
+        onSuccess: () => {
+            invalidateAllTemplateLists(queryClient);
+            toast.success('Item deleted');
+        },
+        onError: (err) => toast.error(errorMessage(err, 'Failed to delete item')),
     })
 };
 

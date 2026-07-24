@@ -1,6 +1,7 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { Building2 } from 'lucide-react';
 import { Input, Button } from '../../components';
 import {
   Dialog,
@@ -54,7 +55,15 @@ export const DepartmentForm = ({ onClose, department }: DepartmentFormProps) => 
     <Dialog open onOpenChange={v => { if (!v) onClose(); }}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{isEditing ? "Edit department" : "New department"}</DialogTitle>
+          <div className="flex items-center gap-2.5">
+            <Building2 className="w-5 h-5 text-primary-500 shrink-0" />
+            <div>
+              <DialogTitle>{isEditing ? "Edit department" : "New department"}</DialogTitle>
+              <p className="text-xs text-text-muted mt-0.5">
+                {isEditing ? "Update this department's name." : "Departments group users and scope checklist assignments."}
+              </p>
+            </div>
+          </div>
         </DialogHeader>
 
         <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4" noValidate>

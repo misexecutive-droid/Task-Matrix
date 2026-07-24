@@ -16,8 +16,11 @@ export const TaskRow = ({ task, assigneeName, isAdmin, onOpen, index = 0 }: Task
     const updateMutation = useUpdateTaskMutation();
     const deleteMutation = useDeleteTaskMutation();
 
+    const next = NEXT_STATUS[task.status];
+
     const cycleStatus = () => {
-        updateMutation.mutate({ id: task.id, payload: { status: NEXT_STATUS[task.status] } });
+        if (!next) return; // done/pending_verification have no self-service next step
+        updateMutation.mutate({ id: task.id, payload: { status: next } });
     };
 
     const priority = PRIORITY_MAP[task.priority];
@@ -29,8 +32,8 @@ export const TaskRow = ({ task, assigneeName, isAdmin, onOpen, index = 0 }: Task
         >
             <button
                 onClick={cycleStatus}
-                disabled={updateMutation.isPending}
-                className="shrink-0 cursor-pointer disabled:opacity-50"
+                disabled={updateMutation.isPending || !next}
+                className="shrink-0 cursor-pointer disabled:opacity-50 disabled:cursor-default"
                 aria-label="Cycle status"
             >
                 {updateMutation.isPending

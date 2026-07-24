@@ -9,3 +9,4 @@ export { PageNav }         from './pagination';
 export { Skeleton }        from './skeleton';
 export { Dropdown }        from './dropdown';
 export type { DropdownAction } from './dropdown';
+export { DateTimePicker }  from './dateTime';

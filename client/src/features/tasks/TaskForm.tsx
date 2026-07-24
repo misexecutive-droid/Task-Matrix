@@ -13,7 +13,7 @@ import {
   Layers,
   ArrowRight
 } from 'lucide-react';
-import { Input, Button } from '../../components';
+import { Button } from '../../components';
 import {
   Dialog,
   DialogContent,
@@ -42,21 +42,12 @@ const INPUT_BASE_CLASS =
 
 // ── Schema ─────────────────────────────────────────────────────
 const taskSchema = z.object({
-  title: z.string().trim().min(1, 'Title is required'),
-  description: z.string().optional(),
-  priority: z.enum(['low', 'medium', 'high']),
-  dueDate: z
-    .string()
-    .optional()
-    .transform((val) => (val ? new Date(val).toISOString() : undefined)),
-  assigneeId: z
-    .string()
-    .optional()
-    .transform((val) => (val !== '' ? val : undefined)),
-  departmentId: z
-    .string()
-    .optional()
-    .transform((val) => (val !== '' ? val : undefined)),
+  title:        z.string().trim().min(1, 'Title is required'),
+  description:  z.string().optional(),
+  priority:     z.enum(['low', 'medium', 'high']),
+  dueDate:      z.string().optional().or(z.literal('')),
+  assigneeId:   z.string().optional().or(z.literal('')),
+  departmentId: z.string().optional().or(z.literal('')),
 });
 
 type TaskFields = z.infer<typeof taskSchema>;
@@ -116,9 +107,17 @@ export const TaskForm = ({ onClose }: TaskFormProps) => {
   const departmentId = watch('departmentId');
 
   const onSubmit = (data: TaskFields) => {
-    mutation.mutate(data, {
-      onSuccess: () => onClose(),
-    });
+    mutation.mutate(
+      {
+        title:        data.title,
+        description:  data.description,
+        priority:     data.priority,
+        dueDate:      data.dueDate ? new Date(data.dueDate).toISOString() : undefined,
+        assigneeId:   data.assigneeId !== '' ? data.assigneeId : undefined,
+        departmentId: data.departmentId !== '' ? data.departmentId : undefined,
+      },
+      { onSuccess: () => onClose() },
+    );
   };
 
   return (
@@ -163,14 +162,18 @@ export const TaskForm = ({ onClose }: TaskFormProps) => {
               <label htmlFor="title" className={LABEL_CLASS}>
                 <Heading className="w-3.5 h-3.5 text-primary-400" /> Task Title <span className="text-rose-400">*</span>
               </label>
-              <Input
+              <input
                 id="title"
                 placeholder="e.g. Redesign the landing page hero section"
-                error={errors.title?.message}
-                className="font-mono text-xs h-10 bg-surface/60 border-border/70 focus:border-primary-500/60 rounded-lg shadow-sm"
+                className={`${INPUT_BASE_CLASS} h-10`}
                 {...register('title')}
                 autoFocus
               />
+              {errors.title?.message && (
+                <p className="text-[11px] text-rose-400 flex items-center gap-1">
+                  <AlertCircle className="w-3 h-3" /> {errors.title.message}
+                </p>
+              )}
             </div>
 
             {/* Description Area */}

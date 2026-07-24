@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Plus, CheckCheck, Clock, Circle, AlertCircle, LayoutList, Kanban } from "lucide-react";
+import { Plus, CheckCheck, Clock, Circle, AlertCircle, LayoutList, Kanban, ShieldQuestion } from "lucide-react";
 import { Button, Skeleton } from "../../components";
 import { useTasksQuery, useAssignableUsersQuery } from "./hook";
 import { useDepartmentsQuery } from "../tickets/hook";
@@ -43,28 +43,35 @@ export const PRIORITY_MAP = {
 export const STATUS_ICON = {
     todo: <Circle size={15} className="text-text-light" />,
     in_progress: <Clock size={15} className="text-amber-500" />,
+    pending_verification: <ShieldQuestion size={15} className="text-indigo-500" />,
     done: <CheckCheck size={15} className="text-emerald-500" />,
 } satisfies Record<Task['status'], React.ReactNode>;
 
 export const STATUS_LABEL = {
     todo: 'To Do',
     in_progress: 'In Progress',
+    pending_verification: 'Pending Verification',
     done: 'Done',
 } satisfies Record<Task['status'], string>;
 
-export const NEXT_STATUS: Record<Task['status'], Task['status']> = {
+// A task's next step, or null once it's out of the assignee's hands — pending_verification
+// waits on a PC/Admin (see the verify buttons on TaskBoard/TaskDetail), done is terminal.
+export const NEXT_STATUS: Record<Task['status'], Task['status'] | null> = {
     todo: 'in_progress',
-    in_progress: 'done',
-    done: 'todo',
+    in_progress: 'pending_verification',
+    pending_verification: null,
+    done: null,
 };
 
 interface TaskListProps {
     userId?: string;
+    hideHeader?: boolean;
 }
 
-export const TaskList = ({ userId }: TaskListProps = {}) => {
+export const TaskList = ({ userId, hideHeader = false }: TaskListProps = {}) => {
     const { user } = useAuth();
     const isAdmin = user?.role === "ADMIN";
+    const isVerifier = user?.role === "PC" || user?.role === "ADMIN";
     const [showForm, setShowForm] = useState(false);
     const [selected, setSelected] = useState<Task | null>(null);
     const { data: tasks, isPending, isError } = useTasksQuery(userId);
@@ -88,6 +95,7 @@ export const TaskList = ({ userId }: TaskListProps = {}) => {
         { key: 'all', label: 'All' },
         { key: 'todo', label: 'To Do' },
         { key: 'in_progress', label: 'In Progress' },
+        { key: 'pending_verification', label: 'Pending Verification' },
         { key: 'done', label: 'Done' },
     ];
 
@@ -96,19 +104,21 @@ export const TaskList = ({ userId }: TaskListProps = {}) => {
     return (
         <div className={['flex flex-col gap-6', view === 'board' ? 'max-w-6xl' : 'max-w-3xl'].join(' ')}>
             <div className="flex items-center justify-between gap-3 flex-wrap">
-                <div className="flex items-center gap-3">
-                    <div className="size-10 rounded-xl bg-gradient-to-br from-primary-600 to-primary-500 flex items-center justify-center shrink-0 shadow-sm shadow-primary-600/20">
-                        <CheckCheck size={18} className="text-white" />
+                {!hideHeader && (
+                    <div className="flex items-center gap-3">
+                        <div className="size-10 rounded-xl bg-gradient-to-br from-primary-600 to-primary-500 flex items-center justify-center shrink-0 shadow-sm shadow-primary-600/20">
+                            <CheckCheck size={18} className="text-white" />
+                        </div>
+                        <div>
+                            <h1 className="text-xl font-mono font-semibold text-text">Tasks</h1>
+                            <p className="text-sm text-text-muted mt-0.5">
+                                {tasks?.length ?? 0} task{tasks?.length !== 1 ? 's' : ''}
+                            </p>
+                        </div>
                     </div>
-                    <div>
-                        <h1 className="text-xl font-mono font-semibold text-text">Tasks</h1>
-                        <p className="text-sm text-text-muted mt-0.5">
-                            {tasks?.length ?? 0} task{tasks?.length !== 1 ? 's' : ''}
-                        </p>
-                    </div>
-                </div>
+                )}
 
-                <div className="flex items-center gap-2">
+                <div className={['flex items-center gap-2', hideHeader ? 'ml-auto' : ''].join(' ')}>
                     <div className="flex gap-1 p-1 bg-surface-hover rounded-lg">
                         <button
                             onClick={() => setView('list')}
@@ -242,6 +252,7 @@ export const TaskList = ({ userId }: TaskListProps = {}) => {
                     tasks={tasks ?? []}
                     assigneeNames={assigneeNames}
                     isAdmin={isAdmin}
+                    isVerifier={isVerifier}
                     onOpen={setSelected}
                 />
             )}

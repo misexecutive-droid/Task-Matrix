@@ -1,6 +1,7 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { UserPlus } from 'lucide-react';
 import { Input, Button } from '../../components';
 import {
   Dialog,
@@ -17,7 +18,7 @@ const userSchema = z.object({
   lastName:  z.string().optional(),
   email:     z.string().email('Enter a valid email'),
   password:  z.string().min(8, 'Password must be at least 8 characters'),
-  role:      z.enum(['ADMIN', 'MANAGER', 'AGENT', 'USER']),
+  role:      z.enum(['ADMIN', 'MANAGER', 'AGENT', 'USER', 'PC']),
 });
 
 type UserFields = z.infer<typeof userSchema>;
@@ -50,7 +51,13 @@ export const UserForm = ({ onClose }: UserFormProps) => {
     <Dialog open onOpenChange={v => { if (!v) onClose(); }}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>New user</DialogTitle>
+          <div className="flex items-center gap-2.5">
+            <UserPlus className="w-5 h-5 text-primary-500 shrink-0" />
+            <div>
+              <DialogTitle>New user</DialogTitle>
+              <p className="text-xs text-text-muted mt-0.5">Create an account and assign a role.</p>
+            </div>
+          </div>
         </DialogHeader>
 
         <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4" noValidate>
@@ -69,6 +76,7 @@ export const UserForm = ({ onClose }: UserFormProps) => {
                 <SelectItem value="USER">User</SelectItem>
                 <SelectItem value="AGENT">Agent</SelectItem>
                 <SelectItem value="MANAGER">Manager</SelectItem>
+                <SelectItem value="PC">Person in Charge (PC)</SelectItem>
                 <SelectItem value="ADMIN">Admin</SelectItem>
               </SelectContent>
             </Select>

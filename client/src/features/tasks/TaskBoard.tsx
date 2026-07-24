@@ -1,25 +1,26 @@
-import { 
-  ChevronRight, 
-  Loader2, 
-  Trash2, 
-  Calendar, 
-  User, 
-  ArrowRight, 
-  CheckCircle2, 
+import {
+  ChevronRight,
+  Loader2,
+  Trash2,
+  User,
+  ArrowRight,
+  CheckCircle2,
   Clock,
-  Sparkles 
+  Sparkles,
+  ShieldQuestion,
 } from "lucide-react";
-import { Button } from "../../components";
 import { useUpdateTaskMutation, useDeleteTaskMutation } from "./hook";
+import { TaskVerifyActions } from "./TaskVerifyActions";
 import { PRIORITY_MAP, STATUS_ICON, STATUS_LABEL, NEXT_STATUS } from "./TaskList";
 import type { Task } from "../../api/task";
 
-const COLUMNS: Task['status'][] = ['todo', 'in_progress', 'done'];
+const COLUMNS: Task['status'][] = ['todo', 'in_progress', 'pending_verification', 'done'];
 
 interface TaskBoardCardProps {
   task: Task;
   assigneeName?: string;
   isAdmin: boolean;
+  isVerifier: boolean;
   onOpen: (task: Task) => void;
   index?: number;
 }
@@ -29,7 +30,7 @@ const getInitials = (name: string) => {
   return name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
 };
 
-const TaskBoardCard = ({ task, assigneeName, isAdmin, onOpen, index = 0 }: TaskBoardCardProps) => {
+const TaskBoardCard = ({ task, assigneeName, isAdmin, isVerifier, onOpen, index = 0 }: TaskBoardCardProps) => {
   const updateMutation = useUpdateTaskMutation();
   const deleteMutation = useDeleteTaskMutation();
   const priority = PRIORITY_MAP[task.priority];
@@ -133,6 +134,15 @@ const TaskBoardCard = ({ task, assigneeName, isAdmin, onOpen, index = 0 }: TaskB
             </span>
             <ArrowRight size={13} className="opacity-0 -translate-x-2 group-hover/btn:opacity-100 group-hover/btn:translate-x-0 transition-all" />
           </button>
+        ) : task.status === 'pending_verification' ? (
+          isVerifier ? (
+            <TaskVerifyActions task={task} />
+          ) : (
+            <span className="flex items-center gap-1.5 text-xs font-medium text-indigo-500">
+              <ShieldQuestion size={13} />
+              Awaiting verification
+            </span>
+          )
         ) : (
           <span className="flex items-center gap-1.5 text-xs font-medium text-emerald-500">
             <CheckCircle2 size={13} />
@@ -148,12 +158,13 @@ interface TaskBoardProps {
   tasks: Task[];
   assigneeNames: Map<string, string>;
   isAdmin: boolean;
+  isVerifier?: boolean;
   onOpen: (task: Task) => void;
 }
 
-export const TaskBoard = ({ tasks, assigneeNames, isAdmin, onOpen }: TaskBoardProps) => {
+export const TaskBoard = ({ tasks, assigneeNames, isAdmin, isVerifier = false, onOpen }: TaskBoardProps) => {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
+    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 items-start">
       {COLUMNS.map(status => {
         const columnTasks = tasks.filter(t => t.status === status);
 
@@ -166,6 +177,7 @@ export const TaskBoard = ({ tasks, assigneeNames, isAdmin, onOpen }: TaskBoardPr
             <div className={`h-1 shrink-0 ${
               status === 'done' ? 'bg-gradient-to-r from-emerald-500 to-emerald-400' :
               status === 'in_progress' ? 'bg-gradient-to-r from-amber-500 to-amber-400' :
+              status === 'pending_verification' ? 'bg-gradient-to-r from-indigo-500 to-indigo-400' :
               'bg-gradient-to-r from-primary-500 to-primary-400'
             }`} />
 
@@ -175,6 +187,7 @@ export const TaskBoard = ({ tasks, assigneeNames, isAdmin, onOpen }: TaskBoardPr
                 <div className={`p-1.5 rounded-lg shadow-sm border ${
                   status === 'done' ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-600' :
                   status === 'in_progress' ? 'bg-amber-500/10 border-amber-500/20 text-amber-600' :
+                  status === 'pending_verification' ? 'bg-indigo-500/10 border-indigo-500/20 text-indigo-600' :
                   'bg-surface border-border text-primary-500'
                 }`}>
                   {STATUS_ICON[status]}
@@ -201,6 +214,7 @@ export const TaskBoard = ({ tasks, assigneeNames, isAdmin, onOpen }: TaskBoardPr
                     key={task.id}
                     task={task}
                     isAdmin={isAdmin}
+                    isVerifier={isVerifier}
                     onOpen={onOpen}
                     index={i}
                     assigneeName={task.assigneeId ? assigneeNames.get(task.assigneeId) : undefined}

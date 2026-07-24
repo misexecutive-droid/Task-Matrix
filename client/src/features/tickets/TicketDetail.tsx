@@ -13,8 +13,11 @@ import {
   Paperclip,
   Sparkles,
   ChevronDown,
+  ShieldCheck,
+  ShieldX,
+  Loader2,
 } from 'lucide-react';
-import { useTicketQuery, useUpdateTicketMutation, useDeleteTicketMutation, useAssignableUsersQuery } from './hook';
+import { useTicketQuery, useUpdateTicketMutation, useDeleteTicketMutation, useAssignableUsersQuery, useVerifyTicketMutation } from './hook';
 import { ChecklistPanel } from './ChecklistPanel';
 import { Button, Skeleton, Dropdown, type DropdownAction } from '../../components';
 import {
@@ -69,16 +72,23 @@ export const TicketDetail = ({ ticket: initialTicket, onClose }: TicketDetailPro
   const ticket = fresh ?? initialTicket;
   const updateMut = useUpdateTicketMutation();
   const deleteMut = useDeleteTicketMutation();
+  const verifyMut = useVerifyTicketMutation();
+  const [rejectNote, setRejectNote] = useState('');
+  const [showRejectBox, setShowRejectBox] = useState(false);
 
   const { user: currentUser } = useAuth();
   const canAssign = currentUser?.role === "ADMIN" || currentUser?.role === "MANAGER";
   const isAdmin = currentUser?.role === "ADMIN";
+  const isVerifier = currentUser?.role === "PC" || currentUser?.role === "ADMIN";
   const canChangeStatus =
     currentUser?.role === "ADMIN" ||
     currentUser?.role === "MANAGER" ||
     (currentUser?.role === "AGENT" && ticket.assigneeId === currentUser?.id) ||
     (currentUser?.role === "USER" && ticket.userId === currentUser?.id);
-  
+  // Non-verifiers hand a ticket off to review instead of closing it directly — closing for good
+  // is now a PC/Admin-only action, done from the Verify button below.
+  const selectableStatuses = isVerifier ? STATUS_OPTIONS : STATUS_OPTIONS.filter(s => s.value !== 'CLOSED');
+
   const { data: assignableUsers } = useAssignableUsersQuery(ticket.departmentId ?? undefined);
 
   // Local attachment & image upload state
@@ -124,7 +134,7 @@ export const TicketDetail = ({ ticket: initialTicket, onClose }: TicketDetailPro
 
   // Status/Assignee dropdown menus — same trigger-button + action-list shape
   // as the Header account menu, just wired to mutate the ticket instead of navigating.
-  const statusActions: DropdownAction[] = STATUS_OPTIONS.map(s => ({
+  const statusActions: DropdownAction[] = selectableStatuses.map(s => ({
     label: s.label,
     onClick: () => updateMut.mutate({ id: ticket.id, payload: { status: s.value } }),
   }));
@@ -260,6 +270,23 @@ export const TicketDetail = ({ ticket: initialTicket, onClose }: TicketDetailPro
 
           </div>
 
+          {/* Verification outcome banner — shows the PC's note from the last approve/reject */}
+          {ticket.verificationNote && (
+            <div className={`flex items-start gap-2 p-3 rounded-xl border text-xs ${
+              ticket.status === 'CLOSED'
+                ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-400'
+                : 'bg-amber-500/10 border-amber-500/20 text-amber-600 dark:text-amber-400'
+            }`}>
+              {ticket.status === 'CLOSED' ? <ShieldCheck size={14} className="shrink-0 mt-0.5" /> : <ShieldX size={14} className="shrink-0 mt-0.5" />}
+              <div>
+                <p className="font-semibold">
+                  {ticket.status === 'CLOSED' && ticket.verifiedBy ? 'Verified' : 'Sent back for changes'}
+                </p>
+                <p className="mt-0.5 text-text-secondary">{ticket.verificationNote}</p>
+              </div>
+            </div>
+          )}
+
           {/* Ticket Description */}
           {ticket.description && (
             <div>
@@ -348,6 +375,61 @@ export const TicketDetail = ({ ticket: initialTicket, onClose }: TicketDetailPro
           </div>
 
         </div>
+
+        {/* PC/Admin verification actions — only shown while the ticket is awaiting review */}
+        {isVerifier && ticket.status === 'IN_REVIEW' && (
+          <div className="px-4 pt-3 pb-1 border-t border-border/40 bg-surface/50 flex flex-col gap-2">
+            {!showRejectBox ? (
+              <div className="flex items-center gap-2">
+                <Button
+                  size="sm"
+                  variant="primary"
+                  className="gap-1.5 bg-emerald-600 hover:bg-emerald-700 font-mono text-xs"
+                  isLoading={verifyMut.isPending}
+                  onClick={() => verifyMut.mutate({ id: ticket.id, payload: { action: 'APPROVE' } })}
+                >
+                  <ShieldCheck size={13} />
+                  Verify & Close
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="gap-1.5 border-rose-500/40 text-rose-500 hover:bg-rose-500/10 font-mono text-xs"
+                  disabled={verifyMut.isPending}
+                  onClick={() => setShowRejectBox(true)}
+                >
+                  <ShieldX size={13} />
+                  Reject
+                </Button>
+              </div>
+            ) : (
+              <div className="flex flex-col gap-2">
+                <textarea
+                  autoFocus
+                  value={rejectNote}
+                  onChange={e => setRejectNote(e.target.value)}
+                  placeholder="What needs to be fixed before this can be approved?"
+                  rows={2}
+                  className="w-full px-3 py-2 text-xs font-mono bg-surface border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500/50"
+                />
+                <div className="flex items-center gap-2">
+                  <Button
+                    size="sm"
+                    variant="primary"
+                    className="bg-rose-600 hover:bg-rose-700 font-mono text-xs"
+                    disabled={verifyMut.isPending || !rejectNote.trim()}
+                    onClick={() => verifyMut.mutate({ id: ticket.id, payload: { action: 'REJECT', note: rejectNote.trim() } })}
+                  >
+                    {verifyMut.isPending ? <Loader2 size={13} className="animate-spin" /> : 'Send back'}
+                  </Button>
+                  <Button size="sm" variant="outline" className="font-mono text-xs" disabled={verifyMut.isPending} onClick={() => { setShowRejectBox(false); setRejectNote(''); }}>
+                    Cancel
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Drawer Footer Actions */}
         <SheetFooter className="p-4 border-t border-border/40 bg-surface/50 flex items-center justify-between gap-2">
