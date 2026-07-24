@@ -372,4 +372,4 @@ export const ChecklistTemplateList = () => {
       {showForm && <ChecklistTemplateForm onClose={() => setShowForm(false)} />}
     </div>
   );
-};
+};  
