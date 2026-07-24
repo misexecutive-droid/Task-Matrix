@@ -1,12 +1,12 @@
 import { type Request , type Response } from "express"
 import { ticketService } from "./ticket.service.js"
-import { createTicketSchema , paginatioinSchema, updateTicketSchema , tatReportQuerySchema } from "./ticket.validation.js"
+import { createTicketSchema , paginatioinSchema, updateTicketSchema , tatReportQuerySchema, verifyTicketSchema } from "./ticket.validation.js"
 import { asyncHandler } from "../../utils/asyncHandler.js"
 
 export const ticketController = {
     list : asyncHandler( async ( req : Request , res : Response) => {
-        const { page , limit } = paginatioinSchema.parse(req.query);
-        const result = await ticketService.list(req.user!, page , limit)
+        const { page , limit, status } = paginatioinSchema.parse(req.query);
+        const result = await ticketService.list(req.user!, page , limit, status)
         res.json({ success : true , ...result})
     }),
 
@@ -33,6 +33,13 @@ export const ticketController = {
         const input = updateTicketSchema.parse(req.body);
         // The service checks whether this user is even allowed to modify this particular ticket (see assertCanMutate) before applying changes.
         const ticket = await ticketService.update(req.params.id , input , req.user!)
+        res.json({ success : true , data : ticket})
+    }),
+
+    // Handles PATCH /tickets/:id/verify - PC/Admin approves or rejects a ticket that's IN_REVIEW.
+    verify : asyncHandler ( async (req : Request , res : Response) => {
+        const input = verifyTicketSchema.parse(req.body);
+        const ticket = await ticketService.verify(req.params.id , input , req.user!)
         res.json({ success : true , data : ticket})
     }),
 

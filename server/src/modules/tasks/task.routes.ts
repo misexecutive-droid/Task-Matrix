@@ -13,6 +13,7 @@ taskRouter.use(authenticate)
 taskRouter.get("/", taskController.list)       // GET    /tasks      -> list all tasks visible to this user
 taskRouter.get("/:id" , taskController.getOne) // GET    /tasks/:id  -> get a single task by id
 taskRouter.patch("/:id" , taskController.update) // PATCH /tasks/:id  -> partially update a task
+taskRouter.patch("/:id/verify", requireRole("PC", "ADMIN"), taskController.verify) // PATCH /tasks/:id/verify -> PC/Admin approves or rejects a task that's pending_verification
 taskRouter.delete("/:id" , requireRole("ADMIN"),taskController.remove) // DELETE /tasks/:id -> delete a task
 
 taskRouter.post("/", requireRole("ADMIN"), taskController.create)

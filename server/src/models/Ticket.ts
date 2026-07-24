@@ -33,6 +33,13 @@ const ticketSchema = new Schema(
         storeId: { type: Schema.Types.ObjectId, ref: 'Store', default: null },
         categoryId: { type: Schema.Types.ObjectId, ref: 'Category', default: null },
         departmentId: { type: Schema.Types.ObjectId, ref: 'Department', default: null },
+
+        // PC (Person in Charge) quality-verification fields — set when a PC/ADMIN approves or
+        // rejects a ticket sent to IN_REVIEW. verifiedBy/verifiedAt only reflect the most recent
+        // APPROVE; verificationNote is overwritten by either action.
+        verifiedBy: { type: Schema.Types.ObjectId, ref: 'User', default: null },
+        verifiedAt: { type: Date, default: null },
+        verificationNote: { type: String, default: null },
     },
     // timestamps: true adds createdAt/updatedAt automatically.
     // toJSON/toObject virtuals: true is required so virtual fields defined below (assignee, checklists,
@@ -78,6 +85,15 @@ ticketSchema.pre("save" , function (next){
 ticketSchema.virtual("raisedBy" , {
     ref : "User",
     localField : "userId",
+    foreignField : "_id",
+    justOne : true
+})
+
+// Virtual field "verifier": populate-based virtual that looks up the User (PC/Admin) who last
+// verified this ticket, via verifiedBy. Same pattern as "assignee"/"raisedBy" above.
+ticketSchema.virtual("verifier", {
+    ref : "User",
+    localField : "verifiedBy",
     foreignField : "_id",
     justOne : true
 })

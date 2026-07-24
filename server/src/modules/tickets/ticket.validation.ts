@@ -22,6 +22,7 @@ export const updateTicketSchema = createTicketSchema.partial().extend({
 export const paginatioinSchema = z.object({
     page : z.coerce.number().int().min(1).default(1),
     limit : z.coerce.number().int().min(1).max(100).default(20),
+    status : z.enum(TICKET_STATUSES).optional(),
 })
 
 export const tatReportQuerySchema = z.object({
@@ -30,6 +31,18 @@ export const tatReportQuerySchema = z.object({
     to : z.string().optional(),
 })
 
+// PC/Admin verification action on a ticket that's IN_REVIEW: APPROVE closes it for good,
+// REJECT bounces it back to IN_PROGRESS. A note is required when rejecting so the assignee
+// knows what to fix; optional when approving.
+export const verifyTicketSchema = z.object({
+    action : z.enum(["APPROVE", "REJECT"]),
+    note : z.string().optional(),
+}).refine(v => v.action === "APPROVE" || !!v.note?.trim(), {
+    message : "A note is required when rejecting.",
+    path : ["note"],
+})
+
 export type CreateTicketInput = z.infer<typeof createTicketSchema>;
 export type UpdateTicketInput = z.infer<typeof updateTicketSchema>;
 export type TatReportQuery = z.infer<typeof tatReportQuerySchema>;
+export type VerifyTicketInput = z.infer<typeof verifyTicketSchema>;

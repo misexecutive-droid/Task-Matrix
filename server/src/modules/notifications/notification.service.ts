@@ -10,6 +10,17 @@ type CreateNotificationInput = {
   title: string; // short headline shown in the UI
   message: string; // the full human-readable text
   ticketId?: string; // optional link back to the related ticket, if any
+  taskId?: string; // optional link back to the related task, if any
+};
+
+// A ticket or task, reduced to just the fields the PC-verification notifications need.
+type VerifiableEntity = {
+  _id: any;
+  title: string;
+  departmentId?: any;
+  storeId?: any;
+  userId?: any;
+  assigneeId?: any;
 };
 
 // Sends a notification to one specific user over their personal Socket.IO "room" (user:<id>),
@@ -55,6 +66,46 @@ export const notificationService = {
       title: 'Ticket assigned',
       message: `Ticket "${ticket.title}" has been assigned.`,
       ticketId: ticket._id.toString(),
+    });
+  },
+
+  // Called when a ticket/task is handed off for PC verification (ticket -> IN_REVIEW, task ->
+  // pending_verification) - notifies every PC scoped to that department/store that something's
+  // waiting on them. Mirrors notifyTicketAssigned's "look up the right people, notifyMany" shape.
+  async notifyPendingVerification(entity: VerifiableEntity, kind: 'TICKET' | 'TASK' = 'TICKET') {
+    const or: Record<string, unknown>[] = [];
+    if (entity.departmentId) or.push({ departmentId: entity.departmentId });
+    if (entity.storeId) or.push({ storeId: entity.storeId });
+    if (!or.length) return []; // nothing to scope PCs by - no one to notify
+
+    const pcs = await User.find({ role: 'PC', $or: or }).select('_id');
+    const recipientIds = pcs.map((p) => p._id.toString());
+    if (!recipientIds.length) return [];
+
+    const idField = kind === 'TICKET' ? { ticketId: entity._id.toString() } : { taskId: entity._id.toString() };
+    return notificationService.notifyMany(recipientIds, {
+      type: `${kind}_PENDING_VERIFICATION`,
+      title: kind === 'TICKET' ? 'Ticket awaiting verification' : 'Task awaiting verification',
+      message: `"${entity.title}" is ready for your review.`,
+      ...idField,
+    });
+  },
+
+  // Called after a PC/Admin approves or rejects - tells the assignee (and the original raiser,
+  // if different) the outcome, including the PC's note when there is one.
+  async notifyVerificationResult(entity: VerifiableEntity, action: 'APPROVE' | 'REJECT', note: string | undefined, kind: 'TICKET' | 'TASK' = 'TICKET') {
+    const recipientIds: string[] = [];
+    if (entity.assigneeId) recipientIds.push(entity.assigneeId.toString());
+    if (entity.userId && entity.userId.toString() !== entity.assigneeId?.toString()) recipientIds.push(entity.userId.toString());
+    if (!recipientIds.length) return [];
+
+    const idField = kind === 'TICKET' ? { ticketId: entity._id.toString() } : { taskId: entity._id.toString() };
+    const verb = action === 'APPROVE' ? 'verified and closed' : 'sent back for changes';
+    return notificationService.notifyMany(recipientIds, {
+      type: `${kind}_${action === 'APPROVE' ? 'APPROVED' : 'REJECTED'}`,
+      title: action === 'APPROVE' ? 'Verified' : 'Sent back for changes',
+      message: note ? `"${entity.title}" was ${verb}: ${note}` : `"${entity.title}" was ${verb}.`,
+      ...idField,
     });
   },
 

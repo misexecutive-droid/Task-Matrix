@@ -29,6 +29,18 @@ export const updateTaskSchema = createTaskSchema.partial().extend({
     departmentId : objectId.nullable().optional() // NEW — allow clearing it back to "no department" via null
 });
 
+// PC/Admin verification action on a task that's pending_verification: APPROVE marks it truly
+// done, REJECT bounces it back to in_progress. A note is required when rejecting so the
+// assignee knows what to fix; optional when approving.
+export const verifyTaskSchema = z.object({
+    action : z.enum(["APPROVE", "REJECT"]),
+    note : z.string().optional(),
+}).refine(v => v.action === "APPROVE" || !!v.note?.trim(), {
+    message : "A note is required when rejecting.",
+    path : ["note"],
+})
+
 export type CreateTaskInput = z.infer<typeof createTaskSchema>;
 export type UpdateTaskInput = z.infer<typeof updateTaskSchema>;
 export type ComplianceReportQuery = z.infer<typeof complianceReportQuerySchema>;
+export type VerifyTaskInput = z.infer<typeof verifyTaskSchema>;

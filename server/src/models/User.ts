@@ -4,7 +4,7 @@ import bcrypt from "bcryptjs"; // library used to securely hash and compare pass
 
 // The list of allowed roles a user can have. "as const" locks these strings
 // so TypeScript treats them as an exact set of values, not just "string".
-export const ROLES = ["ADMIN", "MANAGER", "AGENT", "USER"] as const;
+export const ROLES = ["ADMIN", "MANAGER", "AGENT", "USER", "PC"] as const;
 // A TypeScript type built from the ROLES array above (so Role can only ever be one of those 4 strings)
 export type Role = (typeof ROLES)[number];
 

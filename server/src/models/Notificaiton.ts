@@ -11,6 +11,8 @@ const notificationSchema = new Schema(
         message : { type : String, required : true }, // the full notification text
         // ticketId: optional reference back to the Ticket this notification is about (if any)
         ticketId : { type : Schema.Types.ObjectId , ref : "Ticket" , default : null},
+        // taskId: optional reference back to the Task this notification is about (if any)
+        taskId : { type : Schema.Types.ObjectId , ref : "Task" , default : null},
         isRead : { type : Boolean , default : false} // whether the recipient has seen/opened this notification yet
     },
     { timestamps : true}, // adds createdAt/updatedAt automatically (no toJSON/toObject virtuals set here)

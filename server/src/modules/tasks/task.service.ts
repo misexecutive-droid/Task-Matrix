@@ -1,19 +1,36 @@
 import { Task } from "../../models/Task.js"
 import { AppError } from "../../utils/AppError.js"
+import { assertChecklistsResolved } from "../../utils/checklistGate.js"
 import type { AccessTokenPayload } from "../../middleware/auth/auth.js"
-import type { CreateTaskInput, UpdateTaskInput } from "./task.validation.js"
+import type { CreateTaskInput, UpdateTaskInput, VerifyTaskInput } from "./task.validation.js"
 import { Types } from "mongoose"
 import { TaskChecklistItem } from "../../models/TaskChecklistItem.js"
+import { notificationService } from "../notifications/notification.service.js"
 
-const visiblityFilter = (user: AccessTokenPayload) =>
-    user.role === "ADMIN" ? {} : { $or: [{ userId: user.sub }, { assigneeId: user.sub }] }
+const visiblityFilter = (user: AccessTokenPayload) => {
+    if (user.role === "ADMIN") return {};
+
+    const or: Record<string, unknown>[] = [{ userId: user.sub }, { assigneeId: user.sub }];
+    // PC additionally sees every task in their own department (read-only — see the forbidden
+    // check at the top of update() below, they can only act on a task through verify()).
+    if (user.role === "PC" && user.departmentId) or.push({ departmentId: user.departmentId });
+    return { $or: or };
+}
+
+// Is this task inside the PC's own department? (Task has no storeId field, unlike Ticket.)
+const isSameDept = (user: AccessTokenPayload, task: any) =>
+    Boolean(user.departmentId && String(task.departmentId) === user.departmentId)
 
 export const taskService = {
-    async list(user: AccessTokenPayload, filterUserId?: string) {
+    async list(user: AccessTokenPayload, filterUserId?: string, status?: string) {
         if (user.role === "ADMIN" && filterUserId) {
-            return Task.find({ $or: [{ userId: filterUserId }, { assigneeId: filterUserId }] }).sort({ createdAt: -1 });
+            const filter: Record<string, unknown> = { $or: [{ userId: filterUserId }, { assigneeId: filterUserId }] };
+            if (status) filter.status = status;
+            return Task.find(filter).sort({ createdAt: -1 });
         }
-        return Task.find(visiblityFilter(user)).sort({ createdAt: -1 });
+        const filter: Record<string, unknown> = visiblityFilter(user);
+        if (status) filter.status = status;
+        return Task.find(filter).sort({ createdAt: -1 });
 
     },
 
@@ -31,26 +48,30 @@ export const taskService = {
     },
 
     async update(id: string, input: UpdateTaskInput, user: AccessTokenPayload) {
+        // PC only ever acts through taskService.verify() — never the generic update path.
+        if (user.role === "PC") {
+            throw AppError.forbidden("PC can only act on a task through the verification queue.")
+        }
 
-        // Closing out a task means every checklist item is either actually done, or explicitly
-        // explained — an item left not-done with no remarks gives no way to tell "forgot about
-        // it" from "couldn't finish it, here's why". So this is the one place that's enforced:
-        // no remarks required while the item just sits open, but marking the whole task "done"
-        // is blocked until every not-done item says why.
-        if (input.status === "done") {
-            const existing = await Task.findOne({ _id: id, ...visiblityFilter(user) })
-                .populate({ path: "checklists", populate: { path: "items" } });
-            if (!existing) throw AppError.notFound("Task not found");
+        const existing = await Task.findOne({ _id: id, ...visiblityFilter(user) })
+            .populate({ path: "checklists", populate: { path: "items" } });
+        if (!existing) throw AppError.notFound("Task not found");
 
-            const incomplete = (existing as any).checklists
-                .flatMap((cl: any) => cl.items)
-                .filter((item: any) => !item.isDone && !item.remarks?.trim());
+        const beforeStatus = existing.status;
 
-            if (incomplete.length) {
-                throw AppError.badRequest(
-                    `Add remarks explaining why these checklist items aren't done before marking this task done: ${incomplete.map((i: any) => i.label).join(", ")}`,
-                );
+        if (input.status === "done" && beforeStatus !== "done") {
+            // Marking a task truly done is now a PC/Admin-only action, done through
+            // taskService.verify() — everyone else (PC is already blocked above) can only
+            // hand it off to pending_verification (see the gate right below) and wait for
+            // that step.
+            if (user.role !== "ADMIN") {
+                throw AppError.forbidden("Only a verifier can mark a task done — send it for review instead.")
             }
+        } else if (input.status === "pending_verification" && beforeStatus !== "pending_verification") {
+            // Sending a task for review is blocked until every not-done checklist item has
+            // remarks explaining why — same rule as before, just retargeted from "done" to
+            // this hand-off point.
+            assertChecklistsResolved((existing as any).checklists, "sending this task for review")
         }
 
         const task = await Task.findOneAndUpdate(
@@ -60,6 +81,44 @@ export const taskService = {
 
         );
         if (!task) throw AppError.notFound("Task not found")
+
+        // Just handed off to review — let the department's PCs know there's something to check.
+        if (input.status === "pending_verification" && beforeStatus !== "pending_verification") {
+            await notificationService.notifyPendingVerification(task as any, 'TASK');
+        }
+
+        return task;
+    },
+
+    // PC/Admin-only: approve (truly mark done) or reject (bounce back to in_progress) a task
+    // that's currently pending_verification.
+    async verify(id: string, input: VerifyTaskInput, user: AccessTokenPayload) {
+        const task = await Task.findById(id);
+        if (!task) throw AppError.notFound("Task not found")
+
+        // PC is scoped to their own department, same idea as the ticket-side check; ADMIN can
+        // verify anything regardless of scope.
+        if (user.role === "PC" && !isSameDept(user, task)) {
+            throw AppError.forbidden("Outside your department")
+        }
+
+        if (task.status !== "pending_verification") {
+            throw AppError.badRequest("This task isn't pending verification.")
+        }
+
+        if (input.action === "APPROVE") {
+            task.status = "done";
+            task.verifiedBy = user.sub as any;
+            task.verifiedAt = new Date();
+            task.verificationNote = input.note ?? null;
+        } else {
+            task.status = "in_progress";
+            task.verificationNote = input.note ?? null;
+        }
+        await task.save()
+
+        await notificationService.notifyVerificationResult(task as any, input.action, input.note, 'TASK')
+
         return task;
     },
 

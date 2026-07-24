@@ -1,7 +1,7 @@
 import { Schema, model } from "mongoose"
 
 // Allowed statuses for a Task
-export const TASK_STATUSES = ["todo", "in_progress", "done"] as const
+export const TASK_STATUSES = ["todo", "in_progress", "pending_verification", "done"] as const
 export type TaskStatus = (typeof TASK_STATUSES)[number];
 
 // Allowed priority levels for a Task
@@ -32,7 +32,14 @@ const taskSchema = new Schema(
         // all of its tasks, what's the completion/compliance/quality rate today" — that's only
         // possible if a Task actually records which department it's under.
 
-        departmentId : {type : Schema.Types.ObjectId , ref : "Department", default : null}
+        departmentId : {type : Schema.Types.ObjectId , ref : "Department", default : null},
+
+        // PC (Person in Charge) quality-verification fields — set when a PC/ADMIN approves or
+        // rejects a task sent to "pending_verification". verifiedBy/verifiedAt only reflect the
+        // most recent APPROVE; verificationNote is overwritten by either action.
+        verifiedBy:       { type: Schema.Types.ObjectId, ref: "User", default: null },
+        verifiedAt:       { type: Date, default: null },
+        verificationNote: { type: String, default: null },
     },
     // NEW: added toJSON/toObject virtuals here. Without this, Task documents were missing
     // the `id` field in every API response — only `_id` was present. Your client's Task type
@@ -55,6 +62,15 @@ taskSchema.virtual("checklists", {
     ref : "TaskChecklist",
     localField : "_id",
     foreignField : "taskId"
+})
+
+// Virtual field "verifier": populate-based virtual that looks up the User (PC/Admin) who last
+// verified this task, via verifiedBy. Same pattern as Ticket.ts's "assignee"/"raisedBy" virtuals.
+taskSchema.virtual("verifier", {
+    ref : "User",
+    localField : "verifiedBy",
+    foreignField : "_id",
+    justOne : true
 })
 // The Mongoose Model used to query/create/update Task documents
 export const Task = model("Task", taskSchema)

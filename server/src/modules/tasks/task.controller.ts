@@ -1,6 +1,6 @@
 import type { Request , Response } from "express" // Express's types for the incoming request and outgoing response
 import { taskService } from "./task.service.js" // the layer that actually talks to the database
-import { createTaskSchema , updateTaskSchema } from "./task.validation.js" // zod schemas used to validate/parse incoming request bodies
+import { createTaskSchema , updateTaskSchema, verifyTaskSchema } from "./task.validation.js" // zod schemas used to validate/parse incoming request bodies
 import { asyncHandler } from "../../utils/asyncHandler.js" // wraps async route handlers so thrown errors get passed to Express's error handling instead of crashing the app
 
 // the controller layer: turns HTTP requests into calls to the service layer, and turns the service's results back into HTTP responses.
@@ -12,7 +12,8 @@ export const taskController = {
         // Same defensive pattern as user.controller.ts's listAssignable: query params can technically
         // come through as arrays or be missing entirely, so we only accept it if it's actually a string.
         const filterUserId = typeof req.query.userId === 'string' ? req.query.userId : undefined;
-        const tasks = await taskService.list(req.user!, filterUserId) // req.user is attached by the auth middleware after verifying the JWT; "!" tells TS "trust me, this exists here"
+        const status = typeof req.query.status === 'string' ? req.query.status : undefined;
+        const tasks = await taskService.list(req.user!, filterUserId, status) // req.user is attached by the auth middleware after verifying the JWT; "!" tells TS "trust me, this exists here"
         res.json(tasks) // send the list back as plain JSON
     }),
 
@@ -33,6 +34,13 @@ export const taskController = {
     update : asyncHandler(async (req : Request , res : Response) => {
         const input = updateTaskSchema.parse(req.body); // partial validation since not all fields are required on update
         const task = await taskService.update(req.params.id , input , req.user!)
+        res.json(task);
+    }),
+
+    // PATCH /tasks/:id/verify - PC/Admin approves or rejects a task that's pending_verification
+    verify : asyncHandler(async (req : Request , res : Response) => {
+        const input = verifyTaskSchema.parse(req.body);
+        const task = await taskService.verify(req.params.id , input , req.user!)
         res.json(task);
     }),
 
