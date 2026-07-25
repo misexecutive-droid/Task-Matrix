@@ -7,6 +7,7 @@ import {
   AlertCircle 
 } from 'lucide-react';
 import type { Ticket } from '../../api/ticket';
+import { getChecklistProgress } from '../../lib/checklistProgress';
 
 // Priority configuration with rich icon backgrounds, borders, and dark-mode support
 const PRIORITY_CONFIG: Record<Ticket['priority'], {
@@ -77,9 +78,7 @@ interface TicketCardProps {
 }
 
 export const TicketCard = ({ ticket, onClick, departmentName, index = 0 }: TicketCardProps) => {
-  const totalItems = ticket.checklists.reduce((s, c) => s + c.items.length, 0);
-  const doneItems = ticket.checklists.reduce((s, c) => s + c.items.filter(i => i.isDone).length, 0);
-  const progress = totalItems > 0 ? Math.round((doneItems / totalItems) * 100) : null;
+  const { totalItems, doneItems, progress } = getChecklistProgress(ticket.checklists);
 
   const isOverdue = ticket.isOverdue && ticket.status !== 'CLOSED';
   const priorityInfo = PRIORITY_CONFIG[ticket.priority];

@@ -10,6 +10,7 @@ import {
   Inbox,
   RotateCcw,
   ChevronDown,
+  User
 } from 'lucide-react';
 import { Button, PageNav, Skeleton, Dropdown, type DropdownAction } from '../../components';
 import { useTicketsQuery, useDepartmentsQuery } from './hook';
@@ -28,6 +29,18 @@ const STATUS_FILTERS: { key: TicketStatus | 'ALL' | 'OVERDUE'; label: string }[]
   { key: 'ON_HOLD', label: 'On Hold' },
   { key: 'OVERDUE', label: 'Overdue' },
 ];
+
+// Lookup map instead of an if/else or ternary chain — each filter key maps straight to its
+// own predicate, so adding a new filter later is just one more entry, no branching to extend.
+const STATUS_FILTER_PREDICATES: Record<TicketStatus | 'ALL' | 'OVERDUE', (t: Ticket) => boolean> = {
+  ALL: () => true,
+  OVERDUE: t => t.isOverdue && t.status !== 'CLOSED',
+  OPEN: t => t.status === 'OPEN',
+  IN_PROGRESS: t => t.status === 'IN_PROGRESS',
+  IN_REVIEW: t => t.status === 'IN_REVIEW',
+  CLOSED: t => t.status === 'CLOSED',
+  ON_HOLD: t => t.status === 'ON_HOLD',
+};
 
 // Groups tickets by departmentId, sorted alphabetically by department name with
 // "No department" always last.
@@ -53,6 +66,43 @@ const groupByDepartment = (tickets: Ticket[], departmentNames: Map<string, strin
   });
 };
 
+const groupByAssignee = (tickets : Ticket[]) => {
+const groups = new Map<string,{assigneeId : string | null ; assigneeName : string; tickets : Ticket[]}>();
+
+  for (const ticket of tickets) {
+    const key = ticket.assigneeId ?? '__unassigned__';
+
+    if(!groups.has(key)){
+      groups.set(key, {
+        assigneeId : ticket.assigneeId,
+        assigneeName : ticket.assignee ? ticket.assignee.firstName : "Unassigned",
+        tickets : [],
+      })
+    }
+    groups.get(key)!.tickets.push(ticket)
+  }
+
+  return [...groups.values()].sort((a,b) => {
+    if(a.assigneeId === null) return 1;
+    if(b.assigneeId === null ) return -1;
+    return a.assigneeName.localeCompare(b.assigneeName);
+  })
+
+}
+
+const groupChecklistStats = (tickets :Ticket[]) => {
+  let total = 0;
+  let done = 0;
+  for(const t of tickets ){
+   for(const cl of t.checklists){
+     total += cl.items.length;
+    done += cl.items.filter(i => i.isDone).length;
+   }
+  }
+
+  return { total , done};
+}
+
 export const TicketList = () => {
   const { user } = useAuth();
   const isAdmin = user?.role === "ADMIN";
@@ -67,13 +117,11 @@ export const TicketList = () => {
   const departmentNames = new Map((departments ?? []).map(d => [d.id, d.name]));
 
   const [statusFilter, setStatusFilter] = useState<TicketStatus | 'ALL' | 'OVERDUE'>('ALL');
+  
   const [search, setSearch] = useState('');
+  const [groupBy , setGroupBy] = useState<'department' | 'assignee'>('department')
 
-  const statusFiltered = statusFilter === 'ALL'
-    ? tickets
-    : statusFilter === 'OVERDUE'
-      ? tickets.filter(t => t.isOverdue && t.status !== 'CLOSED')
-      : tickets.filter(t => t.status === statusFilter);
+  const statusFiltered = tickets.filter(STATUS_FILTER_PREDICATES[statusFilter]);
 
   const query = search.trim().toLowerCase();
   const filtered = query
@@ -83,7 +131,22 @@ export const TicketList = () => {
     )
     : statusFiltered;
 
-  const departmentGroups = groupByDepartment(filtered, departmentNames);
+  // Lookup map instead of a ternary — each grouping mode has its own builder function, so
+  // adding a third grouping mode later is one more entry, not another branch.
+  const GROUP_BUILDERS: Record<'department' | 'assignee', () => { key: string; label: string; tickets: Ticket[] }[]> = {
+    department: () => groupByDepartment(filtered, departmentNames).map(g => ({
+      key: g.departmentId ?? '__none__',
+      label: g.departmentName,
+      tickets: g.tickets,
+    })),
+    assignee: () => groupByAssignee(filtered).map(g => ({
+      key: g.assigneeId ?? '__unassigned__',
+      label: g.assigneeName,
+      tickets: g.tickets,
+    })),
+  };
+  const groups = GROUP_BUILDERS[groupBy]();
+
   const hasActiveFilters = search.length > 0 || statusFilter !== 'ALL';
 
   // Status filter menu — same trigger-button + action-list shape as the other
@@ -181,6 +244,31 @@ export const TicketList = () => {
             }
           />
         </div>
+
+        <div className="flex items-center gap-2">
+          <span className="text-[11px] text-text-muted font-mono uppercase tracking-wider flex items-center gap-1 shrink-0">
+            Group by:
+          </span>
+          <div className="flex gap-1 p-1 bg-surface-hover rounded-lg w-fit">
+            <button
+              onClick={() => setGroupBy('department')}
+              className={`flex items-center gap-1.5 px-2.5 py-1 text-xs font-mono font-medium rounded-md transition-colors cursor-pointer ${
+                groupBy === 'department' ? 'bg-surface text-text shadow-sm' : 'text-text-muted hover:text-text-secondary'
+              }`}
+            >
+              <Building2 size={12} /> Department
+            </button>
+            <button
+              onClick={() => setGroupBy('assignee')}
+              className={`flex items-center gap-1.5 px-2.5 py-1 text-xs font-mono font-medium rounded-md transition-colors cursor-pointer ${
+                groupBy === 'assignee' ? 'bg-surface text-text shadow-sm' : 'text-text-muted hover:text-text-secondary'
+              }`}
+            >
+              <User size={12} /> Person
+            </button>
+          </div>
+        </div>
+
       </div>
 
       {/* Loading Skeletons */}
@@ -244,44 +332,57 @@ export const TicketList = () => {
         </div>
       )}
 
-      {/* Ticket List Grouped by Department */}
+      {/* Ticket List Grouped by Department or Person */}
       {!isPending && !isError && filtered.length > 0 && (() => {
         let cardIndex = 0;
         return (
           <div className="flex flex-col gap-6">
-            {departmentGroups.map(group => (
-              <div key={group.departmentId ?? '__none__'} className="flex flex-col gap-3">
+            {groups.map(group => {
+              const stats = groupChecklistStats(group.tickets);
+              return (
+                <div key={group.key} className="flex flex-col gap-3">
 
-                {/* Department Group Banner */}
-                <div className="flex items-center justify-between px-1 pb-1 border-b border-border/40">
-                  <div className="flex items-center gap-2">
-                    <Building2 size={13} className="text-primary-500 shrink-0" />
-                    <h3 className="text-xs font-mono font-semibold text-text-secondary uppercase tracking-wider">
-                      {group.departmentName}
-                    </h3>
+                  {/* Group Banner */}
+                  <div className="flex items-center justify-between px-1 pb-1 border-b border-border/40">
+                    <div className="flex items-center gap-2">
+                      {groupBy === 'department'
+                        ? <Building2 size={13} className="text-primary-500 shrink-0" />
+                        : <User size={13} className="text-primary-500 shrink-0" />}
+                      <h3 className="text-xs font-mono font-semibold text-text-secondary uppercase tracking-wider">
+                        {group.label}
+                      </h3>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {stats.total > 0 && (
+                        <span className="text-[11px] font-mono px-2 py-0.5 rounded-full bg-primary-500/10 text-primary-600 dark:text-primary-300 border border-primary-500/20">
+                          {stats.done}/{stats.total} checklist items done
+                        </span>
+                      )}
+                      <span className="text-[11px] font-mono px-2 py-0.5 rounded-full bg-surface-muted text-text-muted border border-border/50">
+                        {group.tickets.length} {group.tickets.length === 1 ? 'ticket' : 'tickets'}
+                      </span>
+                    </div>
                   </div>
-                  <span className="text-[11px] font-mono px-2 py-0.5 rounded-full bg-surface-muted text-text-muted border border-border/50">
-                    {group.tickets.length} {group.tickets.length === 1 ? 'ticket' : 'tickets'}
-                  </span>
-                </div>
 
-                {/* Cards Grid */}
-                <div className="flex flex-col gap-3">
-                  {group.tickets.map(ticket => (
-                    <TicketCard
-                      key={ticket.id}
-                      ticket={ticket}
-                      onClick={setSelected}
-                      index={cardIndex++}
-                      departmentName={group.departmentName}
-                    />
-                  ))}
+                  {/* Cards Grid */}
+                  <div className="flex flex-col gap-3">
+                    {group.tickets.map(ticket => (
+                      <TicketCard
+                        key={ticket.id}
+                        ticket={ticket}
+                        onClick={setSelected}
+                        index={cardIndex++}
+                        departmentName={departmentNames.get(ticket.departmentId ?? '') ?? 'Ticket'}
+                      />
+                    ))}
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         );
       })()}
+
 
       {/* Pagination Footer */}
       {meta && meta.totalPages > 1 && (
