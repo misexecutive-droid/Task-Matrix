@@ -61,7 +61,7 @@ const ItemRow = ({
     // Card wrapper: each checklist item is its own bordered card (not a divided
     // row anymore) — eyebrow, header, hero image strip, body, action row, same
     // shape as TicketCard's Hero-Card layout.
-    <div className="flex flex-col gap-3 p-3 rounded-lg border border-border bg-surface font-mono">
+    <div className="flex flex-col gap-3 p-3 rounded-lg border border-border bg-surface">
 
       {/* Eyebrow row: small icon square + the photo-requirement status, mirroring
           the reference card's small icon + label row above the main header. */}
@@ -73,7 +73,7 @@ const ItemRow = ({
           ].join(' ')}>
             <Camera size={10} className="text-white" />
           </span>
-          <span className="text-xs font-mono text-text-muted truncate">
+          <span className="text-xs font-display text-text-muted truncate">
             {qualifying}/{item.requiredImageCount} photo{item.requiredImageCount !== 1 ? 's' : ''}
             {item.requiresLivePhoto ? ' (live only)' : ''}
             {item.maxImageCount != null ? ` · max ${item.maxImageCount}` : ''}
@@ -98,10 +98,10 @@ const ItemRow = ({
         </span>
 
         <div className="flex-1 min-w-0">
-          <p className={`text-sm font-mono font-semibold leading-snug ${item.isDone ? 'line-through text-text-muted' : 'text-text'}`}>
+          <p className={`text-sm font-display font-semibold leading-snug ${item.isDone ? 'line-through text-text-muted' : 'text-text'}`}>
             {item.label}
           </p>
-          <p className="text-xs text-text-muted font-mono truncate">
+          <p className="text-xs text-text-muted font-display truncate">
             {item.isDone && item.completedAt
               ? `Completed ${new Date(item.completedAt).toLocaleDateString()}`
               : item.dueAt
@@ -147,7 +147,7 @@ const ItemRow = ({
                 className="size-16 object-cover rounded-md border border-border"
               />
               <span className={[
-                'absolute -top-1 -left-1 text-[9px] font-mono px-1 rounded-full text-white',
+                'absolute -top-1 -left-1 text-[9px] font-display px-1 rounded-full text-white',
                 img.captureMethod === 'LIVE' ? 'bg-emerald-500' : 'bg-text-light',
               ].join(' ')}>
                 {img.captureMethod === 'LIVE' ? 'Live' : 'Gallery'}
@@ -169,7 +169,7 @@ const ItemRow = ({
       {/* Body: read-only remarks quote when this viewer can't edit (or the item
           is already done) — editable textarea + action-pill row otherwise. */}
       {(!canWork || item.isDone) && item.remarks && (
-        <p className="text-xs text-text-secondary font-mono italic">"{item.remarks}"</p>
+        <p className="text-xs text-text-secondary font-display italic">"{item.remarks}"</p>
       )}
 
       {canWork && !item.isDone && (
@@ -197,7 +197,7 @@ const ItemRow = ({
               every item action — take photo, gallery, save remarks, mark
               complete — mirroring the reference card's row of outlined buttons. */}
           <div className="flex items-center gap-2 flex-wrap pt-0.5">
-            <label className="flex items-center gap-1.5 text-xs font-mono font-medium px-2.5 py-1 rounded-md border border-primary-500/50 text-primary-600 hover:bg-primary-500/10 cursor-pointer transition-colors">
+            <label className="flex items-center gap-1.5 text-xs font-display font-medium px-2.5 py-1 rounded-md border border-primary-500/50 text-primary-600 hover:bg-primary-500/10 cursor-pointer transition-colors">
               <Camera size={12} />
               Take photo
               <input
@@ -209,7 +209,7 @@ const ItemRow = ({
                 onChange={e => { handleFiles(e.target.files, 'LIVE'); e.target.value = ''; }}
               />
             </label>
-            <label className="flex items-center gap-1.5 text-xs font-mono font-medium px-2.5 py-1 rounded-md border border-border text-text-secondary hover:bg-surface-hover cursor-pointer transition-colors">
+            <label className="flex items-center gap-1.5 text-xs font-display font-medium px-2.5 py-1 rounded-md border border-border text-text-secondary hover:bg-surface-hover cursor-pointer transition-colors">
               <ImageUp size={12} />
               Gallery
               <input
@@ -225,7 +225,7 @@ const ItemRow = ({
             <button
               onClick={() => updateRemarks.mutate({ id: item.id, remarks })}
               disabled={updateRemarks.isPending}
-              className="flex items-center gap-1.5 text-xs font-mono font-medium px-2.5 py-1 rounded-md border border-border text-text-secondary hover:bg-surface-hover cursor-pointer transition-colors disabled:opacity-50"
+              className="flex items-center gap-1.5 text-xs font-display font-medium px-2.5 py-1 rounded-md border border-border text-text-secondary hover:bg-surface-hover cursor-pointer transition-colors disabled:opacity-50"
             >
               {updateRemarks.isPending && <Loader2 size={12} className="animate-spin" />}
               Save remarks
@@ -234,7 +234,7 @@ const ItemRow = ({
             <button
               onClick={() => completeItem.mutate(item.id)}
               disabled={completeItem.isPending}
-              className="flex items-center gap-1.5 text-xs font-mono font-medium px-2.5 py-1 rounded-md border border-emerald-500/50 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10 cursor-pointer transition-colors disabled:opacity-50 ml-auto"
+              className="flex items-center gap-1.5 text-xs font-display font-medium px-2.5 py-1 rounded-md border border-emerald-500/50 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10 cursor-pointer transition-colors disabled:opacity-50 ml-auto"
             >
               {completeItem.isPending && <Loader2 size={12} className="animate-spin" />}
               Mark complete
@@ -259,7 +259,7 @@ const ChecklistBlock = ({
   const doneCount = checklist.items.filter(i => i.isDone).length;
 
   return (
-    <div className="border border-border rounded-lg overflow-hidden font-mono">
+    <div className="border border-border rounded-lg overflow-hidden">
 
       <div className="flex items-center justify-between px-3 py-2.5 bg-surface-hover">
         <button
@@ -269,10 +269,10 @@ const ChecklistBlock = ({
           {open
             ? <ChevronDown size={14} className="text-text-muted shrink-0" />
             : <ChevronRight size={14} className="text-text-muted shrink-0" />}
-          <span className="text-sm font-mono font-medium text-text truncate">
+          <span className="text-sm font-display font-medium text-text truncate">
             {checklist.title}
           </span>
-          <span className="text-xs text-text-muted font-mono shrink-0 ml-1">
+          <span className="text-xs text-text-muted font-mono tabular-nums shrink-0 ml-1">
             {doneCount}/{checklist.items.length}
           </span>
         </button>
@@ -296,7 +296,7 @@ const ChecklistBlock = ({
         // is now its own rounded card and needs breathing room, not divider lines.
         <div className="flex flex-col gap-2 p-2">
           {checklist.items.length === 0 && (
-            <p className="px-1 py-1.5 text-xs text-text-muted font-mono">No items yet.</p>
+            <p className="px-1 py-1.5 text-xs text-text-muted font-display">No items yet.</p>
           )}
           {checklist.items.map(item => (
             <ItemRow
@@ -372,9 +372,9 @@ export const ChecklistPanel = ({ ticketId, checklists }: ChecklistPanelProps) =>
   };
 
   return (
-    <div className="flex flex-col gap-3 font-mono">
+    <div className="flex flex-col gap-3">
       <div className="flex items-center justify-between gap-2 flex-wrap">
-        <h3 className="text-sm font-mono font-semibold text-text">Checklists</h3>
+        <h3 className="text-sm font-display font-semibold text-text">Checklists</h3>
         {isAdmin && !adding && (
           <div className="flex items-center gap-2">
             {!!templates?.length && (
@@ -402,7 +402,7 @@ export const ChecklistPanel = ({ ticketId, checklists }: ChecklistPanelProps) =>
             )}
             <button
               onClick={() => setAdding(true)}
-              className="flex items-center gap-1 text-xs font-mono text-primary-600 hover:text-primary-700 transition-colors cursor-pointer"
+              className="flex items-center gap-1 text-xs font-display text-primary-600 hover:text-primary-700 transition-colors cursor-pointer"
             >
               <Plus size={12} />
               Add checklist
@@ -485,7 +485,7 @@ export const ChecklistPanel = ({ ticketId, checklists }: ChecklistPanelProps) =>
 
           <button
             onClick={() => setItemDrafts(d => [...d, emptyItemDraft()])}
-            className="flex items-center gap-1 text-xs font-mono text-primary-600 hover:text-primary-700 cursor-pointer w-fit"
+            className="flex items-center gap-1 text-xs font-display text-primary-600 hover:text-primary-700 cursor-pointer w-fit"
           >
             <Plus size={12} />
             Add another item
@@ -509,7 +509,7 @@ export const ChecklistPanel = ({ ticketId, checklists }: ChecklistPanelProps) =>
       )}
 
       {checklists.length === 0 && !adding && (
-        <p className="text-xs text-text-muted font-mono py-2">No checklists yet.</p>
+        <p className="text-xs text-text-muted font-display py-2">No checklists yet.</p>
       )}
 
       {checklists.map(cl => (

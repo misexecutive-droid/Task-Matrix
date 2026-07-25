@@ -2,20 +2,33 @@ import { tokenStore } from '../lib/tokenStore';
 
 const BASE = (import.meta.env.VITE_API_URL as string | undefined) ?? 'http://localhost:5050';
 
-let refreshPromise: Promise<string | null> | null = null;
+// The refresh token is single-use (rotated server-side on every call), so two tabs racing to
+// refresh at once will make the loser reuse an already-revoked token and get force-logged-out —
+// this happens routinely since the access token only lives 15 minutes. `navigator.locks`
+// serializes refresh attempts across every tab/worker on this origin; whichever tab loses the
+// race for the lock then notices `staleToken` no longer matches the (now-rotated) stored token
+// and just reuses that instead of calling the endpoint a second time with a dead token.
+const refreshAccessToken = (staleToken: string | null): Promise<string | null> => {
+  const doRefresh = async () => {
+    const latest = tokenStore.get();
+    if (latest && latest !== staleToken) return latest;
 
-const refreshAccessToken = (): Promise<string | null> => {
-  if (!refreshPromise) {
-    refreshPromise = fetch(`${BASE}/auth/refresh`, { method: 'POST', credentials: 'include' })
-      .then(async (res) => {
-        if (!res.ok) return null;
-        const data = await res.json();
-        return data.accessToken as string;
-      })
-      .catch(() => null)
-      .finally(() => { refreshPromise = null; });
+    try {
+      const res = await fetch(`${BASE}/auth/refresh`, { method: 'POST', credentials: 'include' });
+      if (!res.ok) return null;
+      const data = await res.json();
+      const newToken = data.accessToken as string;
+      tokenStore.set(newToken);
+      return newToken;
+    } catch {
+      return null;
+    }
+  };
+
+  if ('locks' in navigator) {
+    return navigator.locks.request('tm-auth-refresh', doRefresh);
   }
-  return refreshPromise;
+  return doRefresh();
 };
 
 const forceLogout = () => {
@@ -45,9 +58,8 @@ export const apiFetch = async <T>(path: string, options: RequestInit = {}): Prom
   let res = await doFetch(token);
 
   if (res.status === 401 && token && !isAuthEndpoint) {
-    const newToken = await refreshAccessToken();
+    const newToken = await refreshAccessToken(token);
     if (newToken) {
-      tokenStore.set(newToken);
       res = await doFetch(newToken);
     } else {
       forceLogout();

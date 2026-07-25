@@ -52,7 +52,7 @@ const ItemRow = ({ item, departmentId, assignableUsers, index }: ItemRowProps) =
         <span className="flex items-center justify-center w-5 h-5 rounded-md bg-surface-hover text-text-muted text-[11px] font-mono font-semibold shrink-0">
           {index + 1}
         </span>
-        <span className="text-sm font-mono text-text font-medium leading-snug">{item.label}</span>
+        <span className="text-sm font-display text-text font-medium leading-snug">{item.label}</span>
       </div>
 
       {/* Controls Bar */}
@@ -63,7 +63,7 @@ const ItemRow = ({ item, departmentId, assignableUsers, index }: ItemRowProps) =
           <Camera size={13} className="text-text-muted shrink-0" />
           
           <div className="flex items-center gap-1">
-            <span className="text-[10px] font-mono text-text-muted uppercase">Min</span>
+            <span className="text-[10px] font-display text-text-muted uppercase">Min</span>
             <input
               type="number"
               min={0}
@@ -80,7 +80,7 @@ const ItemRow = ({ item, departmentId, assignableUsers, index }: ItemRowProps) =
           <span className="text-text-muted text-[10px]">•</span>
 
           <div className="flex items-center gap-1">
-            <span className="text-[10px] font-mono text-text-muted uppercase">Max</span>
+            <span className="text-[10px] font-display text-text-muted uppercase">Max</span>
             <input
               type="number"
               min={0}
@@ -100,7 +100,7 @@ const ItemRow = ({ item, departmentId, assignableUsers, index }: ItemRowProps) =
         <button
           type="button"
           onClick={() => updateItem.mutate({ id: item.id, payload: { requiresLivePhoto: !item.requiresLivePhoto } })}
-          className={`flex items-center gap-1.5 px-2 py-1 rounded-lg border text-xs font-mono transition-all cursor-pointer ${
+          className={`flex items-center gap-1.5 px-2 py-1 rounded-lg border text-xs font-display transition-all cursor-pointer ${
             item.requiresLivePhoto 
               ? 'bg-primary-500/10 border-primary-500/30 text-primary-600 dark:text-primary-400 font-medium' 
               : 'bg-background border-border/60 text-text-muted hover:text-text'
@@ -121,7 +121,7 @@ const ItemRow = ({ item, departmentId, assignableUsers, index }: ItemRowProps) =
           <SelectTrigger
             size="sm"
             title={departmentId ? 'Default assignee' : 'Set a department on this template first'}
-            className="h-7 px-2 text-xs font-mono bg-background border-border/60 min-w-[110px]"
+            className="h-7 px-2 text-xs font-display bg-background border-border/60 min-w-[110px]"
           >
             <div className="flex items-center gap-1.5 truncate">
               <UserCheck size={12} className="text-text-muted shrink-0" />
@@ -180,10 +180,10 @@ const TemplateBlock = ({ template, departmentName }: { template: ChecklistTempla
           </div>
           
           <div className="flex items-center gap-2 min-w-0 flex-wrap">
-            <span className="text-sm font-mono font-semibold text-text truncate">{template.name}</span>
-            
+            <span className="text-sm font-display font-semibold text-text truncate">{template.name}</span>
+
             <div className="flex items-center gap-1.5 shrink-0">
-              <span className={`text-[11px] font-mono font-medium px-2 py-0.5 rounded-md flex items-center gap-1 ${
+              <span className={`text-[11px] font-display font-medium px-2 py-0.5 rounded-md flex items-center gap-1 ${
                 template.appliesTo === 'TASK'
                   ? 'bg-primary-500/10 text-primary-600 dark:text-primary-300 ring-1 ring-primary-500/20'
                   : 'bg-amber-500/10 text-amber-600 dark:text-amber-400 ring-1 ring-amber-500/20'
@@ -193,7 +193,7 @@ const TemplateBlock = ({ template, departmentName }: { template: ChecklistTempla
               </span>
 
               {departmentName && (
-                <span className="text-[11px] font-mono font-medium px-2 py-0.5 rounded-md bg-surface-hover text-text-secondary border border-border/60 flex items-center gap-1">
+                <span className="text-[11px] font-display font-medium px-2 py-0.5 rounded-md bg-surface-hover text-text-secondary border border-border/60 flex items-center gap-1">
                   <Building2 size={11} />
                   {departmentName}
                 </span>
@@ -201,7 +201,7 @@ const TemplateBlock = ({ template, departmentName }: { template: ChecklistTempla
             </div>
           </div>
 
-          <span className="text-xs text-text-muted font-mono shrink-0 ml-auto mr-2">
+          <span className="text-xs text-text-muted font-mono tabular-nums shrink-0 ml-auto mr-2">
             {template.items.length} {template.items.length === 1 ? 'step' : 'steps'}
           </span>
         </button>
@@ -227,7 +227,7 @@ const TemplateBlock = ({ template, departmentName }: { template: ChecklistTempla
             className="border-t border-border bg-surface-subtle/20"
           >
             {template.items.length === 0 && (
-              <div className="px-6 py-6 text-center text-xs text-text-muted font-mono flex flex-col items-center gap-1">
+              <div className="px-6 py-6 text-center text-xs text-text-muted font-display flex flex-col items-center gap-1">
                 <Sparkles size={16} className="text-text-muted/60" />
                 <span>No checklist steps added yet. Add your first step below!</span>
               </div>
@@ -250,14 +250,14 @@ const TemplateBlock = ({ template, departmentName }: { template: ChecklistTempla
                 onChange={e => setNewLabel(e.target.value)}
                 onKeyDown={e => { if (e.key === 'Enter') handleAddItem(); }}
                 placeholder="Add next step label…"
-                className="flex-1 px-3 py-1.5 text-xs font-mono bg-background text-text rounded-lg border border-border/70 focus:outline-none focus:ring-2 focus:ring-primary-500/20 placeholder:text-text-muted transition-all"
+                className="flex-1 px-3 py-1.5 text-xs font-display bg-background text-text rounded-lg border border-border/70 focus:outline-none focus:ring-2 focus:ring-primary-500/20 placeholder:text-text-muted transition-all"
               />
-              <Button 
-                size="sm" 
-                variant="outline" 
-                onClick={handleAddItem} 
-                isLoading={addItem.isPending} 
-                className="font-mono text-xs h-8 gap-1.5"
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={handleAddItem}
+                isLoading={addItem.isPending}
+                className="font-display text-xs h-8 gap-1.5"
               >
                 <Plus size={13} />
                 Add Step
@@ -287,21 +287,21 @@ export const ChecklistTemplateList = () => {
           </div>
           <div className="space-y-0.5">
             <div className="flex items-center gap-2">
-              <h1 className="text-xl font-mono font-bold text-text tracking-tight">Checklist Templates</h1>
-              <span className="text-xs font-mono bg-surface-hover border border-border/80 px-2 py-0.5 rounded-full text-text-muted">
+              <h1 className="text-xl font-display font-bold text-text tracking-tight">Checklist Templates</h1>
+              <span className="text-xs font-mono tabular-nums bg-surface-hover border border-border/80 px-2 py-0.5 rounded-full text-text-muted">
                 {templates.length}
               </span>
             </div>
-            <p className="text-xs text-text-muted font-mono max-w-xl leading-relaxed">
+            <p className="text-xs text-text-muted font-display max-w-xl leading-relaxed">
               Standardize operational procedures. Create templates once and apply them instantly across tasks and tickets.
             </p>
           </div>
         </div>
 
-        <Button 
-          size="sm" 
-          variant="primary" 
-          className="gap-2 font-mono text-xs shadow-xs shrink-0" 
+        <Button
+          size="sm"
+          variant="primary"
+          className="gap-2 font-display text-xs shadow-xs shrink-0"
           onClick={() => setShowForm(true)}
         >
           <Plus size={15} />
@@ -327,7 +327,7 @@ export const ChecklistTemplateList = () => {
 
       {/* Error Alert Card */}
       {isError && (
-        <div className="flex items-center gap-2.5 p-4 rounded-xl bg-danger/10 border border-danger/20 text-danger text-xs font-mono">
+        <div className="flex items-center gap-2.5 p-4 rounded-xl bg-danger/10 border border-danger/20 text-danger text-xs font-display">
           <AlertCircle size={16} className="shrink-0" />
           <span>Failed to load checklist templates. Please check your network connection and try again.</span>
         </div>
@@ -339,14 +339,14 @@ export const ChecklistTemplateList = () => {
           <div className="p-3 bg-surface border border-border rounded-xl text-text-muted mb-3 shadow-xs">
             <Inbox size={26} />
           </div>
-          <h3 className="text-sm font-mono font-semibold text-text">No templates configured</h3>
-          <p className="text-xs text-text-muted font-mono mt-1 max-w-sm">
+          <h3 className="text-sm font-display font-semibold text-text">No templates configured</h3>
+          <p className="text-xs text-text-muted font-display mt-1 max-w-sm">
             You haven't created any checklist templates yet. Click below to add your first standard procedure.
           </p>
-          <Button 
-            size="sm" 
-            variant="outline" 
-            className="mt-4 gap-2 font-mono text-xs" 
+          <Button
+            size="sm"
+            variant="outline"
+            className="mt-4 gap-2 font-display text-xs"
             onClick={() => setShowForm(true)}
           >
             <Plus size={14} />

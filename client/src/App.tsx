@@ -7,6 +7,7 @@ import { Dashboard } from './features/dashboard';
 import { HomePage } from './features/dashboard/HomePage';
 import { PublicLayout } from './components/layout';
 import { TicketList, useTicketSocket } from './features/tickets';
+import { TaskList } from './features/tasks';
 import { useNotificationSocket } from './features/notifications/useNotificationSocket';
 import { AdminLayout } from './features/admin/AdminLayout';
 import { UserList } from './features/admin/UserList';
@@ -68,6 +69,7 @@ const router = createBrowserRouter([
           { path: '/calendar', element: <p className="font-display text-text-secondary">Calendar — coming soon</p> },
           { path: '/settings', element: <p className="font-display text-text-secondary">Settings — coming soon</p> },
           { path: '/tickets', element: <TicketList /> },
+          { path: '/tasks', element: <TaskList /> },
           { path: '/checklists', element: <MyChecklists /> },
           { path: '/checklists/:instanceId', element: <ChecklistInstanceDetail /> },
           { path: '/dashboard', element: <Navigate to="/" replace /> },

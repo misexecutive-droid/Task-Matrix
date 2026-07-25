@@ -88,7 +88,7 @@ export const TicketCard = ({ ticket, onClick, departmentName, index = 0 }: Ticke
     <button
       type="button"
       onClick={() => onClick(ticket)}
-      className="w-full text-left flex flex-col gap-3.5 p-4 rounded-xl border border-border/70 bg-surface/80 hover:bg-surface hover:border-primary-500/50 hover:shadow-lg hover:shadow-primary-500/5 hover:-translate-y-0.5 transition-all duration-200 group cursor-pointer animate-step-in font-mono backdrop-blur-sm relative overflow-hidden"
+      className="w-full text-left flex flex-col gap-3.5 p-4 rounded-xl border border-border/70 bg-surface/80 hover:bg-surface hover:border-primary-500/50 hover:shadow-lg hover:shadow-primary-500/5 hover:-translate-y-0.5 transition-all duration-200 group cursor-pointer animate-step-in backdrop-blur-sm relative overflow-hidden"
       style={{ animationDelay: `${Math.min(index, 10) * 35}ms` }}
     >
       {/* Top Bar: Department Tag & Action Indicator */}
@@ -97,7 +97,7 @@ export const TicketCard = ({ ticket, onClick, departmentName, index = 0 }: Ticke
           <span className="flex items-center justify-center size-3.5 rounded bg-primary-600/90 text-white shrink-0">
             <TicketIcon size={9} />
           </span>
-          <span className="text-[11px] font-mono text-text-muted font-medium truncate max-w-[180px]">
+          <span className="text-[11px] font-display text-text-muted font-medium truncate max-w-[180px]">
             {departmentName ?? 'Ticket'}
           </span>
         </div>
@@ -118,13 +118,13 @@ export const TicketCard = ({ ticket, onClick, departmentName, index = 0 }: Ticke
         </div>
 
         <div className="flex-1 min-w-0">
-          <h3 className="text-sm font-mono font-semibold text-text leading-snug line-clamp-1 group-hover:text-primary-500 transition-colors">
+          <h3 className="text-sm font-display font-semibold text-text leading-snug line-clamp-1 group-hover:text-primary-500 transition-colors">
             {ticket.title}
           </h3>
-          
+
           {/* Assignee Avatar Pill */}
           <div className="flex items-center gap-1.5 mt-1">
-            <div className="flex items-center gap-1 text-[11px] text-text-muted font-mono">
+            <div className="flex items-center gap-1 text-[11px] text-text-muted font-display">
               <User size={12} className="shrink-0 text-text-muted/70" />
               <span className="truncate">
                 {ticket.assignee ? `${ticket.assignee.firstName}` : 'Unassigned'}
@@ -136,7 +136,7 @@ export const TicketCard = ({ ticket, onClick, departmentName, index = 0 }: Ticke
 
       {/* Body: Clamped Description */}
       {ticket.description && (
-        <p className="text-xs font-mono text-text-secondary/90 leading-relaxed line-clamp-2 bg-surface-muted/30 p-2 rounded-lg border border-border/30">
+        <p className="text-xs font-display text-text-secondary/90 leading-relaxed line-clamp-2 bg-surface-muted/30 p-2 rounded-lg border border-border/30">
           {ticket.description}
         </p>
       )}
@@ -144,12 +144,12 @@ export const TicketCard = ({ ticket, onClick, departmentName, index = 0 }: Ticke
       {/* Checklist Progress Bar */}
       {progress !== null && (
         <div className="flex flex-col gap-1.5 pt-0.5">
-          <div className="flex items-center justify-between text-[11px] font-mono text-text-muted">
+          <div className="flex items-center justify-between text-[11px] font-display text-text-muted">
             <span className="flex items-center gap-1">
               <CheckSquare size={11} className="text-primary-500" />
               Subtasks
             </span>
-            <span className="font-semibold text-text-secondary">{doneItems}/{totalItems} ({progress}%)</span>
+            <span className="font-mono tabular-nums font-semibold text-text-secondary">{doneItems}/{totalItems} ({progress}%)</span>
           </div>
           <div className="w-full h-1.5 bg-surface-muted rounded-full overflow-hidden p-0.5 border border-border/40">
             <div
@@ -163,20 +163,20 @@ export const TicketCard = ({ ticket, onClick, departmentName, index = 0 }: Ticke
       {/* Action Chips Row */}
       <div className="flex items-center gap-1.5 flex-wrap pt-1 border-t border-border/40">
         {/* Status Chip with Pulse Dot */}
-        <span className={`inline-flex items-center gap-1.5 text-xs font-mono font-medium px-2.5 py-0.5 rounded-full border ${statusInfo.badge}`}>
+        <span className={`inline-flex items-center gap-1.5 text-xs font-display font-medium px-2.5 py-0.5 rounded-full border ${statusInfo.badge}`}>
           <span className={`size-1.5 rounded-full ${statusInfo.dot}`} />
           {statusInfo.label}
         </span>
 
         {/* Priority Chip */}
-        <span className={`text-xs font-mono font-medium px-2.5 py-0.5 rounded-full border ${priorityInfo.badge}`}>
+        <span className={`text-xs font-display font-medium px-2.5 py-0.5 rounded-full border ${priorityInfo.badge}`}>
           {priorityInfo.label}
         </span>
 
         {/* TAT Due / Overdue Badge */}
         {ticket.tatDueAt && (
           <span
-            className={`inline-flex items-center gap-1 text-xs font-mono font-medium px-2.5 py-0.5 rounded-full border transition-colors ${
+            className={`inline-flex items-center gap-1 text-xs font-display font-medium px-2.5 py-0.5 rounded-full border transition-colors ${
               isOverdue
                 ? 'border-rose-500/50 text-rose-500 bg-rose-500/10 animate-pulse'
                 : 'border-border/80 text-text-muted bg-surface-muted/40'

@@ -56,8 +56,8 @@ const PRIORITIES: { value: TicketFields['priority']; label: string; activeClass:
   { value: 'CRITICAL', label: 'Critical', activeClass: 'border-rose-500/60 bg-rose-500/10 text-rose-400 ring-2 ring-rose-500/20' },
 ];
 
-const LABEL_CLASS = 'text-xs font-mono font-medium text-text-secondary uppercase tracking-wider flex items-center gap-1.5';
-const SELECT_CLASS = 'w-full px-3 h-9 text-sm font-mono bg-surface text-text rounded-md border border-border focus:outline-none focus:ring-2 focus:ring-primary-500/30 transition-all cursor-pointer hover:border-border/80';
+const LABEL_CLASS = 'text-xs font-display font-medium text-text-secondary uppercase tracking-wider flex items-center gap-1.5';
+const SELECT_CLASS = 'w-full px-3 h-10 text-base sm:text-sm font-display bg-surface text-text rounded-md border border-border focus:outline-none focus:ring-2 focus:ring-primary-500/30 transition-all cursor-pointer hover:border-border/80';
 
 export const TicketForm = ({ onClose }: TicketFormProps) => {
   const { data: departments } = useDepartmentsQuery();
@@ -101,33 +101,51 @@ export const TicketForm = ({ onClose }: TicketFormProps) => {
 
   return (
     <Dialog open onOpenChange={v => { if (!v) onClose(); }}>
-      {/* 
-        Scrollbar Hidden Styles Applied:
-        - overflow-y-auto
-        - [scrollbar-width:none] (Firefox)
-        - [-ms-overflow-style:none] (IE/Edge)
-        - [&::-webkit-scrollbar]:hidden (Chrome/Safari)
+      {/*
+        Mobile (<640px): a full-bleed bottom sheet — anchored to the viewport's bottom edge,
+        top-rounded only, sliding up from below. Desktop (sm+): the original centered, fully-
+        rounded modal. Header and footer stay pinned (shrink-0) outside the scrolling region on
+        both layouts so Cancel/Create Ticket remain reachable regardless of viewport height.
       */}
-      <DialogContent className="sm:max-w-lg border-border/60 bg-surface/95 backdrop-blur-md shadow-2xl p-5 rounded-xl max-h-[90vh] overflow-y-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-        
+      <DialogContent
+        className="
+          left-0 right-0 top-auto bottom-0 translate-x-0 translate-y-0 w-full max-w-full
+          sm:left-[50%] sm:right-auto sm:top-[50%] sm:bottom-auto sm:translate-x-[-50%] sm:translate-y-[-50%] sm:max-w-xl
+          border-t border-x-0 border-b-0 sm:border border-border/60
+          bg-surface/95 backdrop-blur-md shadow-2xl p-0
+          rounded-t-2xl rounded-b-none sm:rounded-2xl
+          max-h-[92dvh] sm:max-h-[90vh]
+          flex flex-col overflow-hidden
+          data-[state=open]:slide-in-from-bottom-8 data-[state=closed]:slide-out-to-bottom-8
+          sm:data-[state=open]:slide-in-from-bottom-0 sm:data-[state=closed]:slide-out-to-bottom-0
+          data-[state=open]:zoom-in-100 data-[state=closed]:zoom-out-100
+          sm:data-[state=open]:zoom-in-95 sm:data-[state=closed]:zoom-out-95
+        "
+      >
+        {/* Sheet drag handle — mobile only, signals "this is a bottom sheet" */}
+        <div className="sm:hidden flex justify-center pt-2.5 pb-1 shrink-0">
+          <div className="h-1.5 w-10 rounded-full bg-border/70" />
+        </div>
+
         {/* Header */}
-        <DialogHeader className="pb-2 border-b border-border/40">
-          <div className="flex items-center gap-2.5">
-            <div className="p-2 rounded-lg bg-primary-500/10 text-primary-500 border border-primary-500/20">
+        <DialogHeader className="shrink-0 px-5 sm:px-7 pt-3 sm:pt-7 pb-4 border-b border-border/40">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 rounded-lg bg-primary-500/10 text-primary-500 border border-primary-500/20 shrink-0">
               <Ticket className="w-5 h-5" />
             </div>
-            <div>
-              <DialogTitle className="text-lg font-semibold tracking-tight text-text">
+            <div className="min-w-0">
+              <DialogTitle className="text-base sm:text-lg font-semibold tracking-tight text-text truncate">
                 Create New Ticket
               </DialogTitle>
-              <p className="text-xs text-text-muted font-mono mt-0.5">
+              <p className="text-xs text-text-muted font-display mt-0.5 truncate">
                 Fill in the parameters to dispatch a task.
               </p>
             </div>
           </div>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-3 mt-1" noValidate>
+        <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col flex-1 min-h-0" noValidate>
+          <div className="flex flex-col gap-5 sm:gap-6 px-5 sm:px-7 py-5 sm:py-6 overflow-y-auto flex-1 min-h-0 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
 
           {/* Title Input */}
           <Input
@@ -135,33 +153,33 @@ export const TicketForm = ({ onClose }: TicketFormProps) => {
             label="Title"
             placeholder="e.g. Fix authentication timeout on mobile"
             error={errors.title?.message}
-            className="font-mono text-sm h-9"
+            className="font-display"
             {...register('title')}
           />
 
           {/* Description */}
-          <div className="flex flex-col gap-1">
+          <div className="flex flex-col gap-2">
             <label htmlFor="description" className={LABEL_CLASS}>
               Description
             </label>
             <textarea
               id="description"
-              rows={2}
+              rows={3}
               placeholder="Describe the issue or expectations…"
-              className="w-full px-3 py-2 text-sm font-mono bg-surface text-text rounded-md border border-border focus:outline-none focus:ring-2 focus:ring-primary-500/30 placeholder:text-text-muted/60 resize-none transition-all hover:border-border/80"
+              className="w-full px-3 py-2.5 text-base sm:text-sm font-display bg-surface text-text rounded-md border border-border focus:outline-none focus:ring-2 focus:ring-primary-500/30 placeholder:text-text-muted/60 resize-none transition-all hover:border-border/80"
               {...register('description')}
             />
             {errors.description && (
-              <p className="text-xs text-rose-500 flex items-center gap-1 font-mono">
+              <p className="text-xs text-rose-500 flex items-center gap-1 font-display">
                 <AlertCircle className="w-3 h-3" /> {errors.description.message}
               </p>
             )}
           </div>
 
           {/* Priority Selector */}
-          <div className="flex flex-col gap-1">
+          <div className="flex flex-col gap-2">
             <label className={LABEL_CLASS}>Priority Level</label>
-            <div className="grid grid-cols-4 gap-2">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-2.5">
               {PRIORITIES.map((p) => {
                 const isSelected = priority === p.value;
                 return (
@@ -169,7 +187,7 @@ export const TicketForm = ({ onClose }: TicketFormProps) => {
                     key={p.value}
                     type="button"
                     onClick={() => setValue('priority', p.value)}
-                    className={`px-2 py-1.5 text-xs font-mono font-medium rounded-md border transition-all duration-200 text-center ${
+                    className={`px-2 py-3 sm:py-2.5 text-xs font-display font-medium rounded-md border transition-all duration-200 text-center ${
                       isSelected
                         ? p.activeClass
                         : 'border-border/60 bg-surface/50 text-text-muted hover:bg-surface/80 hover:text-text'
@@ -182,38 +200,38 @@ export const TicketForm = ({ onClose }: TicketFormProps) => {
             </div>
           </div>
 
-          {/* Assignment Mode Toggle */}
-          <div className="flex flex-col gap-1">
+          {/* Assignment Mode Toggle   */}
+          <div className="flex flex-col gap-2">
             <label className={LABEL_CLASS}>Assignment Strategy</label>
-            <div className="grid grid-cols-2 gap-1 p-1 bg-surface-muted/50 border border-border/50 rounded-lg">
+            <div className="grid grid-cols-2 gap-1.5 p-1.5 bg-surface-muted/50 border border-border/50 rounded-lg">
               <button
                 type="button"
                 onClick={() => setValue('assignmentMode', 'MANUAL')}
-                className={`flex items-center justify-center gap-2 py-1.5 text-xs font-mono font-medium rounded-md transition-all ${
+                className={`flex items-center justify-center gap-1.5 sm:gap-2 py-3 sm:py-2.5 px-1 text-xs font-display font-medium rounded-md transition-all text-center ${
                   assignmentMode === 'MANUAL'
                     ? 'bg-surface text-text shadow-sm border border-border/80'
                     : 'text-text-muted hover:text-text'
                 }`}
               >
-                <User className="w-3.5 h-3.5" /> Manual Dispatch
+                <User className="w-3.5 h-3.5 shrink-0" /> <span className="truncate">Manual Dispatch</span>
               </button>
               <button
                 type="button"
                 onClick={() => setValue('assignmentMode', 'AUTO')}
-                className={`flex items-center justify-center gap-2 py-1.5 text-xs font-mono font-medium rounded-md transition-all ${
+                className={`flex items-center justify-center gap-1.5 sm:gap-2 py-3 sm:py-2.5 px-1 text-xs font-display font-medium rounded-md transition-all text-center ${
                   assignmentMode === 'AUTO'
                     ? 'bg-primary-500/15 text-primary-400 border border-primary-500/30 shadow-sm'
                     : 'text-text-muted hover:text-text'
                 }`}
               >
-                <Zap className="w-3.5 h-3.5 text-primary-400" /> Auto Assign
+                <Zap className="w-3.5 h-3.5 text-primary-400 shrink-0" /> <span className="truncate">Auto Assign</span>
               </button>
             </div>
           </div>
 
           {/* Department & Assignee Fields */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div className="flex flex-col gap-1">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="flex flex-col gap-2">
               <label className={LABEL_CLASS}>
                 <Building2 className="w-3.5 h-3.5" /> Department
               </label>
@@ -225,15 +243,15 @@ export const TicketForm = ({ onClose }: TicketFormProps) => {
                   <SelectValue placeholder="Any department" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value={ANY_DEPARTMENT} className="font-mono text-xs">Any department</SelectItem>
+                  <SelectItem value={ANY_DEPARTMENT} className="font-display text-xs">Any department</SelectItem>
                   {departments?.map(d => (
-                    <SelectItem key={d.id} value={d.id} className="font-mono text-xs">{d.name}</SelectItem>
+                    <SelectItem key={d.id} value={d.id} className="font-display text-xs">{d.name}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
 
-            <div className="flex flex-col gap-1">
+            <div className="flex flex-col gap-2">
               <label className={LABEL_CLASS}>
                 <UserCheck className="w-3.5 h-3.5" /> Assignee
               </label>
@@ -245,9 +263,9 @@ export const TicketForm = ({ onClose }: TicketFormProps) => {
                   <SelectValue placeholder="Unassigned" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value={UNASSIGNED} className="font-mono text-xs">Unassigned</SelectItem>
+                  <SelectItem value={UNASSIGNED} className="font-display text-xs">Unassigned</SelectItem>
                   {assignableUsers?.map(u => (
-                    <SelectItem key={u.id} value={u.id} className="font-mono text-xs">
+                    <SelectItem key={u.id} value={u.id} className="font-display text-xs">
                       {u.firstName} {u.lastName ?? ''} ({u.role})
                     </SelectItem>
                   ))}
@@ -272,7 +290,7 @@ export const TicketForm = ({ onClose }: TicketFormProps) => {
                   type="number"
                   placeholder="e.g. 24"
                   error={errors.tatHours?.message}
-                  className="font-mono text-sm h-9"
+                  className="font-display"
                   {...register('tatHours')}
                 />
               </motion.div>
@@ -283,7 +301,7 @@ export const TicketForm = ({ onClose }: TicketFormProps) => {
                 animate={{ opacity: 1, height: 'auto' }}
                 exit={{ opacity: 0, height: 0 }}
                 transition={{ duration: 0.15 }}
-                className="p-2.5 rounded-md bg-primary-500/5 border border-primary-500/20 text-xs text-primary-400 font-mono flex items-center gap-2"
+                className="p-3 rounded-md bg-primary-500/5 border border-primary-500/20 text-xs text-primary-400 font-display flex items-center gap-2.5"
               >
                 <Sparkles className="w-4 h-4 shrink-0 text-primary-400" />
                 <span>Auto-assigned tickets are given a default TAT of <strong>24 hours</strong>.</span>
@@ -293,18 +311,19 @@ export const TicketForm = ({ onClose }: TicketFormProps) => {
 
           {/* Global Mutation Error */}
           {mutation.isError && (
-            <div className="p-2 rounded-md bg-rose-500/10 border border-rose-500/20 text-xs text-rose-400 font-mono flex items-center gap-2">
+            <div className="p-3 rounded-md bg-rose-500/10 border border-rose-500/20 text-xs text-rose-400 font-display flex items-center gap-2.5">
               <AlertCircle className="w-4 h-4 shrink-0" />
               {mutation.error instanceof Error ? mutation.error.message : 'Failed to create ticket.'}
             </div>
           )}
+          </div>
 
           {/* Footer Actions */}
-          <DialogFooter className="mt-1 pt-2 border-t border-border/40 gap-2">
-            <Button type="button" variant="outline" size="sm" onClick={onClose} className="font-mono">
+          <DialogFooter className="shrink-0 px-5 sm:px-7 pt-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:pb-4 border-t border-border/40 gap-3">
+            <Button type="button" variant="outline" size="sm" onClick={onClose} className="font-display">
               Cancel
             </Button>
-            <Button type="submit" variant="primary" size="sm" isLoading={mutation.isPending} className="font-mono">
+            <Button type="submit" variant="primary" size="sm" isLoading={mutation.isPending} className="font-display">
               Create Ticket
             </Button>
           </DialogFooter>

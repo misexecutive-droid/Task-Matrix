@@ -65,7 +65,7 @@ interface TicketDetailProps {
   onClose: () => void;
 }
 
-const SECTION_HEADER = 'text-xs font-mono font-medium text-text-secondary uppercase tracking-wider flex items-center gap-1.5 mb-2';
+const SECTION_HEADER = 'text-xs font-display font-medium text-text-secondary uppercase tracking-wider flex items-center gap-1.5 mb-2';
 
 export const TicketDetail = ({ ticket: initialTicket, onClose }: TicketDetailProps) => {
   const { data: fresh, isPending } = useTicketQuery(initialTicket.id);
@@ -150,7 +150,7 @@ export const TicketDetail = ({ ticket: initialTicket, onClose }: TicketDetailPro
 
   return (
     <Sheet open onOpenChange={v => { if (!v) onClose(); }}>
-      <SheetContent className="sm:max-w-xl w-full border-l border-border/60 bg-surface/95 backdrop-blur-md p-0 flex flex-col h-full font-mono">
+      <SheetContent className="sm:max-w-xl w-full border-l border-border/60 bg-surface/95 backdrop-blur-md p-0 flex flex-col h-full">
         
         {/* Drawer Header */}
         <SheetHeader className="p-5 pb-4 border-b border-border/40 bg-surface/50">
@@ -384,7 +384,7 @@ export const TicketDetail = ({ ticket: initialTicket, onClose }: TicketDetailPro
                 <Button
                   size="sm"
                   variant="primary"
-                  className="gap-1.5 bg-emerald-600 hover:bg-emerald-700 font-mono text-xs"
+                  className="gap-1.5 bg-emerald-600 hover:bg-emerald-700 font-display text-xs"
                   isLoading={verifyMut.isPending}
                   onClick={() => verifyMut.mutate({ id: ticket.id, payload: { action: 'APPROVE' } })}
                 >
@@ -394,7 +394,7 @@ export const TicketDetail = ({ ticket: initialTicket, onClose }: TicketDetailPro
                 <Button
                   size="sm"
                   variant="outline"
-                  className="gap-1.5 border-rose-500/40 text-rose-500 hover:bg-rose-500/10 font-mono text-xs"
+                  className="gap-1.5 border-rose-500/40 text-rose-500 hover:bg-rose-500/10 font-display text-xs"
                   disabled={verifyMut.isPending}
                   onClick={() => setShowRejectBox(true)}
                 >
@@ -410,19 +410,19 @@ export const TicketDetail = ({ ticket: initialTicket, onClose }: TicketDetailPro
                   onChange={e => setRejectNote(e.target.value)}
                   placeholder="What needs to be fixed before this can be approved?"
                   rows={2}
-                  className="w-full px-3 py-2 text-xs font-mono bg-surface border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500/50"
+                  className="w-full px-3 py-2 text-xs font-display bg-surface border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500/50"
                 />
                 <div className="flex items-center gap-2">
                   <Button
                     size="sm"
                     variant="primary"
-                    className="bg-rose-600 hover:bg-rose-700 font-mono text-xs"
+                    className="bg-rose-600 hover:bg-rose-700 font-display text-xs"
                     disabled={verifyMut.isPending || !rejectNote.trim()}
                     onClick={() => verifyMut.mutate({ id: ticket.id, payload: { action: 'REJECT', note: rejectNote.trim() } })}
                   >
                     {verifyMut.isPending ? <Loader2 size={13} className="animate-spin" /> : 'Send back'}
                   </Button>
-                  <Button size="sm" variant="outline" className="font-mono text-xs" disabled={verifyMut.isPending} onClick={() => { setShowRejectBox(false); setRejectNote(''); }}>
+                  <Button size="sm" variant="outline" className="font-display text-xs" disabled={verifyMut.isPending} onClick={() => { setShowRejectBox(false); setRejectNote(''); }}>
                     Cancel
                   </Button>
                 </div>
@@ -439,13 +439,13 @@ export const TicketDetail = ({ ticket: initialTicket, onClose }: TicketDetailPro
               size="sm"
               onClick={handleDelete}
               isLoading={deleteMut.isPending}
-              className="text-rose-500 border-rose-500/30 hover:bg-rose-500/10 gap-1.5 font-mono text-xs"
+              className="text-rose-500 border-rose-500/30 hover:bg-rose-500/10 gap-1.5 font-display text-xs"
             >
               <Trash2 size={13} />
               Delete Ticket
             </Button>
           )}
-          <Button variant="outline" size="sm" onClick={onClose} className="font-mono text-xs ml-auto">
+          <Button variant="outline" size="sm" onClick={onClose} className="font-display text-xs ml-auto">
             Close
           </Button>
         </SheetFooter>

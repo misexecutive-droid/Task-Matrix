@@ -24,7 +24,10 @@ export type CreateUserPayload = {
     storeId?: string;
 };
 
-export type UpdateUserPayload = Partial<Omit<CreateUserPayload, "password">> & { isActive?: boolean };
+export type UpdateUserPayload = Partial<Omit<CreateUserPayload, "password" | "departmentId">> & {
+    isActive?: boolean;
+    departmentId?: string | null;
+};
 export type ApiResponse<T> = { success: boolean; data: T };
 
 export const adminApi = {

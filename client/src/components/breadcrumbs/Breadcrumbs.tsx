@@ -19,25 +19,29 @@ interface BreadcrumbsProps {
   className?: string;
 }
 
-// Drop-in trail: pass [{ label, to }, ...] — the last item (or any item
-// without `to`) renders as plain text, everything else is a router Link.
 export const Breadcrumbs = ({ items, className }: BreadcrumbsProps) => {
+  // Prevent rendering empty wrappers if no items are provided
+  if (!items?.length) return null;
+
   return (
     <Breadcrumb className={className}>
       <BreadcrumbList>
-        {items.map((item, i) => {
+        {items.map(({ label, to }, i) => {
           const isLast = i === items.length - 1;
+          const isPage = isLast || !to;
+
           return (
-            <Fragment key={item.label}>
+            <Fragment key={`${label}-${i}`}>
               <BreadcrumbItem>
-                {isLast || !item.to ? (
-                  <BreadcrumbPage>{item.label}</BreadcrumbPage>
+                {isPage ? (
+                  <BreadcrumbPage>{label}</BreadcrumbPage>
                 ) : (
                   <BreadcrumbLink asChild>
-                    <Link to={item.to}>{item.label}</Link>
+                    <Link to={to}>{label}</Link>
                   </BreadcrumbLink>
                 )}
               </BreadcrumbItem>
+              
               {!isLast && <BreadcrumbSeparator />}
             </Fragment>
           );

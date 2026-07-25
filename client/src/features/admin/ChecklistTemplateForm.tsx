@@ -102,8 +102,8 @@ export const ChecklistTemplateForm = ({ onClose }: ChecklistTemplateFormProps) =
 
   return (
     <Dialog open onOpenChange={v => { if (!v) onClose(); }}>
-      <DialogContent className="sm:max-w-2xl font-mono max-h-[90vh] flex flex-col p-0 overflow-hidden bg-background rounded-xl border border-border shadow-2xl">
-        
+      <DialogContent className="sm:max-w-2xl max-h-[90vh] flex flex-col p-0 overflow-hidden bg-background rounded-xl border border-border shadow-2xl">
+
         {/* Header Section */}
         <DialogHeader className="p-6 pb-4 border-b border-border/60 bg-surface-subtle/40">
           <div className="flex items-start gap-3.5">
@@ -111,10 +111,10 @@ export const ChecklistTemplateForm = ({ onClose }: ChecklistTemplateFormProps) =
               <ListChecks className="w-6 h-6" />
             </div>
             <div className="space-y-1">
-              <DialogTitle className="font-mono text-lg font-semibold tracking-tight text-text">
+              <DialogTitle className="text-lg tracking-tight">
                 Create Checklist Template
               </DialogTitle>
-              <p className="text-xs text-text-muted font-mono leading-relaxed">
+              <p className="text-xs text-text-muted font-display leading-relaxed">
                 Build a reusable checklist to streamline repetitive procedures. Attach it to tasks or tickets in a single click.
               </p>
             </div>
@@ -130,7 +130,7 @@ export const ChecklistTemplateForm = ({ onClose }: ChecklistTemplateFormProps) =
               id="name"
               label="TEMPLATE NAME"
               placeholder="e.g. Daily Store Opening Checklist"
-              className="font-mono text-sm h-10 bg-surface focus:ring-primary-500/20 transition-all"
+              className="font-display text-sm h-10 bg-surface focus:ring-primary-500/20 transition-all"
               value={name}
               onChange={e => { setName(e.target.value); setNameError(null); }}
               error={nameError ?? undefined}
@@ -139,12 +139,12 @@ export const ChecklistTemplateForm = ({ onClose }: ChecklistTemplateFormProps) =
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1.5">
-                <label className="text-xs font-mono font-medium text-text-secondary uppercase tracking-wider flex items-center gap-1.5">
+                <label className="text-xs font-display font-medium text-text-secondary uppercase tracking-wider flex items-center gap-1.5">
                   <Sparkles size={13} className="text-primary-500" />
                   Target System
                 </label>
                 <Select value={appliesTo} onValueChange={v => setAppliesTo(v as ChecklistTemplateTarget)}>
-                  <SelectTrigger className="w-full px-3 h-10 text-sm font-mono bg-surface text-text rounded-lg border border-border focus:ring-2 focus:ring-primary-500/20 transition-all cursor-pointer">
+                  <SelectTrigger className="w-full px-3 h-10 text-sm font-display bg-surface text-text rounded-lg border border-border focus:ring-2 focus:ring-primary-500/20 transition-all cursor-pointer">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -156,12 +156,12 @@ export const ChecklistTemplateForm = ({ onClose }: ChecklistTemplateFormProps) =
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-xs font-mono font-medium text-text-secondary uppercase tracking-wider flex items-center gap-1.5">
+                <label className="text-xs font-display font-medium text-text-secondary uppercase tracking-wider flex items-center gap-1.5">
                   <Building2 size={13} className="text-primary-500" />
                   Department (Optional)
                 </label>
                 <Select value={departmentId || NO_DEPARTMENT} onValueChange={handleDepartmentChange}>
-                  <SelectTrigger className="w-full px-3 h-10 text-sm font-mono bg-surface text-text rounded-lg border border-border focus:ring-2 focus:ring-primary-500/20 transition-all cursor-pointer">
+                  <SelectTrigger className="w-full px-3 h-10 text-sm font-display bg-surface text-text rounded-lg border border-border focus:ring-2 focus:ring-primary-500/20 transition-all cursor-pointer">
                     <SelectValue placeholder="No department" />
                   </SelectTrigger>
                   <SelectContent>
@@ -182,7 +182,7 @@ export const ChecklistTemplateForm = ({ onClose }: ChecklistTemplateFormProps) =
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="text-xs font-mono font-medium text-text-secondary uppercase tracking-wider">
+                <h3 className="text-xs font-display font-medium text-text-secondary uppercase tracking-wider">
                   Checklist Steps ({itemDrafts.length})
                 </h3>
                 <p className="text-[11px] text-text-muted mt-0.5">
@@ -211,7 +211,7 @@ export const ChecklistTemplateForm = ({ onClose }: ChecklistTemplateFormProps) =
                         value={draft.label}
                         onChange={e => updateDraft(i, { label: e.target.value })}
                         placeholder={`Step ${i + 1} description…`}
-                        className="flex-1 px-3 py-2 text-sm font-mono bg-background text-text rounded-lg border border-border/70 focus:border-primary-500/50 focus:outline-none focus:ring-2 focus:ring-primary-500/20 placeholder:text-text-muted transition-all"
+                        className="flex-1 px-3 py-2 text-sm font-display bg-background text-text rounded-lg border border-border/70 focus:border-primary-500/50 focus:outline-none focus:ring-2 focus:ring-primary-500/20 placeholder:text-text-muted transition-all"
                       />
                       {itemDrafts.length > 1 && (
                         <button
@@ -233,7 +233,7 @@ export const ChecklistTemplateForm = ({ onClose }: ChecklistTemplateFormProps) =
                         <div className="flex items-center gap-2 bg-background p-1.5 rounded-lg border border-border/60">
                           <Camera size={14} className="text-text-muted ml-1" />
                           <div className="flex items-center gap-1">
-                            <span className="text-[11px] text-text-muted">Min:</span>
+                            <span className="text-[11px] font-display text-text-muted">Min:</span>
                             <input
                               type="number"
                               min={0}
@@ -243,7 +243,7 @@ export const ChecklistTemplateForm = ({ onClose }: ChecklistTemplateFormProps) =
                             />
                           </div>
                           <div className="flex items-center gap-1">
-                            <span className="text-[11px] text-text-muted">Max:</span>
+                            <span className="text-[11px] font-display text-text-muted">Max:</span>
                             <input
                               type="number"
                               min={0}
@@ -255,7 +255,7 @@ export const ChecklistTemplateForm = ({ onClose }: ChecklistTemplateFormProps) =
                           </div>
                         </div>
 
-                        <label className="flex items-center gap-2 text-xs font-mono text-text-secondary cursor-pointer select-none">
+                        <label className="flex items-center gap-2 text-xs font-display text-text-secondary cursor-pointer select-none">
                           <input
                             type="checkbox"
                             checked={draft.requiresLivePhoto}
@@ -273,7 +273,7 @@ export const ChecklistTemplateForm = ({ onClose }: ChecklistTemplateFormProps) =
                           onValueChange={v => updateDraft(i, { assigneeId: v === UNASSIGNED ? '' : v })}
                           disabled={!departmentId}
                         >
-                          <SelectTrigger className="w-full h-8 px-2.5 text-xs font-mono bg-background border-border/70">
+                          <SelectTrigger className="w-full h-8 px-2.5 text-xs font-display bg-background border-border/70">
                             <div className="flex items-center gap-1.5 truncate">
                               <UserCheck size={13} className="text-text-muted shrink-0" />
                               <SelectValue placeholder="Assignee" />
@@ -300,7 +300,7 @@ export const ChecklistTemplateForm = ({ onClose }: ChecklistTemplateFormProps) =
             <button
               type="button"
               onClick={() => setItemDrafts(d => [...d, emptyItemDraft()])}
-              className="w-full py-2.5 border-2 border-dashed border-border hover:border-primary-500/40 hover:bg-primary-500/5 text-primary-600 rounded-xl transition-all flex items-center justify-center gap-2 text-xs font-mono font-semibold cursor-pointer group"
+              className="w-full py-2.5 border-2 border-dashed border-border hover:border-primary-500/40 hover:bg-primary-500/5 text-primary-600 rounded-xl transition-all flex items-center justify-center gap-2 text-xs font-display font-semibold cursor-pointer group"
             >
               <Plus size={15} className="transition-transform group-hover:scale-110" />
               Add Next Step
@@ -309,7 +309,7 @@ export const ChecklistTemplateForm = ({ onClose }: ChecklistTemplateFormProps) =
 
           {/* Dynamic Error State */}
           {createMutation.isError && (
-            <div className="flex items-center gap-2 p-3 bg-danger/10 border border-danger/20 rounded-lg text-danger text-xs font-mono">
+            <div className="flex items-center gap-2 p-3 bg-danger/10 border border-danger/20 rounded-lg text-danger text-xs font-display">
               <AlertCircle size={15} className="shrink-0" />
               <span>
                 {createMutation.error instanceof Error 
@@ -323,27 +323,27 @@ export const ChecklistTemplateForm = ({ onClose }: ChecklistTemplateFormProps) =
 
         {/* Action Footer */}
         <DialogFooter className="p-4 px-6 border-t border-border/60 bg-surface-subtle/30 flex items-center justify-between sm:justify-between gap-3">
-          <p className="text-[11px] text-text-muted font-mono hidden sm:flex items-center gap-1">
+          <p className="text-[11px] text-text-muted font-display hidden sm:flex items-center gap-1">
             <HelpCircle size={13} />
             Steps with empty labels will be skipped.
           </p>
           <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
-            <Button 
-              type="button" 
-              variant="outline" 
-              size="sm" 
-              onClick={onClose} 
-              className="font-mono text-xs"
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={onClose}
+              className="font-display text-xs"
             >
               Cancel
             </Button>
-            <Button 
-              type="button" 
-              variant="primary" 
-              size="sm" 
-              isLoading={createMutation.isPending} 
-              onClick={handleSubmit} 
-              className="font-mono text-xs shadow-xs"
+            <Button
+              type="button"
+              variant="primary"
+              size="sm"
+              isLoading={createMutation.isPending}
+              onClick={handleSubmit}
+              className="font-display text-xs shadow-xs"
             >
               Save Template
             </Button>

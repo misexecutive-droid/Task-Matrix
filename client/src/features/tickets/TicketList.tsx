@@ -164,7 +164,7 @@ export const TicketList = () => {
   };
 
   return (
-    <div className="flex flex-col gap-6 max-w-4xl mx-auto font-mono w-full pb-10">
+    <div className="flex flex-col gap-6 max-w-4xl mx-auto w-full pb-10">
 
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-border/50">
@@ -174,10 +174,10 @@ export const TicketList = () => {
               <TicketIcon className="w-5 h-5" />
             </div>
             <div>
-              <h1 className="text-xl font-mono font-semibold text-text tracking-tight">
+              <h1 className="text-xl font-display font-semibold text-text tracking-tight">
                 Support Tickets
               </h1>
-              <p className="text-xs text-text-muted font-mono mt-0.5 flex items-center gap-1.5">
+              <p className="text-xs text-text-muted font-display mt-0.5 flex items-center gap-1.5">
                 <span>{meta?.total ?? 0} total record{meta?.total !== 1 ? 's' : ''}</span>
                 {statusFilter !== 'ALL' && (
                   <span className="text-primary-500 font-medium">({filtered.length} matching filter)</span>
@@ -191,7 +191,7 @@ export const TicketList = () => {
           <button
             type="button"
             onClick={() => setShowForm(true)}
-            className="group relative inline-flex items-center justify-center gap-2 px-4 py-2 text-xs font-mono font-semibold rounded-lg text-white bg-gradient-to-r from-primary-600 to-primary-500 hover:from-primary-500 hover:to-primary-400 shadow-[0_2px_10px_rgba(59,130,246,0.3)] hover:shadow-[0_4px_16px_rgba(59,130,246,0.45)] active:scale-[0.97] transition-all duration-200 border border-white/15 cursor-pointer"
+            className="group relative inline-flex items-center justify-center gap-2 px-4 py-2 text-xs font-display font-semibold rounded-lg text-white bg-gradient-to-r from-primary-600 to-primary-500 hover:from-primary-500 hover:to-primary-400 shadow-[0_2px_10px_rgba(59,130,246,0.3)] hover:shadow-[0_4px_16px_rgba(59,130,246,0.45)] active:scale-[0.97] transition-all duration-200 border border-white/15 cursor-pointer"
           >
             <Plus size={15} className="transition-transform duration-300 group-hover:scale-125" />
             <span className="tracking-wide">Create Ticket</span>
@@ -209,7 +209,7 @@ export const TicketList = () => {
             value={search}
             onChange={e => setSearch(e.target.value)}
             placeholder="Search tickets by title or content..."
-            className="w-full pl-9 pr-9 py-2 text-xs font-mono bg-surface text-text rounded-lg border border-border/80 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 placeholder:text-text-muted/60 transition-all"
+            className="w-full pl-9 pr-9 py-2 text-xs font-display bg-surface text-text rounded-lg border border-border/80 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 placeholder:text-text-muted/60 transition-all"
           />
           {search && (
             <button
@@ -224,7 +224,7 @@ export const TicketList = () => {
 
         {/* Status Filter */}
         <div className="flex items-center gap-2">
-          <span className="text-[11px] text-text-muted font-mono uppercase tracking-wider flex items-center gap-1 shrink-0">
+          <span className="text-[11px] text-text-muted font-display uppercase tracking-wider flex items-center gap-1 shrink-0">
             <Filter size={11} /> Filter:
           </span>
           <Dropdown
@@ -233,7 +233,7 @@ export const TicketList = () => {
             trigger={
               <button
                 type="button"
-                className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-mono font-medium rounded-md transition-all cursor-pointer whitespace-nowrap border w-fit ${statusFilter !== 'ALL'
+                className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-display font-medium rounded-md transition-all cursor-pointer whitespace-nowrap border w-fit ${statusFilter !== 'ALL'
                     ? 'bg-primary-500/15 text-primary-500 border-primary-500/30 shadow-2xs font-semibold'
                     : 'bg-surface/50 text-text-muted border-border/40 hover:bg-surface-hover hover:text-text'
                   }`}
@@ -246,13 +246,13 @@ export const TicketList = () => {
         </div>
 
         <div className="flex items-center gap-2">
-          <span className="text-[11px] text-text-muted font-mono uppercase tracking-wider flex items-center gap-1 shrink-0">
+          <span className="text-[11px] text-text-muted font-display uppercase tracking-wider flex items-center gap-1 shrink-0">
             Group by:
           </span>
           <div className="flex gap-1 p-1 bg-surface-hover rounded-lg w-fit">
             <button
               onClick={() => setGroupBy('department')}
-              className={`flex items-center gap-1.5 px-2.5 py-1 text-xs font-mono font-medium rounded-md transition-colors cursor-pointer ${
+              className={`flex items-center gap-1.5 px-2.5 py-1 text-xs font-display font-medium rounded-md transition-colors cursor-pointer ${
                 groupBy === 'department' ? 'bg-surface text-text shadow-sm' : 'text-text-muted hover:text-text-secondary'
               }`}
             >
@@ -260,7 +260,7 @@ export const TicketList = () => {
             </button>
             <button
               onClick={() => setGroupBy('assignee')}
-              className={`flex items-center gap-1.5 px-2.5 py-1 text-xs font-mono font-medium rounded-md transition-colors cursor-pointer ${
+              className={`flex items-center gap-1.5 px-2.5 py-1 text-xs font-display font-medium rounded-md transition-colors cursor-pointer ${
                 groupBy === 'assignee' ? 'bg-surface text-text shadow-sm' : 'text-text-muted hover:text-text-secondary'
               }`}
             >
@@ -299,7 +299,7 @@ export const TicketList = () => {
 
       {/* Error State */}
       {isError && (
-        <div className="flex items-center gap-2.5 p-4 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-500 text-xs font-mono">
+        <div className="flex items-center gap-2.5 p-4 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-500 text-xs font-display">
           <AlertCircle size={16} className="shrink-0" />
           <span>Failed to load tickets. Please check your network connection and try again.</span>
         </div>
@@ -311,8 +311,8 @@ export const TicketList = () => {
           <div className="p-3 rounded-full bg-surface-muted border border-border/60 text-text-muted mb-3">
             <Inbox size={26} />
           </div>
-          <h3 className="text-sm font-semibold text-text font-mono">No tickets found</h3>
-          <p className="text-xs text-text-muted font-mono mt-1 max-w-xs">
+          <h3 className="text-sm font-semibold text-text font-display">No tickets found</h3>
+          <p className="text-xs text-text-muted font-display mt-1 max-w-xs">
             {hasActiveFilters
               ? 'No tickets matched your current search query or filter selection.'
               : 'There are currently no tickets registered in the system.'}
@@ -323,7 +323,7 @@ export const TicketList = () => {
               size="sm"
               variant="outline"
               onClick={handleResetFilters}
-              className="mt-4 gap-1.5 text-xs font-mono"
+              className="mt-4 gap-1.5 text-xs font-display"
             >
               <RotateCcw size={13} />
               Reset Filters
@@ -348,18 +348,18 @@ export const TicketList = () => {
                       {groupBy === 'department'
                         ? <Building2 size={13} className="text-primary-500 shrink-0" />
                         : <User size={13} className="text-primary-500 shrink-0" />}
-                      <h3 className="text-xs font-mono font-semibold text-text-secondary uppercase tracking-wider">
+                      <h3 className="text-xs font-display font-semibold text-text-secondary uppercase tracking-wider">
                         {group.label}
                       </h3>
                     </div>
                     <div className="flex items-center gap-2">
                       {stats.total > 0 && (
-                        <span className="text-[11px] font-mono px-2 py-0.5 rounded-full bg-primary-500/10 text-primary-600 dark:text-primary-300 border border-primary-500/20">
-                          {stats.done}/{stats.total} checklist items done
+                        <span className="text-[11px] font-display px-2 py-0.5 rounded-full bg-primary-500/10 text-primary-600 dark:text-primary-300 border border-primary-500/20">
+                          <span className="font-mono tabular-nums">{stats.done}/{stats.total}</span> checklist items done
                         </span>
                       )}
-                      <span className="text-[11px] font-mono px-2 py-0.5 rounded-full bg-surface-muted text-text-muted border border-border/50">
-                        {group.tickets.length} {group.tickets.length === 1 ? 'ticket' : 'tickets'}
+                      <span className="text-[11px] font-display px-2 py-0.5 rounded-full bg-surface-muted text-text-muted border border-border/50">
+                        <span className="font-mono tabular-nums">{group.tickets.length}</span> {group.tickets.length === 1 ? 'ticket' : 'tickets'}
                       </span>
                     </div>
                   </div>
