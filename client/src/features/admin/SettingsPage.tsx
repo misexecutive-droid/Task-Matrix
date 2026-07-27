@@ -4,7 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Loader2, Settings as SettingsIcon, CheckSquare } from 'lucide-react';
 import { Input, Button, Form, Skeleton } from '../../components';
-import { useSettingsQuery, useUpdateSettingsMutation } from './hooks';
+import { useSettingsQuery, useUpdateSettingsMutation } from './hook';
 
 const IMAGE_TYPE_OPTIONS = [
   { value: 'image/jpeg', label: 'JPEG' },

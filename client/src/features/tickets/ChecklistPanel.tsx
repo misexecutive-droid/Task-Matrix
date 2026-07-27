@@ -44,9 +44,10 @@ const ItemRow = ({
   const uploadImages  = useUploadChecklistImagesMutation(ticketId);
   const deleteImage   = useDeleteChecklistImageMutation(ticketId);
 
+  const images = item.images ?? [];
   const qualifying = item.requiresLivePhoto
-    ? item.images.filter(i => i.captureMethod === 'LIVE').length
-    : item.images.length;
+    ? images.filter(i => i.captureMethod === 'LIVE').length
+    : images.length;
 
   const handleFiles = (files: FileList | null, captureMethod: CaptureMethod) => {
     if (!files || !files.length) return;
@@ -137,9 +138,9 @@ const ItemRow = ({
       {/* Hero image strip: evidence photos attached to this item — the natural
           equivalent of the reference card's hero image slot. Only rendered when
           photos actually exist. */}
-      {item.images.length > 0 && (
+      {images.length > 0 && (
         <div className="flex flex-wrap gap-2">
-          {item.images.map(img => (
+          {images.map(img => (
             <div key={img.id} className="relative group/img">
               <img
                 src={`${UPLOADS_BASE}${img.url}`}

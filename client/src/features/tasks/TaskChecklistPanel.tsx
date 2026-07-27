@@ -42,9 +42,10 @@ const ItemRow = ({
   const uploadImages  = useUploadTaskImagesMutation(taskId);
   const deleteImage   = useDeleteTaskImageMutation(taskId);
 
+  const images = item.images ?? [];
   const qualifying = item.requiresLivePhoto
-    ? item.images.filter(i => i.captureMethod === 'LIVE').length
-    : item.images.length;
+    ? images.filter(i => i.captureMethod === 'LIVE').length
+    : images.length;
 
   const handleFiles = (files: FileList | null, captureMethod: CaptureMethod) => {
     if (!files || !files.length) return;
@@ -120,9 +121,9 @@ const ItemRow = ({
       </div>
 
       {/* Hero image strip */}
-      {item.images.length > 0 && (
+      {images.length > 0 && (
         <div className="flex flex-wrap gap-3 pl-11">
-          {item.images.map(img => (
+          {images.map(img => (
             <div key={img.id} className="relative group/img overflow-hidden rounded-lg border border-border shadow-sm">
               <img
                 src={`${UPLOADS_BASE}${img.url}`}

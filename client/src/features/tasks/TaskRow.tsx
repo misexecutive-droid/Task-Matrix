@@ -1,7 +1,7 @@
 import { Loader2, AlertCircle } from "lucide-react";
 import { Button } from "../../components";
 import { useUpdateTaskMutation, useDeleteTaskMutation } from "./hook";
-import { PRIORITY_MAP, STATUS_ICON, NEXT_STATUS } from "./TaskList";
+import { PRIORITY_MAP, STATUS_ICON, NEXT_STATUS } from "./taskDisplay";
 import type { Task } from '../../api/task';
 
 interface TaskRowProps {

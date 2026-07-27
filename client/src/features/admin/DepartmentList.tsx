@@ -1,7 +1,8 @@
 import { useState, useMemo, lazy, Suspense } from "react";
-import { Plus, AlertCircle, Trash2, Pencil, Building2, Users, Loader2 } from "lucide-react";
+import { Plus, Trash2, Pencil, Building2, Users, Loader2 } from "lucide-react";
 import { Button, Skeleton } from "../../components";
-import { useDeleteDepartmentMutation, useDepartmentsQuery, useUpdateDepartmentMutation, useUsersQuery } from "./hooks";
+import { useDeleteDepartmentMutation, useDepartmentsQuery, useUpdateDepartmentMutation, useUsersQuery } from "./hook";
+import { ErrorMessage, EmptyState } from './adminDisplay';
 import type { Department } from "../../api/departments";
 
 // Lazy-loaded modal chunk
@@ -173,16 +174,3 @@ const DepartmentGridSkeleton = () => (
   </div>
 );
 
-const ErrorMessage = ({ message }: { message: string }) => (
-  <div className="flex items-center gap-2 px-4 py-3 rounded-lg bg-danger/10 text-danger text-sm font-display">
-    <AlertCircle size={15} />
-    {message}
-  </div>
-);
-
-const EmptyState = ({ label, Icon }: { label: string; Icon: React.ElementType }) => (
-  <div className="flex flex-col items-center justify-center py-16 text-text-muted gap-2 border border-dashed border-border rounded-xl bg-surface/50">
-    <Icon size={28} className="text-text-light" />
-    <p className="text-sm font-display">{label}</p>
-  </div>
-);

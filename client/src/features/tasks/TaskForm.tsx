@@ -40,7 +40,6 @@ const LABEL_CLASS =
 const INPUT_BASE_CLASS =
   'w-full px-3 sm:px-3.5 py-2.5 text-sm font-display bg-surface/60 text-text rounded-lg border border-border/70 focus:outline-none focus:ring-2 focus:ring-primary-500/40 focus:border-primary-500/60 transition-all duration-200 placeholder:text-text-muted/50 hover:border-border';
 
-// ── Schema ─────────────────────────────────────────────────────
 const taskSchema = z.object({
   title:        z.string().trim().min(1, 'Title is required'),
   description:  z.string().optional(),
@@ -319,7 +318,7 @@ export const TaskForm = ({ onClose }: TaskFormProps) => {
 
           </div>
 
-          {/* Footer Actions */}
+        
           <DialogFooter className="shrink-0 px-4 py-4 sm:px-7 border-t border-border/40 flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-2.5 sm:gap-3">
             <Button
               type="button"

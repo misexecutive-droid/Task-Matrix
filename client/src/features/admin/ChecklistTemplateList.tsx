@@ -25,7 +25,7 @@ import {
   useUpdateChecklistTemplateItemMutation,
   useDeleteChecklistTemplateItemMutation,
   useDepartmentsQuery,
-} from './hooks';
+} from './hook';
 import { useAssignableUsersQuery } from '../tickets/hook';
 import { ChecklistTemplateForm } from './ChecklistTemplateForm';
 import type { ChecklistTemplate, ChecklistTemplateItem } from '../../api/checklistTemplates';

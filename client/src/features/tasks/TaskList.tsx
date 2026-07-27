@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { Plus, CheckCheck, Clock, Circle, AlertCircle, LayoutList, Kanban, ShieldQuestion } from "lucide-react";
+import { useState } from "react";
+import { Plus, CheckCheck, AlertCircle, LayoutList, Kanban } from "lucide-react";
 import { Button, Skeleton } from "../../components";
 import { useTasksQuery, useAssignableUsersQuery } from "./hook";
 import { useDepartmentsQuery } from "../tickets/hook";
@@ -32,35 +32,6 @@ const groupByDepartment = (tasks: Task[], departmentNames: Map<string, string>) 
         if (b.departmentId === null) return -1;
         return a.departmentName.localeCompare(b.departmentName);
     });
-};
-
-export const PRIORITY_MAP = {
-    low: { label: 'Low', className: 'bg-surface-hover text-text-muted', accent: 'bg-text-light' },
-    medium: { label: 'Medium', className: 'bg-amber-500/10 text-amber-600 dark:text-amber-400', accent: 'bg-amber-500' },
-    high: { label: 'High', className: 'bg-danger/10 text-danger', accent: 'bg-danger' },
-} satisfies Record<Task['priority'], { label: string; className: string; accent: string }>;
-
-export const STATUS_ICON = {
-    todo: <Circle size={15} className="text-text-light" />,
-    in_progress: <Clock size={15} className="text-amber-500" />,
-    pending_verification: <ShieldQuestion size={15} className="text-indigo-500" />,
-    done: <CheckCheck size={15} className="text-emerald-500" />,
-} satisfies Record<Task['status'], React.ReactNode>;
-
-export const STATUS_LABEL = {
-    todo: 'To Do',
-    in_progress: 'In Progress',
-    pending_verification: 'Pending Verification',
-    done: 'Done',
-} satisfies Record<Task['status'], string>;
-
-// A task's next step, or null once it's out of the assignee's hands — pending_verification
-// waits on a PC/Admin (see the verify buttons on TaskBoard/TaskDetail), done is terminal.
-export const NEXT_STATUS: Record<Task['status'], Task['status'] | null> = {
-    todo: 'in_progress',
-    in_progress: 'pending_verification',
-    pending_verification: null,
-    done: null,
 };
 
 interface TaskListProps {

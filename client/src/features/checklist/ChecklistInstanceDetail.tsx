@@ -2,9 +2,7 @@ import { useParams, useNavigate } from 'react-router';
 import { ArrowLeft, AlertCircle, CheckSquare, Square } from 'lucide-react';
 import { Skeleton } from '../../components';
 import { useChecklistInstanceQuery, useSetChecklistInstanceItemDoneMutation } from './hook';
-
-const formatDate = (iso: string) =>
-  new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+import { formatDate } from './checklistDisplay';
 
 // Shared between a user's own "My Checklists" link and the admin oversight link from
 // ChecklistDefinitionDetail — the server authorizes both (ADMIN or an assignee of the instance).

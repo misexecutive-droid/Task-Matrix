@@ -1,16 +1,20 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useEffect } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { z } from 'zod';
+import { useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Ticket, 
-  Zap, 
-  User, 
-  Building2, 
-  UserCheck, 
+import {
+  Ticket,
+  Zap,
+  User,
+  Building2,
+  UserCheck,
   AlertCircle,
-  Sparkles
+  Sparkles,
+  UploadCloud,
+  X,
 } from 'lucide-react';
 
 import { Input, Button } from '../../components';
@@ -29,6 +33,7 @@ import {
   SelectItem,
 } from '@/components/ui/select';
 import { useCreateTicketMutation, useAssignableUsersQuery, useDepartmentsQuery } from './hook';
+import { ticketApi } from '../../api/ticket';
 
 const ANY_DEPARTMENT = '__any__';
 const UNASSIGNED = '__unassigned__';
@@ -40,8 +45,18 @@ const ticketSchema = z.object({
   assignmentMode: z.enum(['AUTO', 'MANUAL']),
   departmentId:   z.string().optional().or(z.literal('')),
   assigneeId:     z.string().optional().or(z.literal('')),
-  tatHours:       z.string().optional().refine(v => !v || Number(v) > 0, 'Must be a positive number'),
-});
+  dueDate:        z.string().optional().or(z.literal('')),
+  dueTime:        z.string().optional().or(z.literal('')),
+}).refine(
+  (data) => data.assignmentMode !== 'MANUAL' || (!!data.dueDate && !!data.dueTime),
+  { message: 'Pick a due date and time', path: ['dueDate'] },
+).refine(
+  (data) => {
+    if (data.assignmentMode !== 'MANUAL' || !data.dueDate || !data.dueTime) return true;
+    return new Date(`${data.dueDate}T${data.dueTime}`).getTime() > Date.now();
+  },
+  { message: 'Due date/time must be in the future', path: ['dueTime'] },
+)
 
 type TicketFields = z.infer<typeof ticketSchema>;
 
@@ -62,6 +77,18 @@ const SELECT_CLASS = 'w-full px-3 h-10 text-base sm:text-sm font-display bg-surf
 export const TicketForm = ({ onClose }: TicketFormProps) => {
   const { data: departments } = useDepartmentsQuery();
   const mutation = useCreateTicketMutation();
+  const queryClient = useQueryClient();
+
+  // Photos are only actually uploaded once the ticket exists (the attachments endpoint needs a
+  // real ticketId) — held locally here, then pushed via the existing ticket-attachments upload
+  // right after creation succeeds, in the same submit action.
+  const [photos, setPhotos] = useState<File[]>([]);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  const addPhotos = (files: FileList | null) => {
+    if (!files || !files.length) return;
+    setPhotos(prev => [...prev, ...Array.from(files)]);
+  };
 
   const {
     register,
@@ -85,6 +112,10 @@ export const TicketForm = ({ onClose }: TicketFormProps) => {
   }, [departmentId, setValue]);
 
   const onSubmit = (data: TicketFields) => {
+    const tatHours = data.assignmentMode === 'MANUAL' && data.dueDate && data.dueTime
+      ? Math.max(1, Math.ceil((new Date(`${data.dueDate}T${data.dueTime}`).getTime() - Date.now()) / (60 * 60 * 1000)))
+      : undefined;
+
     mutation.mutate(
       {
         title:          data.title,
@@ -93,9 +124,21 @@ export const TicketForm = ({ onClose }: TicketFormProps) => {
         assignmentMode: data.assignmentMode,
         departmentId:   data.departmentId !== '' ? data.departmentId : undefined,
         assigneeId:     data.assigneeId !== '' ? data.assigneeId : undefined,
-        tatHours:       data.tatHours ? Number(data.tatHours) : (data.assignmentMode === 'AUTO' ? 24 : undefined),
+        tatHours:       tatHours ?? (data.assignmentMode === 'AUTO' ? 24 : undefined),
       },
-      { onSuccess: () => onClose() },
+      {
+        onSuccess: async (created) => {
+          if (photos.length) {
+            try {
+              await ticketApi.uploadAttachments(created.id, photos);
+              queryClient.invalidateQueries({ queryKey: ['tickets'] });
+            } catch {
+              toast.error('Ticket created, but the photos failed to attach — add them from the ticket detail view instead.');
+            }
+          }
+          onClose();
+        },
+      },
     );
   };
 
@@ -173,6 +216,51 @@ export const TicketForm = ({ onClose }: TicketFormProps) => {
               <p className="text-xs text-rose-500 flex items-center gap-1 font-display">
                 <AlertCircle className="w-3 h-3" /> {errors.description.message}
               </p>
+            )}
+          </div>
+
+          {/* Photos — attach a picture of the issue right away, instead of having to reopen the
+              ticket afterward. Uploaded via the existing ticket-attachments endpoint once the
+              ticket itself has been created (see onSubmit above). */}
+          <div className="flex flex-col gap-2">
+            <label className={LABEL_CLASS}>Photos (optional)</label>
+            <div
+              onClick={() => fileInputRef.current?.click()}
+              className="group border border-dashed border-border/80 hover:border-primary-500/50 bg-surface/40 hover:bg-primary-500/5 p-4 rounded-xl flex flex-col items-center justify-center cursor-pointer transition-all duration-200"
+            >
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                multiple
+                className="hidden"
+                onChange={e => { addPhotos(e.target.files); e.target.value = ''; }}
+              />
+              <div className="p-2 rounded-full bg-surface-muted group-hover:bg-primary-500/10 text-text-muted group-hover:text-primary-500 transition-colors mb-1.5">
+                <UploadCloud className="w-4.5 h-4.5" />
+              </div>
+              <p className="text-xs font-medium text-text group-hover:text-primary-500 transition-colors">
+                Click to attach a picture of the issue
+              </p>
+              <p className="text-[10px] text-text-muted mt-0.5">PNG, JPG, WEBP up to 10MB</p>
+            </div>
+
+            {photos.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {photos.map((file, i) => (
+                  <div key={i} className="relative size-16 rounded-lg border border-border overflow-hidden">
+                    <img src={URL.createObjectURL(file)} alt="" className="w-full h-full object-cover" />
+                    <button
+                      type="button"
+                      onClick={() => setPhotos(prev => prev.filter((_, idx) => idx !== i))}
+                      className="absolute -top-1 -right-1 size-4 rounded-full bg-surface border border-border flex items-center justify-center text-text-muted hover:text-danger cursor-pointer"
+                      aria-label="Remove photo"
+                    >
+                      <X size={10} />
+                    </button>
+                  </div>
+                ))}
+              </div>
             )}
           </div>
 
@@ -283,15 +371,24 @@ export const TicketForm = ({ onClose }: TicketFormProps) => {
                 animate={{ opacity: 1, height: 'auto' }}
                 exit={{ opacity: 0, height: 0 }}
                 transition={{ duration: 0.15 }}
+                className="grid grid-cols-2 gap-3"
               >
                 <Input
-                  id="tatHours"
-                  label="Turnaround Time (TAT Hours)"
-                  type="number"
-                  placeholder="e.g. 24"
-                  error={errors.tatHours?.message}
+                  id="dueDate"
+                  label="Due date"
+                  type="date"
+                  min={new Date().toISOString().slice(0, 10)}
+                  error={errors.dueDate?.message}
                   className="font-display"
-                  {...register('tatHours')}
+                  {...register('dueDate')}
+                />
+                <Input
+                  id="dueTime"
+                  label="Due time"
+                  type="time"
+                  error={errors.dueTime?.message}
+                  className="font-display"
+                  {...register('dueTime')}
                 />
               </motion.div>
             ) : (

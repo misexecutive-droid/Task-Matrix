@@ -18,7 +18,7 @@ import {
   SelectContent,
   SelectItem,
 } from '@/components/ui/select';
-import { useCreateUserMutation, useUpdateUserMutation, useDepartmentsQuery } from './hooks';
+import { useCreateUserMutation, useUpdateUserMutation, useDepartmentsQuery } from './hook';
 import type { AdminUser, Role } from '../../api/admin';
 
 const NO_DEPARTMENT = '__none__';
@@ -98,7 +98,7 @@ export const UserForm = ({ onClose, user }: UserFormProps) => {
           id: user.id,
           payload: {
             firstName: data.firstName,
-            lastName: data.lastName || null,
+            lastName: data.lastName || undefined,
             email: data.email,
             role: data.role,
             departmentId: departmentPayload ?? null,

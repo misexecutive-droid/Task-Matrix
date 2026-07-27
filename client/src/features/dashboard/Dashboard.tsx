@@ -12,7 +12,7 @@ export const Dashboard = () => {
   );
 
   return (
-    <div className="flex flex-col min-h-svh" style={{ background: 'var(--bg-body)' }}>
+    <div className="flex flex-col h-svh overflow-hidden" style={{ background: 'var(--bg-body)' }}>
 
       <Header onToggleSidebar={() => setSidebarOpen(v => !v)} />
 

@@ -26,7 +26,7 @@ import {
   SelectContent,
   SelectItem,
 } from '@/components/ui/select';
-import { useCreateChecklistTemplateMutation, useDepartmentsQuery } from './hooks';
+import { useCreateChecklistTemplateMutation, useDepartmentsQuery } from './hook';
 import { useAssignableUsersQuery } from '../tickets/hook';
 import type { ChecklistTemplateTarget } from '../../api/checklistTemplates';
 

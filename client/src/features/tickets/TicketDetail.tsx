@@ -16,8 +16,23 @@ import {
   ShieldCheck,
   ShieldX,
   Loader2,
+  MessageSquare,
+  RefreshCcw,
+  Camera,
+  ImageUp,
+  History,
 } from 'lucide-react';
-import { useTicketQuery, useUpdateTicketMutation, useDeleteTicketMutation, useAssignableUsersQuery, useVerifyTicketMutation } from './hook';
+import {
+  useTicketQuery,
+  useUpdateTicketMutation,
+  useDeleteTicketMutation,
+  useAssignableUsersQuery,
+  useVerifyTicketMutation,
+  useUploadTicketAttachmentMutation,
+  useDeleteTicketAttachmentMutation,
+  useAddTicketCommentMutation,
+  useAddTicketStatusUpdateMutation,
+} from './hook';
 import { ChecklistPanel } from './ChecklistPanel';
 import { Button, Skeleton, Dropdown, type DropdownAction } from '../../components';
 import {
@@ -28,7 +43,18 @@ import {
   SheetFooter,
 } from '@/components/ui/sheet';
 import { useAuth } from "../../context/AuthContext";
-import type { Ticket, TicketStatus } from '../../api/ticket';
+import { getTicketStatusLabel } from '../../lib/ticketStatusLabel';
+import type { Ticket, TicketStatus, RestrictedStatus, CaptureMethod } from '../../api/ticket';
+
+// The 3 statuses a non-verifier (assignee/creator/manager) can move a ticket to through the
+// dedicated "Update Status" panel below — deliberately narrower than STATUS_OPTIONS, which
+// still powers the full dropdown verifiers (PC/Admin) see. "Completed" is the human label for
+// IN_REVIEW: from this role's perspective they're done, even though it still needs PC sign-off.
+const STATUS_UPDATE_OPTIONS: { value: RestrictedStatus; label: string }[] = [
+  { value: 'IN_PROGRESS', label: 'In Progress' },
+  { value: 'ON_HOLD', label: 'On Hold' },
+  { value: 'IN_REVIEW', label: 'Completed' },
+];
 
 const STATUS_OPTIONS: { value: TicketStatus; label: string }[] = [
   { value: 'OPEN', label: 'Open' },
@@ -53,12 +79,7 @@ const PRIORITY_CONFIG: Record<Ticket['priority'], { bg: string; text: string; bo
   CRITICAL: { bg: 'bg-rose-500/10', text: 'text-rose-600 dark:text-rose-400', border: 'border-rose-500/20' },
 };
 
-interface Attachment {
-  id: string;
-  url: string;
-  name: string;
-  size: string;
-}
+const UPLOADS_BASE = (import.meta.env.VITE_API_URL as string | undefined) ?? 'http://localhost:5050';
 
 interface TicketDetailProps {
   ticket: Ticket;
@@ -83,45 +104,58 @@ export const TicketDetail = ({ ticket: initialTicket, onClose }: TicketDetailPro
   const canChangeStatus =
     currentUser?.role === "ADMIN" ||
     currentUser?.role === "MANAGER" ||
-    (currentUser?.role === "AGENT" && ticket.assigneeId === currentUser?.id) ||
-    (currentUser?.role === "USER" && ticket.userId === currentUser?.id);
+    // AGENT and USER are both allowed to change status when they're the raiser or the assignee —
+    // a plain USER can be assigned a ticket to fix just like an AGENT can (see
+    // ticketService.visibilityFilter/assertCanMutate on the server for the matching rule).
+    ((currentUser?.role === "AGENT" || currentUser?.role === "USER") &&
+      (ticket.assigneeId === currentUser?.id || ticket.userId === currentUser?.id));
   // Non-verifiers hand a ticket off to review instead of closing it directly — closing for good
   // is now a PC/Admin-only action, done from the Verify button below.
   const selectableStatuses = isVerifier ? STATUS_OPTIONS : STATUS_OPTIONS.filter(s => s.value !== 'CLOSED');
 
   const { data: assignableUsers } = useAssignableUsersQuery(ticket.departmentId ?? undefined);
 
-  // Local attachment & image upload state
+  // Attachment upload/delete — real, persisted uploads (see hook.ts), not local-only state.
   const fileInputRef = useRef<HTMLInputElement | null>(null);
-  const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
-  const [isUploading, setIsUploading] = useState(false);
+  const uploadAttachment = useUploadTicketAttachmentMutation(ticket.id);
+  const deleteAttachment = useDeleteTicketAttachmentMutation(ticket.id);
+
+  const [commentText, setCommentText] = useState('');
+  const addComment = useAddTicketCommentMutation(ticket.id);
+
+  // Restricted status-update flow (In Progress/On Hold/Completed) — see STATUS_UPDATE_OPTIONS
+  // above. Photos accumulate locally until submit; captureMethod tracks whichever source
+  // (camera vs gallery) was used most recently, applied to the whole batch on submit.
+  const [statusPick, setStatusPick] = useState<RestrictedStatus | null>(null);
+  const [statusRemark, setStatusRemark] = useState('');
+  const [statusPhotos, setStatusPhotos] = useState<File[]>([]);
+  const [statusCaptureMethod, setStatusCaptureMethod] = useState<CaptureMethod>('GALLERY');
+  const statusUpdateMut = useAddTicketStatusUpdateMutation(ticket.id);
+
+  const addStatusPhotos = (files: FileList | null, method: CaptureMethod) => {
+    if (!files || !files.length) return;
+    setStatusPhotos(prev => [...prev, ...Array.from(files)]);
+    setStatusCaptureMethod(method);
+  };
+
+  const handleSubmitStatusUpdate = () => {
+    if (!statusPick || !statusRemark.trim()) return;
+    statusUpdateMut.mutate(
+      {
+        status: statusPick,
+        remark: statusRemark.trim(),
+        captureMethod: statusPhotos.length ? statusCaptureMethod : undefined,
+        files: statusPhotos,
+      },
+      { onSuccess: () => { setStatusPick(null); setStatusRemark(''); setStatusPhotos([]); } },
+    );
+  };
 
   const handleFileUpload = (files: FileList | null) => {
     if (!files || files.length === 0) return;
-    setIsUploading(true);
-
-    // Simulate image reader and upload process
-    Array.from(files).forEach((file) => {
-      if (!file.type.startsWith('image/')) return;
-
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const newAttachment: Attachment = {
-          id: Math.random().toString(36).substring(2, 9),
-          url: e.target?.result as string,
-          name: file.name,
-          size: `${(file.size / 1024 / 1024).toFixed(2)} MB`,
-        };
-        setAttachments((prev) => [newAttachment, ...prev]);
-        setIsUploading(false);
-      };
-      reader.readAsDataURL(file);
-    });
-  };
-
-  const handleRemoveAttachment = (id: string) => {
-    setAttachments((prev) => prev.filter((item) => item.id !== id));
+    const images = Array.from(files).filter(f => f.type.startsWith('image/'));
+    if (images.length) uploadAttachment.mutate(images);
   };
 
   const handleDelete = () => {
@@ -189,7 +223,7 @@ export const TicketDetail = ({ ticket: initialTicket, onClose }: TicketDetailPro
               <label className="text-[10px] uppercase text-text-muted font-semibold flex items-center gap-1">
                 <Tag size={11} /> Status
               </label>
-              {canChangeStatus ? (
+              {canChangeStatus && isVerifier ? (
                 <Dropdown
                   align="start"
                   items={statusActions}
@@ -198,14 +232,14 @@ export const TicketDetail = ({ ticket: initialTicket, onClose }: TicketDetailPro
                       type="button"
                       className={`inline-flex items-center gap-1 text-xs font-semibold px-2 py-1 rounded-md border cursor-pointer focus:outline-none transition-all w-fit ${statusStyle.bg} ${statusStyle.text} ${statusStyle.border}`}
                     >
-                      {STATUS_OPTIONS.find(s => s.value === ticket.status)?.label ?? ticket.status}
+                      {getTicketStatusLabel(ticket.status, currentUser?.role, STATUS_OPTIONS.find(s => s.value === ticket.status)?.label ?? ticket.status)}
                       <ChevronDown size={12} />
                     </button>
                   }
                 />
               ) : (
                 <span className={`text-xs font-semibold px-2 py-1 rounded-md border w-fit ${statusStyle.bg} ${statusStyle.text} ${statusStyle.border}`}>
-                  {STATUS_OPTIONS.find(s => s.value === ticket.status)?.label ?? ticket.status}
+                  {getTicketStatusLabel(ticket.status, currentUser?.role, STATUS_OPTIONS.find(s => s.value === ticket.status)?.label ?? ticket.status)}
                 </span>
               )}
             </div>
@@ -232,17 +266,30 @@ export const TicketDetail = ({ ticket: initialTicket, onClose }: TicketDetailPro
                   trigger={
                     <button
                       type="button"
-                      className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-md border border-border bg-surface text-text cursor-pointer focus:outline-none w-fit"
+                      className="inline-flex items-center gap-1.5 text-xs px-1.5 py-1 rounded-md border border-border bg-surface text-text cursor-pointer focus:outline-none w-fit"
                     >
-                      {ticket.assignee ? `${ticket.assignee.firstName}` : 'Unassigned'}
+                      {ticket.assignee ? (
+                        <span className="flex items-center justify-center size-4.5 rounded-full bg-primary-600 text-white text-[9px] font-display font-semibold shrink-0">
+                          {ticket.assignee.firstName.slice(0, 2).toUpperCase()}
+                        </span>
+                      ) : (
+                        <User size={12} className="text-text-muted" />
+                      )}
+                      {ticket.assignee ? ticket.assignee.firstName : 'Unassigned'}
                       <ChevronDown size={12} />
                     </button>
                   }
                 />
               ) : (
-                <span className="text-xs text-text-secondary flex items-center gap-1 py-1">
-                  <User size={12} />
-                  {ticket.assignee ? `${ticket.assignee.firstName}` : 'Unassigned'}
+                <span className="text-xs text-text-secondary flex items-center gap-1.5 py-0.5">
+                  {ticket.assignee ? (
+                    <span className="flex items-center justify-center size-4.5 rounded-full bg-primary-600 text-white text-[9px] font-display font-semibold shrink-0">
+                      {ticket.assignee.firstName.slice(0, 2).toUpperCase()}
+                    </span>
+                  ) : (
+                    <User size={12} />
+                  )}
+                  {ticket.assignee ? ticket.assignee.firstName : 'Unassigned'}
                 </span>
               )}
             </div>
@@ -305,7 +352,7 @@ export const TicketDetail = ({ ticket: initialTicket, onClose }: TicketDetailPro
               <h3 className={SECTION_HEADER}>
                 <Paperclip size={13} /> Attachments & Screenshots
               </h3>
-              <span className="text-[11px] text-text-muted">{attachments.length} files</span>
+              <span className="text-[11px] text-text-muted">{ticket.attachments.length} files</span>
             </div>
 
             {/* Dropzone Container */}
@@ -319,36 +366,42 @@ export const TicketDetail = ({ ticket: initialTicket, onClose }: TicketDetailPro
                 accept="image/*"
                 multiple
                 className="hidden"
-                onChange={(e) => handleFileUpload(e.target.files)}
+                onChange={(e) => { handleFileUpload(e.target.files); e.target.value = ''; }}
               />
               <div className="p-2 rounded-full bg-surface-muted group-hover:bg-primary-500/10 text-text-muted group-hover:text-primary-500 transition-colors mb-1.5">
                 <UploadCloud size={18} />
               </div>
               <p className="text-xs font-medium text-text group-hover:text-primary-500 transition-colors">
-                {isUploading ? 'Processing images...' : 'Click or drop pictures here'}
+                {uploadAttachment.isPending ? 'Uploading...' : 'Click or drop pictures here'}
               </p>
               <p className="text-[10px] text-text-muted mt-0.5">PNG, JPG, WEBP up to 10MB</p>
             </div>
 
+            {uploadAttachment.isError && (
+              <p className="text-xs text-danger">
+                {uploadAttachment.error instanceof Error ? uploadAttachment.error.message : 'Upload failed.'}
+              </p>
+            )}
+
             {/* Attachments Preview Grid */}
-            {attachments.length > 0 && (
+            {ticket.attachments.length > 0 && (
               <div className="grid grid-cols-3 gap-2.5 mt-2">
-                {attachments.map((file) => (
+                {ticket.attachments.map((file) => (
                   <div
                     key={file.id}
                     className="group relative rounded-lg border border-border/60 bg-surface overflow-hidden aspect-square flex items-center justify-center shadow-2xs"
                   >
                     <img
-                      src={file.url}
-                      alt={file.name}
+                      src={`${UPLOADS_BASE}${file.url}`}
+                      alt={file.originalFilename ?? 'attachment'}
                       className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-300"
                     />
-                    
+
                     {/* Image Overlay Controls */}
                     <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center gap-2">
                       <button
                         type="button"
-                        onClick={() => setPreviewImage(file.url)}
+                        onClick={() => setPreviewImage(`${UPLOADS_BASE}${file.url}`)}
                         className="p-1.5 rounded-full bg-white/20 text-white hover:bg-white/40 transition-colors cursor-pointer"
                         title="View image"
                       >
@@ -356,8 +409,9 @@ export const TicketDetail = ({ ticket: initialTicket, onClose }: TicketDetailPro
                       </button>
                       <button
                         type="button"
-                        onClick={() => handleRemoveAttachment(file.id)}
-                        className="p-1.5 rounded-full bg-rose-500/80 text-white hover:bg-rose-600 transition-colors cursor-pointer"
+                        onClick={() => deleteAttachment.mutate(file.id)}
+                        disabled={deleteAttachment.isPending}
+                        className="p-1.5 rounded-full bg-rose-500/80 text-white hover:bg-rose-600 transition-colors cursor-pointer disabled:opacity-50"
                         title="Delete image"
                       >
                         <Trash2 size={14} />
@@ -374,7 +428,207 @@ export const TicketDetail = ({ ticket: initialTicket, onClose }: TicketDetailPro
             <ChecklistPanel ticketId={ticket.id} checklists={ticket.checklists} />
           </div>
 
+          {/* Status History — every restricted status change, with the remark that explained it
+              and any evidence photos attached at the time. This is what makes the mandatory
+              remark actually visible to the PC/Admin reviewing the ticket, instead of it
+              vanishing once the status moves on. */}
+          {ticket.statusUpdates.length > 0 && (
+            <div className="flex flex-col gap-3">
+              <h3 className={SECTION_HEADER}>
+                <History size={13} /> Status History
+              </h3>
+              <div className="flex flex-col gap-3">
+                {ticket.statusUpdates.map(su => (
+                  <div key={su.id} className="flex flex-col gap-1.5 p-3 rounded-lg border border-border/60 bg-surface">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-xs font-display font-semibold text-text">
+                        {su.changedBy?.firstName ?? 'Unknown'}
+                      </span>
+                      <span className="text-[10px] text-text-muted font-display">
+                        moved to <strong>{STATUS_UPDATE_OPTIONS.find(o => o.value === su.toStatus)?.label ?? su.toStatus}</strong>
+                      </span>
+                      <span className="text-[10px] text-text-muted font-display ml-auto">
+                        {new Date(su.createdAt).toLocaleString()}
+                      </span>
+                    </div>
+                    <p className="text-xs text-text-secondary font-display whitespace-pre-wrap">{su.remark}</p>
+                    {su.photos.length > 0 && (
+                      <div className="flex flex-col gap-1.5 pt-1">
+                        <span className="inline-flex items-center gap-1 w-fit text-[9px] font-display font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded bg-primary-500/10 text-primary-600 dark:text-primary-300 border border-primary-500/20">
+                          <Camera size={10} /> Evidence
+                        </span>
+                        <div className="flex flex-wrap gap-2">
+                          {su.photos.map(photo => (
+                            <button
+                              key={photo.id}
+                              type="button"
+                              onClick={() => setPreviewImage(`${UPLOADS_BASE}${photo.url}`)}
+                              className="relative size-14 rounded-md border-2 border-primary-500/40 overflow-hidden cursor-pointer ring-1 ring-primary-500/10"
+                              title={photo.captureMethod === 'LIVE' ? 'Captured live' : 'From gallery'}
+                            >
+                              <img src={`${UPLOADS_BASE}${photo.url}`} alt="" className="w-full h-full object-cover" />
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Comments — one shared thread, visible to anyone who can already view this ticket */}
+          <div className="flex flex-col gap-3">
+            <h3 className={SECTION_HEADER}>
+              <MessageSquare size={13} /> Comments
+              <span className="text-text-muted normal-case font-normal">({ticket.comments.length})</span>
+            </h3>
+
+            <div className="flex flex-col gap-3">
+              {ticket.comments.length === 0 && (
+                <p className="text-xs text-text-muted font-display">No comments yet.</p>
+              )}
+              {ticket.comments.map(c => (
+                <div key={c.id} className="flex flex-col gap-1 p-3 rounded-lg border border-border/60 bg-surface">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-display font-semibold text-text">
+                      {c.author?.firstName ?? 'Unknown'}
+                    </span>
+                    <span className="text-[10px] text-text-muted font-display">
+                      {new Date(c.createdAt).toLocaleString()}
+                    </span>
+                  </div>
+                  <p className="text-xs text-text-secondary font-display whitespace-pre-wrap">{c.body}</p>
+                </div>
+              ))}
+            </div>
+
+            <div className="flex flex-col gap-2">
+              <textarea
+                value={commentText}
+                onChange={e => setCommentText(e.target.value)}
+                placeholder="Write a comment…"
+                rows={2}
+                className="w-full px-3 py-2 text-xs font-display bg-surface border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500/50"
+              />
+              {addComment.isError && (
+                <p className="text-xs text-danger">
+                  {addComment.error instanceof Error ? addComment.error.message : 'Failed to post comment.'}
+                </p>
+              )}
+              <Button
+                size="sm"
+                variant="outline"
+                className="self-end font-display text-xs gap-1.5"
+                disabled={!commentText.trim() || addComment.isPending}
+                onClick={() => addComment.mutate(commentText.trim(), { onSuccess: () => setCommentText('') })}
+              >
+                {addComment.isPending && <Loader2 size={12} className="animate-spin" />}
+                Post comment
+              </Button>
+            </div>
+          </div>
+
         </div>
+
+        {/* Update Status — the restricted flow for whoever is actually doing the work (assignee,
+            creator, or a manager): only In Progress/On Hold/Completed, always with a remark, plus
+            optional live/gallery evidence photos. Verifiers (PC/Admin) keep the full dropdown up
+            in the Quick Attributes card instead, since they need the wider status range. */}
+        {canChangeStatus && !isVerifier && ticket.status !== 'CLOSED' && (
+          <div className="px-4 pt-3 pb-3 border-t border-border/40 bg-surface/50 flex flex-col gap-2.5">
+            <h3 className={SECTION_HEADER}>
+              <RefreshCcw size={13} /> Update Status
+            </h3>
+
+            <div className="grid grid-cols-3 gap-1.5">
+              {STATUS_UPDATE_OPTIONS.map(opt => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => setStatusPick(opt.value)}
+                  className={`text-xs font-display font-medium px-2 py-2 rounded-md border transition-all text-center ${
+                    statusPick === opt.value
+                      ? 'border-primary-500/60 bg-primary-500/10 text-primary-500 ring-2 ring-primary-500/20'
+                      : 'border-border/60 bg-surface text-text-secondary hover:bg-surface-hover'
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+
+            <textarea
+              value={statusRemark}
+              onChange={e => setStatusRemark(e.target.value)}
+              placeholder="Remark — what changed? (required)"
+              rows={2}
+              className="w-full px-3 py-2 text-xs font-display bg-surface border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500/50"
+            />
+
+            {statusPhotos.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {statusPhotos.map((file, i) => (
+                  <div key={i} className="relative size-14 rounded-md border border-border overflow-hidden">
+                    <img src={URL.createObjectURL(file)} alt="" className="w-full h-full object-cover" />
+                    <button
+                      type="button"
+                      onClick={() => setStatusPhotos(prev => prev.filter((_, idx) => idx !== i))}
+                      className="absolute -top-1 -right-1 size-4 rounded-full bg-surface border border-border flex items-center justify-center text-text-muted hover:text-danger cursor-pointer"
+                      aria-label="Remove photo"
+                    >
+                      <X size={10} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {statusUpdateMut.isError && (
+              <p className="text-xs text-danger">
+                {statusUpdateMut.error instanceof Error ? statusUpdateMut.error.message : 'Failed to update status.'}
+              </p>
+            )}
+
+            <div className="flex items-center gap-2 flex-wrap">
+              <label className="flex items-center gap-1.5 text-xs font-display font-medium px-2.5 py-1.5 rounded-md border border-primary-500/50 text-primary-600 hover:bg-primary-500/10 cursor-pointer transition-colors">
+                <Camera size={12} />
+                Take photo
+                <input
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  multiple
+                  className="hidden"
+                  onChange={e => { addStatusPhotos(e.target.files, 'LIVE'); e.target.value = ''; }}
+                />
+              </label>
+              <label className="flex items-center gap-1.5 text-xs font-display font-medium px-2.5 py-1.5 rounded-md border border-border text-text-secondary hover:bg-surface-hover cursor-pointer transition-colors">
+                <ImageUp size={12} />
+                Gallery
+                <input
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  className="hidden"
+                  onChange={e => { addStatusPhotos(e.target.files, 'GALLERY'); e.target.value = ''; }}
+                />
+              </label>
+
+              <Button
+                size="sm"
+                variant="primary"
+                className="ml-auto font-display text-xs gap-1.5"
+                disabled={!statusPick || !statusRemark.trim()}
+                isLoading={statusUpdateMut.isPending}
+                onClick={handleSubmitStatusUpdate}
+              >
+                Submit update
+              </Button>
+            </div>
+          </div>
+        )}
 
         {/* PC/Admin verification actions — only shown while the ticket is awaiting review */}
         {isVerifier && ticket.status === 'IN_REVIEW' && (

@@ -9,6 +9,8 @@ import type {
   UpdateChecklistItemPayload,
   TatReportGroupBy,
   TicketStatus,
+  RestrictedStatus,
+  CaptureMethod,
 } from '../../api/ticket';
 import { userApi } from "../../api/users";
 import { departmentApi } from "../../api/departments";
@@ -56,6 +58,19 @@ export const useUpdateTicketMutation = () =>
     invalidateKeys: [['tickets']],
     successMessage: 'Ticket updated',
     errorFallback: 'Failed to update ticket',
+  });
+
+// The restricted status-update flow: a non-verifier moves a ticket to In Progress/On Hold/In
+// Review with a mandatory remark and optional live/gallery evidence photos, bundled into one
+// request — mirrors useVerifyTicketMutation's shape (also writes straight to the detail cache).
+export const useAddTicketStatusUpdateMutation = (ticketId: string) =>
+  useEntityMutation({
+    mutationFn: (payload: { status: RestrictedStatus; remark: string; captureMethod?: CaptureMethod; files?: File[] }) =>
+      ticketApi.addStatusUpdate(ticketId, payload).then(r => r.data),
+    setDetailData: (updated) => ({ key: KEYS.detail(updated.id), data: updated }),
+    invalidateKeys: [['tickets']],
+    successMessage: 'Status updated',
+    errorFallback: 'Failed to update status',
   });
 
 // Powers the PC verification queue — tickets waiting on a given status (IN_REVIEW), scoped
@@ -152,6 +167,29 @@ export const useDeleteChecklistImageMutation = (ticketId: string) =>
     invalidateKeys: [KEYS.detail(ticketId)],
     successMessage: 'Photo deleted',
     errorFallback: 'Failed to delete photo',
+  });
+
+export const useUploadTicketAttachmentMutation = (ticketId: string) =>
+  useEntityMutation({
+    mutationFn: (files: File[]) => ticketApi.uploadAttachments(ticketId, files).then(r => r.data),
+    invalidateKeys: [KEYS.detail(ticketId)],
+    successMessage: 'Attachment uploaded',
+    errorFallback: 'Failed to upload attachment',
+  });
+
+export const useDeleteTicketAttachmentMutation = (ticketId: string) =>
+  useEntityMutation({
+    mutationFn: (id: string) => ticketApi.deleteAttachment(id),
+    invalidateKeys: [KEYS.detail(ticketId)],
+    successMessage: 'Attachment removed',
+    errorFallback: 'Failed to remove attachment',
+  });
+
+export const useAddTicketCommentMutation = (ticketId: string) =>
+  useEntityMutation({
+    mutationFn: (body: string) => ticketApi.addComment(ticketId, body).then(r => r.data),
+    invalidateKeys: [KEYS.detail(ticketId)],
+    errorFallback: 'Failed to post comment',
   });
 
 // Reusable checklist templates (managed under Admin) that can be applied to a ticket in one

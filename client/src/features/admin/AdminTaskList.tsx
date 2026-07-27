@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { ClipboardList, Users } from "lucide-react";
-import { useUsersQuery } from "./hooks";
+import { useUsersQuery } from "./hook";
 import { TaskList } from "../tasks";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 

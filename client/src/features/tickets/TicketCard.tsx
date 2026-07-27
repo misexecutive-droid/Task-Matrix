@@ -8,6 +8,8 @@ import {
 } from 'lucide-react';
 import type { Ticket } from '../../api/ticket';
 import { getChecklistProgress } from '../../lib/checklistProgress';
+import { getTicketStatusLabel } from '../../lib/ticketStatusLabel';
+import { useAuth } from '../../context/AuthContext';
 
 // Priority configuration with rich icon backgrounds, borders, and dark-mode support
 const PRIORITY_CONFIG: Record<Ticket['priority'], {
@@ -78,11 +80,13 @@ interface TicketCardProps {
 }
 
 export const TicketCard = ({ ticket, onClick, departmentName, index = 0 }: TicketCardProps) => {
+  const { user } = useAuth();
   const { totalItems, doneItems, progress } = getChecklistProgress(ticket.checklists);
 
   const isOverdue = ticket.isOverdue && ticket.status !== 'CLOSED';
   const priorityInfo = PRIORITY_CONFIG[ticket.priority];
   const statusInfo = STATUS_CONFIG[ticket.status];
+  const statusLabel = getTicketStatusLabel(ticket.status, user?.role, statusInfo.label);
 
   return (
     <button
@@ -165,7 +169,7 @@ export const TicketCard = ({ ticket, onClick, departmentName, index = 0 }: Ticke
         {/* Status Chip with Pulse Dot */}
         <span className={`inline-flex items-center gap-1.5 text-xs font-display font-medium px-2.5 py-0.5 rounded-full border ${statusInfo.badge}`}>
           <span className={`size-1.5 rounded-full ${statusInfo.dot}`} />
-          {statusInfo.label}
+          {statusLabel}
         </span>
 
         {/* Priority Chip */}

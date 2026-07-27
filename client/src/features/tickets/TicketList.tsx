@@ -18,7 +18,6 @@ import { TicketCard } from './TicketCard';
 import { TicketForm } from './TicketForm';
 import { TicketDetail } from './TicketDetail';
 import type { Ticket, TicketStatus } from '../../api/ticket';
-import { useAuth } from '../../context/AuthContext';
 
 const STATUS_FILTERS: { key: TicketStatus | 'ALL' | 'OVERDUE'; label: string }[] = [
   { key: 'ALL', label: 'All Tickets' },
@@ -104,8 +103,6 @@ const groupChecklistStats = (tickets :Ticket[]) => {
 }
 
 export const TicketList = () => {
-  const { user } = useAuth();
-  const isAdmin = user?.role === "ADMIN";
   const [showForm, setShowForm] = useState(false);
   const [selected, setSelected] = useState<Ticket | null>(null);
   const [page, setPage] = useState(1);
@@ -187,16 +184,14 @@ export const TicketList = () => {
           </div>
         </div>
 
-        {isAdmin && (
-          <button
-            type="button"
-            onClick={() => setShowForm(true)}
-            className="group relative inline-flex items-center justify-center gap-2 px-4 py-2 text-xs font-display font-semibold rounded-lg text-white bg-gradient-to-r from-primary-600 to-primary-500 hover:from-primary-500 hover:to-primary-400 shadow-[0_2px_10px_rgba(59,130,246,0.3)] hover:shadow-[0_4px_16px_rgba(59,130,246,0.45)] active:scale-[0.97] transition-all duration-200 border border-white/15 cursor-pointer"
-          >
-            <Plus size={15} className="transition-transform duration-300 group-hover:scale-125" />
-            <span className="tracking-wide">Create Ticket</span>
-          </button>
-        )}
+        <button
+          type="button"
+          onClick={() => setShowForm(true)}
+          className="group relative inline-flex items-center justify-center gap-2 px-4 py-2 text-xs font-display font-semibold rounded-lg text-white bg-gradient-to-r from-primary-600 to-primary-500 hover:from-primary-500 hover:to-primary-400 shadow-[0_2px_10px_rgba(59,130,246,0.3)] hover:shadow-[0_4px_16px_rgba(59,130,246,0.45)] active:scale-[0.97] transition-all duration-200 border border-white/15 cursor-pointer"
+        >
+          <Plus size={15} className="transition-transform duration-300 group-hover:scale-125" />
+          <span className="tracking-wide">Create Ticket</span>
+        </button>
       </div>
 
       {/* Control Bar: Search & Status Filters */}

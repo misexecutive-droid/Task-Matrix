@@ -7,42 +7,44 @@ import {
   BreadcrumbLink,
   BreadcrumbPage,
   BreadcrumbSeparator,
-} from '../ui/breadcrumb';
+} from '@/components/ui/breadcrumb'; 
 
 export interface BreadcrumbTrailItem {
   label: string;
   to?: string;
 }
 
-interface BreadcrumbsProps {
+export interface BreadcrumbsProps {
   items: BreadcrumbTrailItem[];
   className?: string;
 }
 
+  
 export const Breadcrumbs = ({ items, className }: BreadcrumbsProps) => {
-  // Prevent rendering empty wrappers if no items are provided
-  if (!items?.length) return null;
+  if (!items || items.length === 0) {
+    return null;
+  }
 
   return (
-    <Breadcrumb className={className}>
+    <Breadcrumb className={className} aria-label="Breadcrumb">
       <BreadcrumbList>
-        {items.map(({ label, to }, i) => {
-          const isLast = i === items.length - 1;
-          const isPage = isLast || !to;
+        {items.map(({ label, to }, index) => {
+          const isLast = index === items.length - 1;
+          const isCurrentPage = isLast || !to;
+          const key = `${to ?? 'static'}-${label}-${index}`;
 
           return (
-            <Fragment key={`${label}-${i}`}>
+            <Fragment key={key}>
               <BreadcrumbItem>
-                {isPage ? (
-                  <BreadcrumbPage>{label}</BreadcrumbPage>
+                {isCurrentPage ? (
+                  <BreadcrumbPage aria-current="page">{label}</BreadcrumbPage>
                 ) : (
                   <BreadcrumbLink asChild>
                     <Link to={to}>{label}</Link>
                   </BreadcrumbLink>
                 )}
               </BreadcrumbItem>
-              
-              {!isLast && <BreadcrumbSeparator />}
+              {!isLast && <BreadcrumbSeparator aria-hidden="true" />}
             </Fragment>
           );
         })}
@@ -50,3 +52,5 @@ export const Breadcrumbs = ({ items, className }: BreadcrumbsProps) => {
     </Breadcrumb>
   );
 };
+
+Breadcrumbs.displayName = 'Breadcrumbs';

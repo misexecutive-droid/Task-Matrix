@@ -26,7 +26,7 @@ import {
   SheetFooter,
 } from '@/components/ui/sheet';
 import { useAuth } from '../../context/AuthContext';
-import { PRIORITY_MAP, STATUS_LABEL, NEXT_STATUS } from './TaskList';
+import { PRIORITY_MAP, STATUS_LABEL, NEXT_STATUS } from './taskDisplay';
 import type { Task } from '../../api/task';
 
 interface TaskDetailProps {

@@ -65,8 +65,8 @@ export const Sidebar = ({ isOpen, user, logout, onNavigate }: SidebarProps) => {
       <aside
         className={[
           'flex flex-col shrink-0 border-r border-border/60 transition-all duration-300 ease-in-out overflow-hidden',
-          'fixed inset-y-0 left-0 z-40 w-72 px-3 py-5',
-          'md:static md:z-auto md:translate-x-0 md:py-5',
+          'fixed top-14 bottom-0 left-0 z-40 w-72 px-3 py-5',
+          'md:static md:top-auto md:z-auto md:translate-x-0 md:py-5',
           isOpen ? 'translate-x-0' : '-translate-x-full',
           isOpen ? 'md:w-60 md:px-3' : 'md:w-[68px] md:px-2.5',
         ].join(' ')}

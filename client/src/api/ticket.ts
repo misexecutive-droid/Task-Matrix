@@ -15,6 +15,10 @@ export type TatReportRow = {
 
 export type CaptureMethod = 'LIVE' | 'GALLERY';
 
+// The restricted set of statuses a non-verifier (assignee/creator/manager) can move a ticket to
+// via the status-update flow — see ticket.validation.ts on the server for the matching schema.
+export type RestrictedStatus = 'IN_PROGRESS' | 'ON_HOLD' | 'IN_REVIEW';
+
 export type ChecklistImage = {
   id:               string;
   url:              string;
@@ -49,6 +53,38 @@ export type Checklist = {
   items:    ChecklistItem[];
 };
 
+export type TicketStatusUpdate = {
+  id:         string;
+  ticketId:   string;
+  fromStatus: TicketStatus;
+  toStatus:   RestrictedStatus;
+  remark:     string;
+  changedBy:  { id: string; email: string; firstName: string; role: string } | null;
+  photos:     TicketAttachment[];
+  createdAt:  string;
+};
+
+export type TicketComment = {
+  id:        string;
+  body:      string;
+  ticketId:  string;
+  authorId:  string;
+  author:    { id: string; email: string; firstName: string; role: string } | null;
+  createdAt: string;
+};
+
+export type TicketAttachment = {
+  id:               string;
+  url:              string;
+  originalFilename: string | null;
+  mimeType:         string;
+  sizeBytes:        number;
+  captureMethod:    CaptureMethod;
+  ticketId:         string;
+  uploadedBy:       string;
+  createdAt:        string;
+};
+
 export type Ticket = {
   id:             string;
   title:          string;
@@ -67,6 +103,9 @@ export type Ticket = {
   updatedAt:      string;
   assignee:       { id: string; email: string; firstName: string; role: string } | null;
   checklists:     Checklist[];
+  attachments:    TicketAttachment[];
+  comments:       TicketComment[];
+  statusUpdates:  TicketStatusUpdate[];
   isOverdue:      boolean;
   verifiedBy:       string | null;
   verifiedAt:       string | null;
@@ -144,6 +183,15 @@ export const ticketApi = {
   verify: (id: string, payload: VerifyTicketPayload) =>
     apiFetch<ApiResponse<Ticket>>(`/tickets/${id}/verify`, { method: 'PATCH', body: JSON.stringify(payload) }),
 
+  addStatusUpdate: (id: string, payload: { status: RestrictedStatus; remark: string; captureMethod?: CaptureMethod; files?: File[] }) => {
+    const formData = new FormData();
+    formData.append('status', payload.status);
+    formData.append('remark', payload.remark);
+    if (payload.captureMethod) formData.append('captureMethod', payload.captureMethod);
+    (payload.files ?? []).forEach(f => formData.append('images', f));
+    return apiFetch<ApiResponse<Ticket>>(`/tickets/${id}/status-updates`, { method: 'POST', body: formData });
+  },
+
   delete: (id: string) =>
     apiFetch<ApiResponse<{ deleted: boolean }>>(`/tickets/${id}`, { method: 'DELETE' }),
 
@@ -180,6 +228,24 @@ export const ticketApi = {
 
   deleteChecklistImage: (id: string) =>
     apiFetch<ApiResponse<{ deleted: boolean }>>(`/checklist-images/${id}`, { method: 'DELETE' }),
+
+  uploadAttachments: (ticketId: string, files: File[]) => {
+    const formData = new FormData();
+    files.forEach(f => formData.append('images', f));
+    return apiFetch<ApiResponse<TicketAttachment[]>>(`/tickets/${ticketId}/attachments`, {
+      method: 'POST',
+      body:   formData,
+    });
+  },
+
+  deleteAttachment: (id: string) =>
+    apiFetch<ApiResponse<{ deleted: boolean }>>(`/ticket-attachments/${id}`, { method: 'DELETE' }),
+
+  addComment: (ticketId: string, body: string) =>
+    apiFetch<ApiResponse<TicketComment>>(`/tickets/${ticketId}/comments`, {
+      method: 'POST',
+      body:   JSON.stringify({ body }),
+    }),
 
   getTatReport : ( groupBy : TatReportGroupBy = "day") =>
     apiFetch<ApiResponse<TatReportRow[]>>(`/tickets/reports/tat?groupBy=${groupBy}`),

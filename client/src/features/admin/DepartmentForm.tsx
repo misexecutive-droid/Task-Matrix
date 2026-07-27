@@ -10,7 +10,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog';
-import { useCreateDepartmentMutation, useUpdateDepartmentMutation } from './hooks';
+import { useCreateDepartmentMutation, useUpdateDepartmentMutation } from './hook';
 import type { Department } from '../../api/departments';
 
 // Only one rule: name must be present. Compare to userSchema in UserForm.tsx,

@@ -37,7 +37,7 @@ export const AdminLayout = () => {
     }
 
     return (
-        <div className='flex flex-col min-h-svh' style={{ background: 'var(--bg-body)' }}>
+        <div className='flex flex-col h-svh overflow-hidden' style={{ background: 'var(--bg-body)' }}>
             <Header onToggleSidebar={() => setSidebarOpen(v => !v)} />
             <div className='flex flex-1 min-h-0'>
                 {sidebarOpen && (
@@ -52,8 +52,8 @@ export const AdminLayout = () => {
                     className={
                         [
                             'flex flex-col border-r border-border transition-all duration-300 overflow-hidden',
-                            'fixed inset-y-0 left-0 z-40 w-72 px-3 py-5',
-                            'md:static md:z-auto md:translate-x-0 md:py-5 md:shrink-0',
+                            'fixed top-14 bottom-0 left-0 z-40 w-72 px-3 py-5',
+                            'md:static md:top-auto md:z-auto md:translate-x-0 md:py-5 md:shrink-0',
                             sidebarOpen ? 'translate-x-0' : '-translate-x-full',
                             sidebarOpen ? 'md:w-60 md:px-3' : 'md:w-[60px] md:px-2',
                         ].join(' ')
