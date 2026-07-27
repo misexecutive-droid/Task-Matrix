@@ -101,8 +101,10 @@ export const userService = {
     // `requireRole('ADMIN')` gate).
     async listAssignable( user : AccessTokenPayload, departmentId?: string ) {
         // Start with the baseline rule: only show users who are currently active - there's no
-        // point offering a deactivated user as someone to assign a ticket to.
-        const filter: Record <string , unknown> = { isActive : true};
+        // point offering a deactivated user as someone to assign a ticket to. Every role (including
+        // plain USER) is assignable - ticketService.visibilityFilter/assertCanMutate treat USER the
+        // same as AGENT for tickets assigned to them, so there's no trap here.
+        const filter: Record <string , unknown> = { isActive : true };
         if(departmentId){
             // If the caller explicitly asked for a specific department (e.g. they picked a
             // department filter in the UI), just scope the results to that department directly,

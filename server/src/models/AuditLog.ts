@@ -1,5 +1,4 @@
 import { Schema , model } from "mongoose";
-// Schema (shape) for an AuditLog document - a record of "something changed" for tracking/history purposes
 const auditLogSchema = new Schema(
     {
         entityType : {type : String , required : true}, // what kind of thing changed, e.g. "Ticket", "User"

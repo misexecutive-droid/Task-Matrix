@@ -2,6 +2,7 @@ import { ChecklistDefinition, type ChecklistRecurrence } from "../../models/Chec
 import { ChecklistDefinitionItem } from "../../models/ChecklistDefinitionItem.js"
 import { ChecklistInstance } from "../../models/ChecklistInstance.js"
 import { ChecklistInstanceItem } from "../../models/ChecklistInstanceItem.js"
+import { generateInstanceForDefinition } from "../../jobs/checklistInstanceGenerator.job.js"
 import { AppError } from "../../utils/AppError.js"
 import type { AccessTokenPayload } from "../../middleware/auth/auth.js"
 import type { CreateChecklistDefinitionInput, SetChecklistDefinitionActiveInput } from "./checklistDefinition.validation.js"
@@ -44,6 +45,10 @@ export const checklistDefinitionService = {
         await ChecklistDefinitionItem.insertMany(
             input.items.map((item, index) => ({ ...item, order: item.order ?? index, definitionId: definition._id })),
         )
+
+        // Stamp out this definition's first instance right away if it's already due, instead of
+        // making the admin wait for the generator job's next hourly tick.
+        await generateInstanceForDefinition(definition, new Date())
 
         return populateDefinition(ChecklistDefinition.findById(definition._id))
     },

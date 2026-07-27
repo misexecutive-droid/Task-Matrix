@@ -1,0 +1,13 @@
+import type { Request, Response } from "express"
+import { ticketCommentService } from "./ticketComment.service.js"
+import { createCommentSchema } from "./ticketComment.validation.js"
+import { asyncHandler } from "../../utils/asyncHandler.js"
+
+export const ticketCommentController = {
+    // POST /tickets/:ticketId/comments
+    create: asyncHandler(async (req: Request, res: Response) => {
+        const input = createCommentSchema.parse(req.body)
+        const comment = await ticketCommentService.create(req.params.ticketId, input, req.user!)
+        res.status(201).json({ success: true, data: comment })
+    }),
+}

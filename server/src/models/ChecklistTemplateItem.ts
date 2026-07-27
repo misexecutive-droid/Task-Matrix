@@ -23,7 +23,7 @@ const checklistTemplateItemSchema = new Schema(
 
         templateId: { type: Schema.Types.ObjectId, ref: "ChecklistTemplate", required: true, index: true },
     },
-    { timestamps: true },
+    { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } },
 )
 
 export const ChecklistTemplateItem = model("ChecklistTemplateItem", checklistTemplateItemSchema)

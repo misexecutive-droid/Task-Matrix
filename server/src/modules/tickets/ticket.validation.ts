@@ -1,5 +1,6 @@
 import { z } from "zod"
 import { PRIORITIES, ASSIGNMENT_MODES, TICKET_STATUSES } from "../../models/Ticket.js"
+import { RESTRICTED_STATUSES } from "../../models/TicketStatusUpdate.js"
 
 const objectId = z.string().regex(/^[0-9a-fA-F]{24}$/, 'Invalid id');
 
@@ -42,7 +43,19 @@ export const verifyTicketSchema = z.object({
     path : ["note"],
 })
 
+// The restricted status-update flow: a non-verifier (assignee/creator/manager) moving a ticket
+// to In Progress, On Hold, or In Review (labelled "Completed" for a plain USER — see
+// ticketStatusLabel.ts on the client) must always explain why via a remark. Photos are optional
+// evidence, captured either live or picked from the gallery — captureMethod is a plain string
+// here (not an enum) since it arrives as a multipart form field.
+export const statusUpdateSchema = z.object({
+    status : z.enum(RESTRICTED_STATUSES),
+    remark : z.string().trim().min(1, "A remark is required"),
+    captureMethod : z.enum(["LIVE", "GALLERY"]).optional(),
+})
+
 export type CreateTicketInput = z.infer<typeof createTicketSchema>;
 export type UpdateTicketInput = z.infer<typeof updateTicketSchema>;
 export type TatReportQuery = z.infer<typeof tatReportQuerySchema>;
 export type VerifyTicketInput = z.infer<typeof verifyTicketSchema>;
+export type StatusUpdateInput = z.infer<typeof statusUpdateSchema>;

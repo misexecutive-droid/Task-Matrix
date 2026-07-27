@@ -15,8 +15,11 @@ export const createUserSchema = z.object({
 
 // Password changes aren't handled through this update endpoint (see user.service.ts's
 // UpdateUserInput comment) — same reason it's left out of update here, only create needs it.
-export const updateUserSchema = createUserSchema.omit({ password: true }).partial().extend({
+// departmentId is overridden to also accept `null` (unlike create) so an admin can explicitly
+// clear a user's department, not just set a new one — mirrors ticket.validation.ts's assigneeId.
+export const updateUserSchema = createUserSchema.omit({ password: true, departmentId: true }).partial().extend({
     isActive: z.boolean().optional(),
+    departmentId: objectId.nullable().optional(),
 });
 
 export type CreateUserInput = z.infer<typeof createUserSchema>;

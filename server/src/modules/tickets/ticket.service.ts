@@ -1,8 +1,11 @@
+import path from "node:path"
 import { Ticket } from "../../models/Ticket.js"
+import { TicketStatusUpdate } from "../../models/TicketStatusUpdate.js"
+import { TicketAttachment } from "../../models/TicketAttachment.js"
 import { AppError } from "../../utils/AppError.js"
 import { assertChecklistsResolved } from "../../utils/checklistGate.js"
 import type { AccessTokenPayload } from "../../middleware/auth/auth.js"
-import type { CreateTicketInput, UpdateTicketInput, VerifyTicketInput } from "./ticket.validation.js"
+import type { CreateTicketInput, UpdateTicketInput, VerifyTicketInput, StatusUpdateInput } from "./ticket.validation.js"
 import { auditService } from "../audit/audit.service.js"
 import { emitTicketEvent } from "../../sockets/ticketEvent.js"
 import { notificationService } from "../notifications/notification.service.js"
@@ -11,31 +14,52 @@ import { settingsService } from "../settings/settings.service.js"
 const populateTicket = (query: any) =>
   query
     .populate({ path: "assignee", select: "email firstName role" })
-    .populate({ path: "checklists", populate: { path: "items" } })
+    .populate({ path: "checklists", populate: { path: "items", populate: { path: "images" } } })
     .populate({ path: "raisedBy", select: "email firstName role" })
+    .populate({ path: "attachments" })
+    .populate({
+      path: "comments",
+      populate: { path: "author", select: "email firstName role" },
+      options: { sort: { createdAt: 1 } },
+    })
+    .populate({
+      path: "statusUpdates",
+      populate: [
+        { path: "changedBy", select: "email firstName role" },
+        { path: "photos" },
+      ],
+      options: { sort: { createdAt: -1 } },
+    })
 
 
 const visibilityFilter = (user: AccessTokenPayload) => {
-  // ADMIN can see everything - an empty filter `{}` matches every document in MongoDB.
-  if (user.role === "ADMIN") return {}
+  // ADMIN and PC both oversee every department, so they see everything - an empty filter `{}`
+  // matches every document in MongoDB. (PC is the cross-department verification role - it needs
+  // to see tickets awaiting review anywhere, not just its own department/store.)
+  if (user.role === "ADMIN" || user.role === "PC") return {}
 
-  if (user.role === "MANAGER" || user.role === "PC") {
-    // A manager/PC should always see tickets they personally raised...
+  if (user.role === "MANAGER") {
+    // A manager should always see tickets they personally raised...
     const or: Record<string, unknown>[] = [{ userId: user.sub }];
     // ...plus every ticket in their department (if they have one)...
     if (user.departmentId) or.push({ departmentId: user.departmentId });
     // ...plus every ticket tied to their store (if they have one).
     if (user.storeId) or.push({ storeId: user.storeId })
     // `$or` is MongoDB's "match ANY of these conditions" operator - so they see the union of all three groups above.
-    // (PC only ever *mutates* through verify(), which does its own scoping check — this just
-    // covers what they're allowed to see, e.g. the IN_REVIEW tickets in their department.)
     return { $or: or }
   }
 
-  // AGENT can see tickets assigned to them, OR tickets they personally raised (userId). They can't see other agents' or other departments' tickets.
-  if (user.role === 'AGENT') return { $or: [{ assigneeId: user.sub }, { userId: user.sub }] };
+  // AGENT and USER both see tickets assigned to them, OR tickets they personally raised - but
+  // ONLY within their own department. A plain USER is exactly as likely to be the one fixing a
+  // ticket as an AGENT is, so both roles share this rule. Department is an AND, not another OR
+  // option here - raising/being assigned a ticket routed to a different department doesn't grant
+  // ongoing visibility into it once it leaves their own department; that's PC/Admin's territory.
+  if (user.role === 'AGENT' || user.role === 'USER') {
+    const own = { $or: [{ assigneeId: user.sub }, { userId: user.sub }] };
+    return user.departmentId ? { $and: [own, { departmentId: user.departmentId }] } : own;
+  }
 
-  // Fallback for a plain USER role: they can only ever see tickets they themselves raised (userId matches their own id). This is the most restricted view.
+  // No other role reaches this point (ADMIN/MANAGER/PC are all handled above).
   return { userId: user.sub }
 }
 
@@ -53,20 +77,20 @@ const isSameDeptOrStore = (user: AccessTokenPayload, ticket: any) => {
 const assertCanMutate = (user: AccessTokenPayload, ticket: any) => {
   // Admins can edit anything.
   if (user.role === "ADMIN") return;
-  if (user.role === "AGENT") {
-    if (String(ticket.assigneeId) === user.sub) return;
-    throw AppError.forbidden("Not assigned to you")
+  if (user.role === "AGENT" || user.role === "USER") {
+    // Either the one raising it or the one assigned to fix it can mutate it, but only within their
+    // own department — same "own department only" rule as visibilityFilter above, so a ticket
+    // that's invisible to them can't still be mutated by guessing its id.
+    const ownTicket = String(ticket.assigneeId) === user.sub || String(ticket.userId) === user.sub;
+    const inOwnDept = !user.departmentId || String(ticket.departmentId) === user.departmentId;
+    if (ownTicket && inOwnDept) return;
+    throw AppError.forbidden("Not your ticket")
   }
 
   if (user.role === "MANAGER") {
     if (isSameDeptOrStore(user, ticket)) return
     // If neither matches, they're trying to touch a ticket outside their scope - block it.
     throw AppError.forbidden("Outside your department/store")
-  }
-
-  if (user.role === "USER") {
-    if (String(ticket.userId) === user.sub) return;
-    throw AppError.forbidden("Not your ticket")
   }
 
   // PC only ever acts through ticketService.verify(), never the generic update path.
@@ -197,6 +221,75 @@ export const ticketService = {
     }
 
     // Just handed off to review — let the department's PCs know there's something to check.
+    if (input.status === "IN_REVIEW" && before.status !== "IN_REVIEW") {
+      await notificationService.notifyPendingVerification(ticket);
+    }
+
+    return populated;
+  },
+
+  // The restricted status-update flow: a non-verifier (assignee/creator/manager) moves a ticket
+  // to IN_PROGRESS/ON_HOLD/IN_REVIEW, always with a mandatory remark and optional evidence
+  // photos (live or gallery). Distinct from update() — this always records a TicketStatusUpdate
+  // history entry, where a plain PATCH from a verifier does not.
+  async addStatusUpdate(id: string, input: StatusUpdateInput, files: Express.Multer.File[], user: AccessTokenPayload) {
+    const ticket = await Ticket.findById(id);
+    if (!ticket) throw AppError.notFound("Ticket not found")
+    assertCanMutate(user, ticket)
+
+    const before = ticket.toObject();
+
+    // Sending a ticket for review is blocked until every not-done checklist item has remarks
+    // explaining why — same gate the plain update() path applies.
+    if (input.status === "IN_REVIEW" && before.status !== "IN_REVIEW") {
+      const withItems = await Ticket.findById(id).populate({ path: "checklists", populate: { path: "items" } });
+      assertChecklistsResolved((withItems as any).checklists, "sending this ticket for review")
+    }
+
+    const statusUpdate = await TicketStatusUpdate.create({
+      ticketId: ticket._id,
+      changedBy: user.sub,
+      fromStatus: before.status,
+      toStatus: input.status,
+      remark: input.remark,
+    })
+
+    if (files.length) {
+      await TicketAttachment.insertMany(
+        files.map((file) => ({
+          url: `/uploads/ticket-attachments/${path.basename(file.path)}`,
+          originalFilename: file.originalname,
+          mimeType: file.mimetype,
+          sizeBytes: file.size,
+          captureMethod: input.captureMethod ?? "GALLERY",
+          statusUpdateId: statusUpdate._id,
+          ticketId: ticket._id,
+          uploadedBy: user.sub,
+        })),
+      )
+    }
+
+    ticket.status = input.status;
+    await ticket.save()
+
+    await auditService.record({
+      entityType: "Ticket",
+      entityId: ticket._id.toString(),
+      action: "UPDATE",
+      actorId: user.sub,
+      before,
+      after: ticket.toObject(),
+    });
+
+    const populated = await populateTicket(Ticket.findById(ticket._id));
+    const target = {
+      userId: ticket.userId?.toString(),
+      assigneeId: ticket.assigneeId?.toString() ?? null,
+      departmentId: ticket.departmentId?.toString() ?? null,
+      storeId: ticket.storeId?.toString() ?? null,
+    };
+    emitTicketEvent("ticket:updated", target, populated);
+
     if (input.status === "IN_REVIEW" && before.status !== "IN_REVIEW") {
       await notificationService.notifyPendingVerification(ticket);
     }

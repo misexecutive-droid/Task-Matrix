@@ -98,6 +98,31 @@ ticketSchema.virtual("verifier", {
     justOne : true
 })
 
+// Virtual field "attachments": general evidence/screenshots attached directly to this ticket
+// (see TicketAttachment.ts) — same "other way" populate shape as "checklists" above.
+ticketSchema.virtual("attachments", {
+    ref : "TicketAttachment",
+    localField : "_id",
+    foreignField : "ticketId"
+})
+
+// Virtual field "comments": the ticket's shared comment thread (see TicketComment.ts) — same
+// "other way" populate shape as "checklists"/"attachments" above.
+ticketSchema.virtual("comments", {
+    ref : "TicketComment",
+    localField : "_id",
+    foreignField : "ticketId"
+})
+
+// Virtual field "statusUpdates": the history of restricted status changes (In Progress/On
+// Hold/In Review) made with a mandatory remark — see TicketStatusUpdate.ts. Same "other way"
+// populate shape as "checklists"/"attachments"/"comments" above.
+ticketSchema.virtual("statusUpdates", {
+    ref : "TicketStatusUpdate",
+    localField : "_id",
+    foreignField : "ticketId"
+})
+
 // TypeScript type for a fully-loaded Ticket document (inferred from the schema + wrapped as a live Mongoose doc)
 export type TicketDoc = HydratedDocument<InferSchemaType<typeof ticketSchema>>;
 // The Mongoose Model used to query/create/update Ticket documents

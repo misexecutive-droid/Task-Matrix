@@ -1,6 +1,6 @@
 import { type Request , type Response } from "express"
 import { ticketService } from "./ticket.service.js"
-import { createTicketSchema , paginatioinSchema, updateTicketSchema , tatReportQuerySchema, verifyTicketSchema } from "./ticket.validation.js"
+import { createTicketSchema , paginatioinSchema, updateTicketSchema , tatReportQuerySchema, verifyTicketSchema, statusUpdateSchema } from "./ticket.validation.js"
 import { asyncHandler } from "../../utils/asyncHandler.js"
 
 export const ticketController = {
@@ -33,6 +33,17 @@ export const ticketController = {
         const input = updateTicketSchema.parse(req.body);
         // The service checks whether this user is even allowed to modify this particular ticket (see assertCanMutate) before applying changes.
         const ticket = await ticketService.update(req.params.id , input , req.user!)
+        res.json({ success : true , data : ticket})
+    }),
+
+    // Handles POST /tickets/:id/status-updates - the restricted status-change flow (In Progress/
+    // On Hold/In Review) with a mandatory remark and optional live/gallery evidence photos.
+    // Multipart form: files come from the `ticketAttachmentUpload` multer middleware applied on
+    // the route (same upload dir as plain ticket attachments — see ticket.routes.ts).
+    addStatusUpdate : asyncHandler ( async (req : Request , res : Response) => {
+        const input = statusUpdateSchema.parse(req.body);
+        const files = (req.files as Express.Multer.File[]) ?? [];
+        const ticket = await ticketService.addStatusUpdate(req.params.id , input , files , req.user!)
         res.json({ success : true , data : ticket})
     }),
 
