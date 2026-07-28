@@ -303,12 +303,6 @@ export const ticketService = {
     const ticket = await Ticket.findById(id);
     if (!ticket) throw AppError.notFound("Ticket not found")
 
-    // PC is scoped to their own department/store, same as MANAGER's mutate check above; ADMIN
-    // can verify anything regardless of scope.
-    if (user.role === "PC" && !isSameDeptOrStore(user, ticket)) {
-      throw AppError.forbidden("Outside your department/store")
-    }
-
     if (ticket.status !== "IN_REVIEW") {
       throw AppError.badRequest("This ticket isn't pending verification.")
     }

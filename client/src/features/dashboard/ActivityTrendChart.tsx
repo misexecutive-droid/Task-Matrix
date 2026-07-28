@@ -1,19 +1,21 @@
 import { useId, useRef, useState } from 'react';
 
-interface TrendPoint {
-  date:    Date;
-  tickets: number;
-  tasks:   number;
+export interface TrendSeries {
+  key: string;
+  label: string;
+  color: string; // any valid CSS color (hex, var(...), etc.)
+  values: number[];
+  unit?: string;
 }
 
 interface ActivityTrendChartProps {
-  title: string;
-  data:  TrendPoint[];
+  dates: Date[];
+  series: TrendSeries[];
 }
 
 const WIDTH = 600;
 const HEIGHT = 180;
-const PAD = { top: 10, right: 28, bottom: 22, left: 10 };
+const PAD = { top: 10, right: 12, bottom: 22, left: 10 };
 const PLOT_W = WIDTH - PAD.left - PAD.right;
 const PLOT_H = HEIGHT - PAD.top - PAD.bottom;
 
@@ -49,13 +51,15 @@ const smoothAreaPath = (points: { x: number; y: number }[]) => {
   return `${line} L${lastX.toFixed(1)},${baseY.toFixed(1)} L${PAD.left},${baseY.toFixed(1)} Z`;
 };
 
-export const ActivityTrendChart = ({ title, data }: ActivityTrendChartProps) => {
+// Generic 1-or-more-series area/line chart — the caller decides what a "series" means
+// (a single metric's daily trend, or several plotted together) and supplies the color/label.
+export const ActivityTrendChart = ({ dates, series }: ActivityTrendChartProps) => {
   const [hoverIndex, setHoverIndex] = useState<number | null>(null);
   const svgRef = useRef<SVGSVGElement>(null);
   const gradId = useId();
 
-  const n = data.length;
-  const maxVal = Math.max(1, ...data.map(d => Math.max(d.tickets, d.tasks))) * 1.15;
+  const n = dates.length;
+  const maxVal = Math.max(1, ...series.flatMap(s => s.values)) * 1.15;
 
   const xAt = (i: number) => PAD.left + (i / (n - 1)) * PLOT_W;
   const yAt = (v: number) => PAD.top + PLOT_H - (v / maxVal) * PLOT_H;
@@ -69,56 +73,20 @@ export const ActivityTrendChart = ({ title, data }: ActivityTrendChartProps) => 
     setHoverIndex(Math.min(n - 1, Math.max(0, index)));
   };
 
-  const lastTicket = data[n - 1]?.tickets ?? 0;
-  const lastTask = data[n - 1]?.tasks ?? 0;
-  const labelsClose = Math.abs(yAt(lastTicket) - yAt(lastTask)) < 12;
-  const hovered = hoverIndex !== null ? data[hoverIndex] : null;
-
-  const half = Math.floor(n / 2) || 1;
-  const prevTotal = data.slice(0, half).reduce((s, d) => s + d.tickets + d.tasks, 0);
-  const currTotal = data.slice(half).reduce((s, d) => s + d.tickets + d.tasks, 0);
-  const deltaPct = prevTotal === 0 ? null : Math.round(((currTotal - prevTotal) / prevTotal) * 100);
-  const rangeLabel = n > 0
-    ? `${data[0].date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} – ${data[n - 1].date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}`
-    : '';
+  const hoveredDate = hoverIndex !== null ? dates[hoverIndex] : null;
 
   return (
-    <div className="flex flex-col gap-5 rounded-2xl border border-border bg-surface/80 backdrop-blur-sm p-5">
-      <div className="flex items-start justify-between flex-wrap gap-3">
-        <div>
-          <h2 className="text-base font-display font-semibold text-text">{title}</h2>
-          <p className="text-xs text-text-muted mt-0.5">{rangeLabel}</p>
+    <div className="flex flex-col gap-4">
+      {series.length > 1 && (
+        <div className="flex items-center gap-4 text-xs font-display text-text-secondary">
+          {series.map(s => (
+            <span key={s.key} className="flex items-center gap-1.5">
+              <span className="inline-block h-0.5 w-3 rounded-full" style={{ background: s.color }} />
+              {s.label}
+            </span>
+          ))}
         </div>
-
-        <div className="text-right">
-          <div className="flex items-center gap-2 justify-end">
-            <span className="text-xl font-display font-bold text-text">{currTotal}</span>
-            {deltaPct !== null ? (
-              <span className={`text-xs font-display font-medium px-2 py-0.5 rounded-full ${
-                deltaPct >= 0 ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' : 'bg-danger/10 text-danger'
-              }`}>
-                {deltaPct >= 0 ? '+' : ''}{deltaPct}%
-              </span>
-            ) : currTotal > 0 ? (
-              <span className="text-xs font-display font-medium px-2 py-0.5 rounded-full bg-primary-500/10 text-primary-600 dark:text-primary-300">
-                New
-              </span>
-            ) : null}
-          </div>
-          <p className="text-xs text-text-muted mt-0.5">Items this week</p>
-        </div>
-      </div>
-
-      <div className="flex items-center gap-4 text-xs font-display text-text-secondary">
-        <span className="flex items-center gap-1.5">
-          <span className="inline-block h-0.5 w-3 rounded-full bg-primary-500" />
-          Tickets
-        </span>
-        <span className="flex items-center gap-1.5">
-          <span className="inline-block h-0.5 w-3 rounded-full bg-amber-500" />
-          Tasks
-        </span>
-      </div>
+      )}
 
       <div className="relative">
         <svg
@@ -129,14 +97,12 @@ export const ActivityTrendChart = ({ title, data }: ActivityTrendChartProps) => 
           onPointerLeave={() => setHoverIndex(null)}
         >
           <defs>
-            <linearGradient id={`${gradId}-tickets`} x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="var(--color-primary-500)" stopOpacity="0.35" />
-              <stop offset="100%" stopColor="var(--color-primary-500)" stopOpacity="0" />
-            </linearGradient>
-            <linearGradient id={`${gradId}-tasks`} x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#f59e0b" stopOpacity="0.32" />
-              <stop offset="100%" stopColor="#f59e0b" stopOpacity="0" />
-            </linearGradient>
+            {series.map(s => (
+              <linearGradient key={s.key} id={`${gradId}-${s.key}`} x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor={s.color} stopOpacity="0.35" />
+                <stop offset="100%" stopColor={s.color} stopOpacity="0" />
+              </linearGradient>
+            ))}
           </defs>
 
           {[0, 0.5, 1].map(f => (
@@ -151,34 +117,31 @@ export const ActivityTrendChart = ({ title, data }: ActivityTrendChartProps) => 
             />
           ))}
 
-          <path d={smoothAreaPath(pointsFor(data.map(d => d.tickets), maxVal))} fill={`url(#${gradId}-tickets)`} />
-          <path d={smoothAreaPath(pointsFor(data.map(d => d.tasks), maxVal))} fill={`url(#${gradId}-tasks)`} />
-          <path
-            d={smoothLinePath(pointsFor(data.map(d => d.tickets), maxVal))}
-            className="stroke-primary-500"
-            fill="none"
-            strokeWidth={2}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-          <path
-            d={smoothLinePath(pointsFor(data.map(d => d.tasks), maxVal))}
-            className="stroke-amber-500"
-            fill="none"
-            strokeWidth={2}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-
-          <circle cx={xAt(n - 1)} cy={yAt(lastTicket)} r={4} className="fill-primary-500 stroke-surface" strokeWidth={2} />
-          <circle cx={xAt(n - 1)} cy={yAt(lastTask)} r={4} className="fill-amber-500 stroke-surface" strokeWidth={2} />
-
-          <text x={xAt(n - 1) + 7} y={yAt(lastTicket) + (labelsClose ? -4 : 3)} className="fill-text-secondary text-[9px] font-mono">
-            {lastTicket}
-          </text>
-          <text x={xAt(n - 1) + 7} y={yAt(lastTask) + (labelsClose ? 8 : 3)} className="fill-text-secondary text-[9px] font-mono">
-            {lastTask}
-          </text>
+          {series.map(s => (
+            <path key={s.key} d={smoothAreaPath(pointsFor(s.values, maxVal))} fill={`url(#${gradId}-${s.key})`} />
+          ))}
+          {series.map(s => (
+            <path
+              key={s.key}
+              d={smoothLinePath(pointsFor(s.values, maxVal))}
+              stroke={s.color}
+              fill="none"
+              strokeWidth={2}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          ))}
+          {series.map(s => (
+            <circle
+              key={s.key}
+              cx={xAt(n - 1)}
+              cy={yAt(s.values[n - 1] ?? 0)}
+              r={4}
+              fill={s.color}
+              className="stroke-surface"
+              strokeWidth={2}
+            />
+          ))}
 
           {hoverIndex !== null && (
             <>
@@ -190,35 +153,42 @@ export const ActivityTrendChart = ({ title, data }: ActivityTrendChartProps) => 
                 className="stroke-text-light"
                 strokeWidth={1}
               />
-              <circle cx={xAt(hoverIndex)} cy={yAt(data[hoverIndex].tickets)} r={4} className="fill-primary-500 stroke-surface" strokeWidth={2} />
-              <circle cx={xAt(hoverIndex)} cy={yAt(data[hoverIndex].tasks)} r={4} className="fill-amber-500 stroke-surface" strokeWidth={2} />
+              {series.map(s => (
+                <circle
+                  key={s.key}
+                  cx={xAt(hoverIndex)}
+                  cy={yAt(s.values[hoverIndex] ?? 0)}
+                  r={4}
+                  fill={s.color}
+                  className="stroke-surface"
+                  strokeWidth={2}
+                />
+              ))}
             </>
           )}
 
           <text x={PAD.left} y={HEIGHT - 4} className="fill-text-light text-[9px] font-display">
-            {data[0]?.date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+            {dates[0]?.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
           </text>
           <text x={WIDTH - PAD.right} y={HEIGHT - 4} textAnchor="end" className="fill-text-light text-[9px] font-display">
             Today
           </text>
         </svg>
 
-        {hovered && hoverIndex !== null && (
+        {hoveredDate && hoverIndex !== null && (
           <div
             className="pointer-events-none absolute top-0 -translate-x-1/2 rounded-lg border border-border bg-surface px-2.5 py-1.5 text-xs shadow-md"
             style={{ left: `${(xAt(hoverIndex) / WIDTH) * 100}%` }}
           >
             <p className="font-display font-medium text-text-secondary mb-1 whitespace-nowrap">
-              {hovered.date.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}
+              {hoveredDate.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}
             </p>
-            <p className="flex items-center gap-1.5 font-mono tabular-nums text-text whitespace-nowrap">
-              <span className="inline-block h-0.5 w-2.5 rounded-full bg-primary-500" />
-              {hovered.tickets} ticket{hovered.tickets === 1 ? '' : 's'}
-            </p>
-            <p className="flex items-center gap-1.5 font-mono tabular-nums text-text whitespace-nowrap">
-              <span className="inline-block h-0.5 w-2.5 rounded-full bg-amber-500" />
-              {hovered.tasks} task{hovered.tasks === 1 ? '' : 's'}
-            </p>
+            {series.map(s => (
+              <p key={s.key} className="flex items-center gap-1.5 font-mono tabular-nums text-text whitespace-nowrap">
+                <span className="inline-block h-0.5 w-2.5 rounded-full" style={{ background: s.color }} />
+                {s.values[hoverIndex]} {s.unit ?? s.label}
+              </p>
+            ))}
           </div>
         )}
       </div>

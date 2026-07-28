@@ -1,24 +1,11 @@
 import { useAuth } from '../../context/AuthContext';
 import { useTicketsQuery, useDepartmentsQuery } from '../tickets/hook';
 import { useTasksQuery } from '../tasks/hook';
-import { Skeleton } from '../../components';
-import { StatusBarChart } from './StatusBarChart';
-import { ActivityTrendChart } from './ActivityTrendChart';
 import { DashboardHeader } from './DashboardHeader';
-import { DashboardStatsGrid } from './DashboardStatsGrid';
+import { DashboardOverview } from './DashboardOverview';
 import { DepartmentBreakdown, type DepartmentRow } from './DepartmentBreakdown';
 import { RecentActivity } from './RecentActivity';
-import {
-  TICKET_STATUS_ORDER,
-  TICKET_STATUS_LABELS,
-  TICKET_STATUS_BAR_COLORS,
-  TASK_STATUS_ORDER,
-  TASK_STATUS_LABELS,
-  TASK_STATUS_BAR_COLORS,
-  dayKey,
-  TREND_DAYS,
-  type FeedItem,
-} from './dashboardDisplay';
+import { dayKey, TREND_DAYS, type FeedItem } from './dashboardDisplay';
 
 export const HomePage = () => {
   const { user } = useAuth();
@@ -47,29 +34,32 @@ export const HomePage = () => {
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
     .slice(0, 6);
 
-  const ticketStatusData = TICKET_STATUS_ORDER.map(status => ({
-    label: TICKET_STATUS_LABELS[status],
-    value: tickets.filter(t => t.status === status).length,
-    colorClass: TICKET_STATUS_BAR_COLORS[status],
-  }));
-
-  const taskStatusData = TASK_STATUS_ORDER.map(status => ({
-    label: TASK_STATUS_LABELS[status],
-    value: (tasks ?? []).filter(t => t.status === status).length,
-    colorClass: TASK_STATUS_BAR_COLORS[status],
-  }));
-
-  const trendData = Array.from({ length: TREND_DAYS }, (_, i) => {
+  const trendDays = Array.from({ length: TREND_DAYS }, (_, i) => {
     const date = new Date();
     date.setHours(0, 0, 0, 0);
     date.setDate(date.getDate() - (TREND_DAYS - 1 - i));
-    const key = dayKey(date);
-    return {
-      date,
-      tickets: tickets.filter(t => dayKey(new Date(t.createdAt)) === key).length,
-      tasks: (tasks ?? []).filter(t => dayKey(new Date(t.createdAt)) === key).length,
-    };
+    return date;
   });
+
+  const trendTickets = trendDays.map(date => {
+    const key = dayKey(date);
+    return tickets.filter(t => dayKey(new Date(t.createdAt)) === key).length;
+  });
+  const trendTasks = trendDays.map(date => {
+    const key = dayKey(date);
+    return (tasks ?? []).filter(t => dayKey(new Date(t.createdAt)) === key).length;
+  });
+  // "Overdue as of that day" approximated from current status — items not yet closed/done
+  // whose due date had already passed by end of that day. Imperfect for items resolved
+  // mid-window (no status-history to look back on), but close enough for a trend line.
+  const trendOverdue = trendDays.map(date => {
+    const dayEnd = new Date(date);
+    dayEnd.setHours(23, 59, 59, 999);
+    const t1 = tickets.filter(t => t.status !== 'CLOSED' && t.tatDueAt && new Date(t.tatDueAt).getTime() < dayEnd.getTime()).length;
+    const t2 = (tasks ?? []).filter(t => t.status !== 'done' && t.dueDate && new Date(t.dueDate).getTime() < dayEnd.getTime()).length;
+    return t1 + t2;
+  });
+  const trendNew = trendDays.map((_, i) => trendTickets[i] + trendTasks[i]);
 
   const departmentRows: DepartmentRow[] = (departments ?? []).map(dept => ({
     name: dept.name,
@@ -80,42 +70,27 @@ export const HomePage = () => {
   }));
 
   return (
-    <div className="flex flex-col gap-8 max-w-4xl">
+    <div className="flex flex-col gap-6 max-w-6xl">
       <DashboardHeader userName={user?.name} />
 
-      <DashboardStatsGrid
+      <DashboardOverview
         isPending={isPending}
         isAdmin={isAdmin}
         openTickets={openTickets}
         openTasks={openTasks}
         overdueCount={overdueCount}
-        overdueTickets={overdueTickets}
-        overdueTasks={overdueTasks}
-        newTicketsThisWeek={newTicketsThisWeek}
-        newTasksThisWeek={newTasksThisWeek}
+        newThisWeek={newTicketsThisWeek + newTasksThisWeek}
+        dates={trendDays}
+        trendTickets={trendTickets}
+        trendTasks={trendTasks}
+        trendOverdue={trendOverdue}
+        trendNew={trendNew}
       />
 
-      {isAdmin && !isPending && <DepartmentBreakdown rows={departmentRows} />}
-
-      {isPending ? (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <Skeleton className="h-52 rounded-2xl" />
-          <Skeleton className="h-52 rounded-2xl" />
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <StatusBarChart title="Tickets by status" data={ticketStatusData} unit="ticket" />
-          <StatusBarChart title="Tasks by status" data={taskStatusData} unit="task" />
-        </div>
-      )}
-
-      {isPending ? (
-        <Skeleton className="h-56 rounded-2xl" />
-      ) : (
-        <ActivityTrendChart title="Activity" data={trendData} />
-      )}
-
-      <RecentActivity feed={feed} isPending={isPending} />
+      <div className={isAdmin ? 'grid grid-cols-1 lg:grid-cols-2 gap-4' : ''}>
+        {isAdmin && !isPending && <DepartmentBreakdown rows={departmentRows} />}
+        <RecentActivity feed={feed} isPending={isPending} />
+      </div>
     </div>
   );
 };

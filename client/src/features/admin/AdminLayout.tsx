@@ -61,15 +61,19 @@ export const AdminLayout = () => {
                     style={{ background: 'var(--glass-bg)', backdropFilter: 'var(--glass-blur)' }}
                 >
                     <div className="flex items-center gap-2 px-2 pb-4 mb-2 border-b border-border">
-                        <span className="size-8 rounded-full bg-primary-600 text-white flex items-center justify-center text-xs font-display font-semibold shrink-0">
+                        <span className="size-8 rounded-full bg-gradient-to-br from-primary-500 to-primary-700 text-white flex items-center justify-center text-xs font-display font-bold shrink-0 shadow-xs">
                             {initials}
                         </span>
-                        <span className={['text-sm font-display font-medium text-text truncate', sidebarOpen ? '' : 'md:hidden'].join(' ')}>
+                        <span className={['text-sm font-display font-semibold text-text truncate', sidebarOpen ? '' : 'md:hidden'].join(' ')}>
                             {user?.name}
                         </span>
                     </div>
 
-                    <nav className="flex flex-col gap-1">
+                    <p className={['text-[11px] font-display font-semibold text-text-light uppercase tracking-wider px-3 mb-2', sidebarOpen ? '' : 'md:hidden'].join(' ')}>
+                        Menu
+                    </p>
+
+                    <nav className="flex flex-col gap-0.5">
                         {NAV.map(({ to, icon: Icon, label, end }) => (
                             <NavLink
                                 key={to}
@@ -78,16 +82,27 @@ export const AdminLayout = () => {
                                 onClick={handleNavClick}
                                 className={({ isActive }) =>
                                     [
-                                        'flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-display font-medium transition-colors',
+                                        'group flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-display font-medium transition-all duration-200',
                                         sidebarOpen ? '' : 'md:justify-center md:px-0',
                                         isActive
                                             ? 'bg-primary-500/10 text-primary-600 dark:text-primary-300'
-                                            : 'text-text-secondary hover:bg-surface-hover hover:text-text',
+                                            : 'text-text-secondary hover:bg-surface-hover/70 hover:text-text',
                                     ].join(' ')
                                 }
                             >
-                                <Icon size={16} className="shrink-0" />
-                                <span className={['truncate', sidebarOpen ? '' : 'md:hidden'].join(' ')}>{label}</span>
+                                {({ isActive }) => (
+                                    <>
+                                        <Icon
+                                            size={17}
+                                            strokeWidth={1.75}
+                                            className={[
+                                                'shrink-0 transition-transform group-hover:scale-105',
+                                                isActive ? 'text-primary-500' : 'text-text-muted group-hover:text-text-secondary',
+                                            ].join(' ')}
+                                        />
+                                        <span className={['truncate', sidebarOpen ? '' : 'md:hidden'].join(' ')}>{label}</span>
+                                    </>
+                                )}
                             </NavLink>
                         ))}
                     </nav>

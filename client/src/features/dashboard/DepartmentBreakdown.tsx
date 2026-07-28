@@ -13,7 +13,7 @@ export const DepartmentBreakdown = ({ rows }: { rows: DepartmentRow[] }) => {
   const maxOpen = Math.max(1, ...rows.map(r => r.openTickets + r.openTasks));
 
   return (
-    <div className="rounded-2xl border border-border bg-surface/80 backdrop-blur-sm">
+    <div className="rounded-lg border border-border bg-surface">
       <div className="flex items-center gap-2 px-5 py-4 border-b border-border">
         <Building2 size={15} className="text-primary-500" />
         <h2 className="text-sm font-display font-semibold text-text">By department</h2>

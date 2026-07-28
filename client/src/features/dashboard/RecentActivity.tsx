@@ -11,7 +11,7 @@ interface RecentActivityProps {
 }
 
 export const RecentActivity = ({ feed, isPending }: RecentActivityProps) => (
-  <div className="rounded-2xl border border-border bg-surface/80 backdrop-blur-sm">
+  <div id="recent-activity" className="rounded-lg border border-border bg-surface">
     <div className="flex items-center justify-between px-5 py-4 border-b border-border">
       <h2 className="text-sm font-display font-semibold text-text">Recent activity</h2>
       <div className="flex gap-3 text-xs font-display">

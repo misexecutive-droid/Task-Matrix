@@ -17,10 +17,6 @@ const visiblityFilter = (user: AccessTokenPayload) => {
     return { $or: or };
 }
 
-// Is this task inside the PC's own department? (Task has no storeId field, unlike Ticket.)
-const isSameDept = (user: AccessTokenPayload, task: any) =>
-    Boolean(user.departmentId && String(task.departmentId) === user.departmentId)
-
 export const taskService = {
     async list(user: AccessTokenPayload, filterUserId?: string, status?: string) {
         if (user.role === "ADMIN" && filterUserId) {
@@ -95,12 +91,6 @@ export const taskService = {
     async verify(id: string, input: VerifyTaskInput, user: AccessTokenPayload) {
         const task = await Task.findById(id);
         if (!task) throw AppError.notFound("Task not found")
-
-        // PC is scoped to their own department, same idea as the ticket-side check; ADMIN can
-        // verify anything regardless of scope.
-        if (user.role === "PC" && !isSameDept(user, task)) {
-            throw AppError.forbidden("Outside your department")
-        }
 
         if (task.status !== "pending_verification") {
             throw AppError.badRequest("This task isn't pending verification.")
