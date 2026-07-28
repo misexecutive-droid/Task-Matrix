@@ -1,14 +1,15 @@
-import { 
-  Clock, 
-  ChevronRight, 
-  Ticket as TicketIcon, 
-  User, 
-  CheckSquare, 
-  AlertCircle 
+import {
+  Clock,
+  ChevronRight,
+  Ticket as TicketIcon,
+  User,
+  CheckSquare,
+  AlertCircle
 } from 'lucide-react';
 import type { Ticket } from '../../api/ticket';
 import { getChecklistProgress } from '../../lib/checklistProgress';
 import { getTicketStatusLabel } from '../../lib/ticketStatusLabel';
+import { getInitials } from '../../lib/getInitials';
 import { useAuth } from '../../context/AuthContext';
 
 // Priority configuration with rich icon backgrounds, borders, and dark-mode support
@@ -87,108 +88,98 @@ export const TicketCard = ({ ticket, onClick, departmentName, index = 0 }: Ticke
   const priorityInfo = PRIORITY_CONFIG[ticket.priority];
   const statusInfo = STATUS_CONFIG[ticket.status];
   const statusLabel = getTicketStatusLabel(ticket.status, user?.role, statusInfo.label);
+  const assigneeName = ticket.assignee ? ticket.assignee.firstName : null;
 
   return (
     <button
       type="button"
       onClick={() => onClick(ticket)}
-      className="w-full text-left flex flex-col gap-3.5 p-4 rounded-xl border border-border/70 bg-surface/80 hover:bg-surface hover:border-primary-500/50 hover:shadow-lg hover:shadow-primary-500/5 hover:-translate-y-0.5 transition-all duration-200 group cursor-pointer animate-step-in backdrop-blur-sm relative overflow-hidden"
+      className="w-full text-left flex flex-col gap-3 p-4 rounded-2xl border border-border/60 bg-surface hover:border-primary-500/40 hover:shadow-md transition-all duration-200 group cursor-pointer animate-step-in relative overflow-hidden"
       style={{ animationDelay: `${Math.min(index, 10) * 35}ms` }}
     >
-      {/* Top Bar: Department Tag & Action Indicator */}
+      {/* Top Row: Department Tag + Chevron */}
       <div className="flex items-center justify-between gap-2">
-        <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-surface-muted border border-border/50">
-          <span className="flex items-center justify-center size-3.5 rounded bg-primary-600/90 text-white shrink-0">
-            <TicketIcon size={9} />
-          </span>
-          <span className="text-[11px] font-display text-text-muted font-medium truncate max-w-[180px]">
-            {departmentName ?? 'Ticket'}
-          </span>
-        </div>
-
-        {/* Hover Arrow Effect */}
-        <div className="flex items-center gap-1 text-text-muted group-hover:text-primary-500 transition-colors">
-          <ChevronRight
-            size={15}
-            className="group-hover:translate-x-0.5 transition-transform duration-200"
-          />
-        </div>
+        <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-display font-medium bg-primary-500/10 text-primary-600 dark:text-primary-300 truncate max-w-[160px]">
+          {departmentName ?? 'Ticket'}
+        </span>
+        <ChevronRight
+          size={15}
+          className="shrink-0 text-text-muted group-hover:text-primary-500 group-hover:translate-x-0.5 transition-all duration-200"
+        />
       </div>
 
-      {/* Main Header: Priority Icon Square + Title & Assignee */}
-      <div className="flex items-start gap-3">
-        <div className={`flex items-center justify-center size-10 rounded-xl border shrink-0 transition-transform group-hover:scale-105 ${priorityInfo.iconBg}`}>
-          <TicketIcon size={18} />
+      {/* Priority Avatar + Title */}
+      <div className="flex items-center gap-3">
+        <div className={`flex items-center justify-center size-9 rounded-full border shrink-0 transition-transform group-hover:scale-105 ${priorityInfo.iconBg}`}>
+          <TicketIcon size={15} />
         </div>
-
-        <div className="flex-1 min-w-0">
-          <h3 className="text-sm font-display font-semibold text-text leading-snug line-clamp-1 group-hover:text-primary-500 transition-colors">
-            {ticket.title}
-          </h3>
-
-          {/* Assignee Avatar Pill */}
-          <div className="flex items-center gap-1.5 mt-1">
-            <div className="flex items-center gap-1 text-[11px] text-text-muted font-display">
-              <User size={12} className="shrink-0 text-text-muted/70" />
-              <span className="truncate">
-                {ticket.assignee ? `${ticket.assignee.firstName}` : 'Unassigned'}
-              </span>
-            </div>
-          </div>
-        </div>
+        <h3 className="flex-1 min-w-0 text-sm font-display font-semibold text-text leading-snug line-clamp-1 group-hover:text-primary-500 transition-colors">
+          {ticket.title}
+        </h3>
       </div>
 
       {/* Body: Clamped Description */}
       {ticket.description && (
-        <p className="text-xs font-display text-text-secondary/90 leading-relaxed line-clamp-2 bg-surface-muted/30 p-2 rounded-lg border border-border/30">
+        <p className="text-xs font-display text-text-secondary/80 leading-snug line-clamp-2 pl-12">
           {ticket.description}
         </p>
       )}
 
       {/* Checklist Progress Bar */}
       {progress !== null && (
-        <div className="flex flex-col gap-1.5 pt-0.5">
-          <div className="flex items-center justify-between text-[11px] font-display text-text-muted">
-            <span className="flex items-center gap-1">
-              <CheckSquare size={11} className="text-primary-500" />
-              Subtasks
-            </span>
-            <span className="font-mono tabular-nums font-semibold text-text-secondary">{doneItems}/{totalItems} ({progress}%)</span>
-          </div>
-          <div className="w-full h-1.5 bg-surface-muted rounded-full overflow-hidden p-0.5 border border-border/40">
+        <div className="flex items-center gap-2 pl-12">
+          <CheckSquare size={12} className="text-primary-500 shrink-0" />
+          <div className="flex-1 h-1.5 bg-surface-muted rounded-full overflow-hidden">
             <div
               className="h-full bg-gradient-to-r from-primary-500 to-primary-400 rounded-full transition-all duration-300"
               style={{ width: `${progress}%` }}
             />
           </div>
+          <span className="text-[10px] font-mono tabular-nums text-text-muted shrink-0">{doneItems}/{totalItems}</span>
         </div>
       )}
 
-      {/* Action Chips Row */}
-      <div className="flex items-center gap-1.5 flex-wrap pt-1 border-t border-border/40">
-        {/* Status Chip with Pulse Dot */}
-        <span className={`inline-flex items-center gap-1.5 text-xs font-display font-medium px-2.5 py-0.5 rounded-full border ${statusInfo.badge}`}>
-          <span className={`size-1.5 rounded-full ${statusInfo.dot}`} />
-          {statusLabel}
-        </span>
-
-        {/* Priority Chip */}
-        <span className={`text-xs font-display font-medium px-2.5 py-0.5 rounded-full border ${priorityInfo.badge}`}>
-          {priorityInfo.label}
-        </span>
-
-        {/* TAT Due / Overdue Badge */}
-        {ticket.tatDueAt && (
-          <span
-            className={`inline-flex items-center gap-1 text-xs font-display font-medium px-2.5 py-0.5 rounded-full border transition-colors ${
-              isOverdue
-                ? 'border-rose-500/50 text-rose-500 bg-rose-500/10 animate-pulse'
-                : 'border-border/80 text-text-muted bg-surface-muted/40'
-            }`}
-          >
-            {isOverdue ? <AlertCircle size={11} className="shrink-0" /> : <Clock size={11} className="shrink-0" />}
-            <span>{new Date(ticket.tatDueAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</span>
+      {/* Footer: Status/Priority/Due Chips + Assignee Avatar */}
+      <div className="flex items-center justify-between gap-2 pt-2 pl-12 border-t border-border/40">
+        <div className="flex items-center gap-1.5 flex-wrap">
+          {/* Status Chip with Pulse Dot */}
+          <span className={`inline-flex items-center gap-1.5 text-xs font-display font-medium px-2.5 py-0.5 rounded-full border ${statusInfo.badge}`}>
+            <span className={`size-1.5 rounded-full ${statusInfo.dot}`} />
+            {statusLabel}
           </span>
+
+          {/* Priority Chip */}
+          <span className={`text-xs font-display font-medium px-2.5 py-0.5 rounded-full border ${priorityInfo.badge}`}>
+            {priorityInfo.label}
+          </span>
+
+          {/* TAT Due / Overdue Badge */}
+          {ticket.tatDueAt && (
+            <span
+              className={`inline-flex items-center gap-1 text-xs font-display font-medium px-2.5 py-0.5 rounded-full border transition-colors ${
+                isOverdue
+                  ? 'border-rose-500/50 text-rose-500 bg-rose-500/10 animate-pulse'
+                  : 'border-border/80 text-text-muted bg-surface-muted/40'
+              }`}
+            >
+              {isOverdue ? <AlertCircle size={11} className="shrink-0" /> : <Clock size={11} className="shrink-0" />}
+              <span>{new Date(ticket.tatDueAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</span>
+            </span>
+          )}
+        </div>
+
+        {/* Assignee Avatar */}
+        {assigneeName ? (
+          <div
+            className="flex items-center justify-center size-6.5 rounded-full bg-gradient-to-br from-primary-500 to-primary-600 text-white text-[10px] font-semibold shrink-0 shadow-xs ring-2 ring-surface"
+            title={`Assigned to ${assigneeName}`}
+          >
+            {getInitials(assigneeName)}
+          </div>
+        ) : (
+          <div className="flex items-center justify-center size-6.5 rounded-full border border-dashed border-border text-text-muted shrink-0" title="Unassigned">
+            <User size={12} />
+          </div>
         )}
       </div>
     </button>

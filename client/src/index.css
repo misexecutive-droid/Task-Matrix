@@ -24,30 +24,30 @@
   --bg-dark: linear-gradient(135deg, #0d1114, #12171b, #172029);
 
   /* ==========================================================
-      PRIMARY (cobalt)
+      PRIMARY (emerald)
   ========================================================== */
 
-  --color-primary-50: #edf3f7;
-  --color-primary-100: #d7e6ee;
-  --color-primary-200: #b0ccdd;
-  --color-primary-300: #85afcb;
-  --color-primary-400: #5b93b9;
-  --color-primary-500: #3d77a0;
-  --color-primary-600: #2c5e8a;
-  --color-primary-700: #234c6f;
-  --color-primary-800: #1b3a56;
-  --color-primary-900: #13293e;
+  --color-primary-50: #ecfdf5;
+  --color-primary-100: #d1fae5;
+  --color-primary-200: #a7f3d0;
+  --color-primary-300: #6ee7b7;
+  --color-primary-400: #34d399;
+  --color-primary-500: #10b981;
+  --color-primary-600: #059669;
+  --color-primary-700: #047857;
+  --color-primary-800: #065f46;
+  --color-primary-900: #064e3b;
 
-  /* Same cobalt scale, exposed under its own name too — bg-cobalt-700, text-cobalt-500, etc. */
-  --color-cobalt-50: #edf3f7;
-  --color-cobalt-100: #d7e6ee;
-  --color-cobalt-200: #b0ccdd;
-  --color-cobalt-400: #5b93b9;
-  --color-cobalt-500: #3d77a0;
-  --color-cobalt-600: #2c5e8a;
-  --color-cobalt-700: #234c6f;
-  --color-cobalt-800: #1b3a56;
-  --color-cobalt-900: #13293e;
+  /* Same emerald scale, exposed under its own name too — bg-cobalt-700, text-cobalt-500, etc. */
+  --color-cobalt-50: #ecfdf5;
+  --color-cobalt-100: #d1fae5;
+  --color-cobalt-200: #a7f3d0;
+  --color-cobalt-400: #34d399;
+  --color-cobalt-500: #10b981;
+  --color-cobalt-600: #059669;
+  --color-cobalt-700: #047857;
+  --color-cobalt-800: #065f46;
+  --color-cobalt-900: #064e3b;
 
   /* ==========================================================
       CORAL (accent)
@@ -94,11 +94,16 @@
       TYPOGRAPHY
   ========================================================== */
 
-  --font-display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
-  --font-body: "Work Sans", system-ui, -apple-system, sans-serif;
-  --font-mono: "Space Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  --font-display: "Nunito Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-body: "Nunito Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 
-  /* Work Sans as the site-wide default (html/body + the built-in `font-sans` utility) — without
+  /* font-mono used to be a real monospace face (Space Mono). A lot of components reach for
+     font-mono on plain labels/text, not just tabular numbers, so leaving it monospaced made
+     the app look like it had two different typefaces depending on which utility a component
+     happened to use. Pointed at Nunito Sans too so every font-* utility renders identically. */
+  --font-mono: "Nunito Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+
+  /* Nunito Sans as the site-wide default (html/body + the built-in `font-sans` utility) — without
      this, anything that doesn't explicitly add font-display/font-mono/font-body silently falls
      back to the browser's generic system font instead of matching the rest of the pairing. */
   --font-sans: var(--font-body);
@@ -108,6 +113,16 @@
   --font-weight-medium: 500;
   --font-weight-semibold: 600;
   --font-weight-bold: 700;
+
+  /* Relaxed letter-spacing scale — Tailwind's defaults (tracking-tight: -0.025em,
+     tracking-wider: 0.05em) read as cramped with Nunito Sans. Overriding here loosens
+     every tracking-tight/-wide/-wider usage app-wide from one place. */
+  --tracking-tighter: -0.01em;
+  --tracking-tight: 0em;
+  --tracking-normal: 0em;
+  --tracking-wide: 0.02em;
+  --tracking-wider: 0.04em;
+  --tracking-widest: 0.08em;
 
   /* ==========================================================
       FONT SIZE

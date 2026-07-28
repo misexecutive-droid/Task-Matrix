@@ -11,6 +11,7 @@ import {
 import { useUpdateTaskMutation, useDeleteTaskMutation } from "./hook";
 import { TaskVerifyActions } from "./TaskVerifyActions";
 import { PRIORITY_MAP, STATUS_LABEL, NEXT_STATUS } from "./taskDisplay";
+import { getInitials } from "../../lib/getInitials";
 import type { Task } from "../../api/task";
 
 interface TaskCardProps {
@@ -21,11 +22,6 @@ interface TaskCardProps {
   onOpen: (task: Task) => void;
   index?: number;
 }
-
-// Helper to create a sleek initial-based avatar
-const getInitials = (name: string) => {
-  return name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
-};
 
 export const TaskCard = ({ task, assigneeName, isAdmin, isVerifier, onOpen, index = 0 }: TaskCardProps) => {
   const updateMutation = useUpdateTaskMutation();

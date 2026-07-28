@@ -19,6 +19,7 @@ import { SettingsPage } from './features/admin/SettingsPage';
 import { ChecklistDefinitionList, ChecklistDefinitionDetail, MyChecklists, ChecklistInstanceDetail } from './features/checklist';
 import { VerificationQueue } from './features/verification';
 import { MyErrorBoundary, NotFoundPage } from './components/error';
+import { CategoryList, SettingsLayout } from './features/settings';
 
 const ProtectedRoute = () => {
   const { token } = useAuth();
@@ -67,7 +68,14 @@ const router = createBrowserRouter([
           { path: '/', element: <HomePage /> },
           { path: '/projects', element: <p className="font-display text-text-secondary">Projects — coming soon</p> },
           { path: '/calendar', element: <p className="font-display text-text-secondary">Calendar — coming soon</p> },
-          { path: '/settings', element: <p className="font-display text-text-secondary">Settings — coming soon</p> },
+          { 
+            path: '/settings', 
+            element: <SettingsLayout/>, 
+            children : [
+              { index : true, element : <Navigate to="/settings/categories" replace />},
+              { path : "categories", element : <CategoryList/>}
+
+          ] },
           { path: '/tickets', element: <TicketList /> },
           { path: '/tasks', element: <TaskList /> },
           { path: '/checklists', element: <MyChecklists /> },

@@ -1,6 +1,6 @@
 import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
-import { NavLink, useLocation } from 'react-router';
+import { NavLink } from 'react-router';
 import {
   CheckSquare,
   ChevronDown,
@@ -15,22 +15,6 @@ import {
 import { NotificationBell } from '../../features/notifications/NotificationBell';
 import { Dropdown, type DropdownAction } from '../dropdown';
 
-const PAGE_LABELS: Record<string, string> = {
-  '/': 'Dashboard',
-  '/tasks': 'Tasks',
-  '/tickets': 'Tickets',
-  '/checklists': 'My Checklists',
-  '/projects': 'Projects',
-  '/calendar': 'Calendar',
-  '/settings': 'Settings',
-  '/admin': 'TAT Report',
-  '/admin/users': 'Users',
-  '/admin/departments': 'Departments',
-  '/admin/checklist-templates': 'Checklist Templates',
-  '/admin/tickets': 'Tickets',
-  '/admin/settings': 'Settings',
-};
-
 // Refined to be flatter and more modern. Removed borders/shadows for a cleaner UI.
 export const ICON_BUTTON_CLASS =
   'inline-flex items-center justify-center size-8 rounded-md text-text-secondary ' +
@@ -42,9 +26,6 @@ export const ICON_BUTTON_CLASS =
 export const Header = ({ onToggleSidebar }: { onToggleSidebar?: () => void }) => {
   const { theme, toggleTheme } = useTheme();
   const { user, logout } = useAuth();
-  const { pathname } = useLocation();
-
-  const pageLabel = PAGE_LABELS[pathname];
 
   const initials = (user?.name ?? 'U')
     .split(' ')
@@ -78,7 +59,7 @@ export const Header = ({ onToggleSidebar }: { onToggleSidebar?: () => void }) =>
       <div className="max-w-[1600px] mx-auto px-4 sm:px-6">
         <div className="h-14 flex items-center justify-between gap-4">
           
-          {/* Left Brand Anchor & Breadcrumb */}
+          {/* Left Module: Sidebar Toggle + Brand */}
           <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
             {onToggleSidebar && (
               <button
@@ -102,49 +83,30 @@ export const Header = ({ onToggleSidebar }: { onToggleSidebar?: () => void }) =>
                 TaskMatrix
               </span>
             </NavLink>
-
-            {/* Vercel-style sleek slash separator & Breadcrumb */}
-            {pageLabel && (
-              <div className="hidden sm:flex items-center gap-3">
-                <svg
-                  fill="none"
-                  shapeRendering="geometricPrecision"
-                  stroke="currentColor"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="1.5"
-                  viewBox="0 0 24 24"
-                  className="size-4 text-border shrink-0"
-                >
-                  <path d="M16.88 3.549L7.12 20.451" />
-                </svg>
-                <h1 className="text-sm font-medium text-text-secondary tracking-tight truncate">
-                  {pageLabel}
-                </h1>
-              </div>
-            )}
           </div>
 
-          {/* Right Action Controls */}
-          <div className="flex items-center gap-1.5 sm:gap-2">
-            <NotificationBell />
+          {/* Right Module: grouped action pill + account, separated by a divider */}
+          <div className="flex items-center gap-2 sm:gap-3">
+            <div className="flex items-center gap-0.5 p-1 rounded-full bg-surface-hover/60">
+              <NotificationBell />
 
-            {/* Theme Toggle Button */}
-            <button
-              onClick={toggleTheme}
-              className={`${ICON_BUTTON_CLASS} overflow-hidden`}
-              title={theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}
-              aria-label="Toggle visual theme"
-            >
-              <span
-                className="inline-flex transition-transform duration-500 ease-spring"
-                style={{
-                  transform: theme === 'light' ? 'rotate(0deg)' : 'rotate(180deg)',
-                }}
+              {/* Theme Toggle Button */}
+              <button
+                onClick={toggleTheme}
+                className={`${ICON_BUTTON_CLASS} overflow-hidden`}
+                title={theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}
+                aria-label="Toggle visual theme"
               >
-                {theme === 'light' ? <Moon size={17} strokeWidth={1.75} /> : <Sun size={17} strokeWidth={1.75} />}
-              </span>
-            </button>
+                <span
+                  className="inline-flex transition-transform duration-500 ease-spring"
+                  style={{
+                    transform: theme === 'light' ? 'rotate(0deg)' : 'rotate(180deg)',
+                  }}
+                >
+                  {theme === 'light' ? <Moon size={17} strokeWidth={1.75} /> : <Sun size={17} strokeWidth={1.75} />}
+                </span>
+              </button>
+            </div>
 
             {/* User Dropdown Profile (Desktop) */}
             {user && (

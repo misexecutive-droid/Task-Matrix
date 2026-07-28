@@ -72,8 +72,18 @@ export const Sidebar = ({ isOpen, user, logout, onNavigate }: SidebarProps) => {
         ].join(' ')}
         style={{ background: 'var(--glass-bg)', backdropFilter: 'var(--glass-blur)' }}
       >
+        {/* Section Label */}
+        <p
+          className={[
+            'text-[11px] font-display font-semibold text-text-light uppercase tracking-wider px-3 mb-2',
+            isOpen ? '' : 'md:hidden',
+          ].join(' ')}
+        >
+          Menu
+        </p>
+
         {/* Navigation Links */}
-        <nav className="flex flex-col gap-1 flex-1">
+        <nav className="flex flex-col gap-0.5 flex-1">
           {navItems.map(({ to, icon: Icon, label }) => (
             <NavLink
               key={to}
@@ -83,24 +93,35 @@ export const Sidebar = ({ isOpen, user, logout, onNavigate }: SidebarProps) => {
               onClick={handleNavClick}
               className={({ isActive }) =>
                 [
-                  'group flex items-center rounded-xl text-xs font-mono font-semibold transition-all duration-200',
+                  'group flex items-center rounded-lg text-xs font-display font-medium transition-all duration-200',
                   'gap-3 px-3 py-2.5',
                   isOpen ? 'md:px-3' : 'md:justify-center md:px-0',
                   isActive
-                    ? 'bg-primary-600 text-white shadow-sm shadow-primary-600/20'
-                    : 'text-text-secondary hover:bg-surface-hover hover:text-text',
+                    ? 'bg-primary-500/10 text-primary-600 dark:text-primary-300'
+                    : 'text-text-secondary hover:bg-surface-hover/70 hover:text-text',
                 ].join(' ')
               }
             >
-              <Icon size={18} className="shrink-0 transition-transform group-hover:scale-105" />
-              <span
-                className={[
-                  'truncate leading-none transition-opacity duration-200',
-                  isOpen ? 'opacity-100' : 'md:hidden md:opacity-0',
-                ].join(' ')}
-              >
-                {label}
-              </span>
+              {({ isActive }) => (
+                <>
+                  <Icon
+                    size={17}
+                    strokeWidth={1.75}
+                    className={[
+                      'shrink-0 transition-transform group-hover:scale-105',
+                      isActive ? 'text-primary-500' : 'text-text-muted group-hover:text-text-secondary',
+                    ].join(' ')}
+                  />
+                  <span
+                    className={[
+                      'truncate leading-none transition-opacity duration-200',
+                      isOpen ? 'opacity-100' : 'md:hidden md:opacity-0',
+                    ].join(' ')}
+                  >
+                    {label}
+                  </span>
+                </>
+              )}
             </NavLink>
           ))}
         </nav>
@@ -117,7 +138,7 @@ export const Sidebar = ({ isOpen, user, logout, onNavigate }: SidebarProps) => {
         >
           {/* Avatar */}
           <div
-            className="size-8 rounded-full bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center text-white text-xs font-mono font-bold shrink-0 shadow-xs"
+            className="size-8 rounded-full bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center text-white text-xs font-display font-bold shrink-0 shadow-xs"
             title={user?.name}
           >
             {initials}
@@ -125,7 +146,7 @@ export const Sidebar = ({ isOpen, user, logout, onNavigate }: SidebarProps) => {
 
           {/* User Details */}
           <div className={['flex-1 min-w-0', isOpen ? '' : 'md:hidden'].join(' ')}>
-            <p className="text-xs font-mono font-semibold text-text truncate leading-tight">
+            <p className="text-xs font-display font-semibold text-text truncate leading-tight">
               {user?.name}
             </p>
             <p className="text-[11px] text-text-muted truncate leading-tight">{user?.email}</p>
