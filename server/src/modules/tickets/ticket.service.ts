@@ -16,7 +16,7 @@ const populateTicket = (query: any) =>
     .populate({ path: "assignee", select: "email firstName role" })
     .populate({ path: "checklists", populate: { path: "items", populate: { path: "images" } } })
     .populate({ path: "raisedBy", select: "email firstName role" })
-    .populate({ path: "attachments" })
+    .populate({ path: "attachments", populate: { path: "uploadedBy", select: "email firstName role" } })
     .populate({
       path: "comments",
       populate: { path: "author", select: "email firstName role" },
@@ -292,6 +292,10 @@ export const ticketService = {
 
     if (input.status === "IN_REVIEW" && before.status !== "IN_REVIEW") {
       await notificationService.notifyPendingVerification(ticket);
+    }
+
+    if (input.status === "ON_HOLD" && before.status !== "ON_HOLD") {
+      await notificationService.notifyTicketOnHold(ticket, input.remark, user.sub);
     }
 
     return populated;

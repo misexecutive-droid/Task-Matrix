@@ -109,6 +109,27 @@ export const notificationService = {
     });
   },
 
+  // Called when a ticket is put ON_HOLD through the restricted status-update flow - tells the
+  // assignee (and the original raiser, if different) it's stalled, including the remark that
+  // explains why. Whoever actually made the change is excluded, since notifying yourself about
+  // your own action is just noise.
+  async notifyTicketOnHold(entity: VerifiableEntity, remark: string, actorId: string, kind: 'TICKET' | 'TASK' = 'TICKET') {
+    const recipientIds: string[] = [];
+    if (entity.assigneeId && entity.assigneeId.toString() !== actorId) recipientIds.push(entity.assigneeId.toString());
+    if (entity.userId && entity.userId.toString() !== actorId && entity.userId.toString() !== entity.assigneeId?.toString()) {
+      recipientIds.push(entity.userId.toString());
+    }
+    if (!recipientIds.length) return [];
+
+    const idField = kind === 'TICKET' ? { ticketId: entity._id.toString() } : { taskId: entity._id.toString() };
+    return notificationService.notifyMany(recipientIds, {
+      type: `${kind}_ON_HOLD`,
+      title: kind === 'TICKET' ? 'Ticket put on hold' : 'Task put on hold',
+      message: `"${entity.title}" was put on hold: ${remark}`,
+      ...idField,
+    });
+  },
+
   // Returns the most recent 50 notifications for a given user, newest first - used to populate the notifications dropdown/list in the UI
   async listForUser(userId: string) {
     return Notification.find({ recipientId: userId }).sort({ createdAt: -1 }).limit(50);
