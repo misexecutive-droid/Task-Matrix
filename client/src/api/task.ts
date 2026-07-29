@@ -39,6 +39,17 @@ export type UpdateTaskPayload = Partial<Omit<CreateTaskPayload, 'assigneeId' | '
 
 export type VerifyTaskPayload = { action: 'APPROVE' | 'REJECT'; note?: string };
 
+export type ComplianceReportRow = {
+    bucket: string;
+    totalItems: number;
+    doneItems: number;
+    completionRate: number | null;
+    itemsRequiringPhotos: number;
+    qualityRate: number | null;
+};
+
+export type ApiResponse<T> = { success: boolean; data: T };
+
 export const taskApi = {
     getAll: (userId?: string, status?: Task['status']) => {
         const params = new URLSearchParams();
@@ -61,4 +72,11 @@ export const taskApi = {
 
     delete: (id: string) =>
         apiFetch<{ success: boolean }>(`/tasks/${id}`, { method: 'DELETE' }),
+
+    getComplianceReport: (groupBy: 'hour' | 'day' | 'week' | 'month' = 'month', from?: string, to?: string) => {
+        const params = new URLSearchParams({ groupBy });
+        if (from) params.set('from', from);
+        if (to) params.set('to', to);
+        return apiFetch<ApiResponse<ComplianceReportRow[]>>(`/tasks/reports/compliance?${params.toString()}`);
+    },
 };

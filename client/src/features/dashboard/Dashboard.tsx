@@ -7,9 +7,9 @@ import { Header, Footer, Sidebar } from '../../components/layout';
 export const Dashboard = () => {
   const { user, logout } = useAuth();
   const location = useLocation();
-  const [sidebarOpen, setSidebarOpen] = useState(
-    () => typeof window !== 'undefined' && window.matchMedia('(min-width: 768px)').matches,
-  );
+  // Starts collapsed on both mobile (closed drawer) and desktop (icon rail) — on desktop the
+  // sidebar expands on hover, and this toggle now just pins it open instead of hiding it.
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
     <div className="flex flex-col h-svh overflow-hidden" style={{ background: 'var(--bg-body)' }}>

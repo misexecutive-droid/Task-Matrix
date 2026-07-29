@@ -32,6 +32,19 @@ export const useTasksQuery = (userId?: string) => {
     });
 };
 
+// Checklist completion rate over time — role-scoped server-side (ADMIN/PC get the org-wide
+// or department view, everyone else only ever sees their own tasks). Powers the dashboard's
+// Monthly Target gauge.
+export const useComplianceReportQuery = (groupBy: 'hour' | 'day' | 'week' | 'month' = 'month', from?: string, to?: string) => {
+    const { token } = useAuth();
+    return useQuery({
+        queryKey: ['tasks', 'compliance', groupBy, from, to],
+        queryFn: () => taskApi.getComplianceReport(groupBy, from, to).then(r => r.data),
+        enabled: !!token,
+        retry: handleQueryRetry,
+    });
+};
+
 // Single task by id
 export const useTaskQuery = (id: string) => {
     const { token } = useAuth();

@@ -45,12 +45,12 @@ export const useUpdateSettingsMutation = () => {
         onError: (err) => toast.error(errorMessage(err, "Failed to update settings")),
     })
 }
-export const useUsersQuery = () => {
+export const useUsersQuery = (enabled: boolean = true) => {
     const { token } = useAuth();
     return useQuery({
         queryKey: USER_KEYS.all,
         queryFn: () => adminApi.getAll().then(r => r.data),
-        enabled: !!token,
+        enabled: !!token && enabled,
     });
 };
 
