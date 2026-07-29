@@ -1,10 +1,21 @@
-import type { CSSProperties } from "react"
-import { Toaster as Sonner, type ToasterProps } from "sonner"
+import { useEffect, type CSSProperties } from "react"
+import { Toaster as Sonner, toast, type ToasterProps } from "sonner"
 
 import { useTheme } from "@/context/ThemeContext"
 
 const Toaster = ({ ...props }: ToasterProps) => {
   const { theme } = useTheme()
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as HTMLElement
+      if (!target.closest("[data-sonner-toast]")) {
+        toast.dismiss()
+      }
+    }
+    document.addEventListener("click", handleClickOutside)
+    return () => document.removeEventListener("click", handleClickOutside)
+  }, [])
 
   return (
     <Sonner
