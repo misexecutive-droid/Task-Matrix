@@ -20,6 +20,7 @@ import { ChecklistDefinitionList, ChecklistDefinitionDetail, MyChecklists, Check
 import { VerificationQueue } from './features/verification';
 import { MyErrorBoundary, NotFoundPage } from './components/error';
 import { CategoryList, SettingsLayout } from './features/settings';
+import { ReportsPage } from './features/reports';
 
 const ProtectedRoute = () => {
   const { token } = useAuth();
@@ -103,6 +104,7 @@ const router = createBrowserRouter([
               { path: '/admin/scheduled-checklists/:definitionId', element: <ChecklistDefinitionDetail /> },
               { path: '/admin/tickets', element: <TicketList /> },
               { path: '/admin/tasks', element: <AdminTaskList /> },
+              { path: '/admin/reports', element: <ReportsPage /> },
               { path: '/admin/settings', element: <SettingsPage /> },
             ],
           },

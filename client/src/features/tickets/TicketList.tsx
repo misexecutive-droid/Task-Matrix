@@ -1,10 +1,11 @@
 import { useState } from 'react';
-import { Plus, Ticket as TicketIcon, AlertCircle, Inbox, RotateCcw, Building2, User } from 'lucide-react';
+import { Plus, Ticket as TicketIcon, AlertCircle, Inbox, RotateCcw, Building2, User, FileDown } from 'lucide-react';
 import { Button, PageNav } from '../../components';
 import { useAuth } from '@/context/AuthContext';
 import { useTicketsQuery, useDepartmentsQuery } from './hook';
 import { TicketForm } from './TicketForm';
 import { TicketDetail } from './TicketDetail';
+import { TicketExportDialog } from './TicketExportDialog';
 import { TicketListControls } from './list/TicketListControls';
 import { TicketListSkeleton } from './list/TicketListSkeleton';
 import { TicketGroupedList } from './list/TicketGroupedList';
@@ -21,6 +22,7 @@ import type { Ticket } from '../../api/ticket';
 export const TicketList = () => {
   const { user } = useAuth();
   const [showForm, setShowForm] = useState(false);
+  const [showExport, setShowExport] = useState(false);
   const [selected, setSelected] = useState<Ticket | null>(null);
   const [page, setPage] = useState(1);
 
@@ -141,6 +143,17 @@ export const TicketList = () => {
               </button>
             </div>
 
+            {user?.role === 'ADMIN' && (
+              <button
+                type="button"
+                onClick={() => setShowExport(true)}
+                className="inline-flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-display font-medium rounded-full border border-border/60 text-text-secondary hover:bg-surface-hover hover:text-text transition-all duration-200 cursor-pointer"
+              >
+                <FileDown size={14} />
+                <span className="tracking-wide">Export</span>
+              </button>
+            )}
+
             <button
               type="button"
               onClick={() => setShowForm(true)}
@@ -217,6 +230,7 @@ export const TicketList = () => {
 
       {/* Dialog Modals */}
       {showForm && <TicketForm onClose={() => setShowForm(false)} />}
+      {showExport && <TicketExportDialog onClose={() => setShowExport(false)} />}
       {selected && <TicketDetail ticket={selected} onClose={() => setSelected(null)} />}
     </div>
   );

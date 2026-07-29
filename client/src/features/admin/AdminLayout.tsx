@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { NavLink, Outlet, useLocation } from 'react-router'
 import { AnimatePresence, motion } from 'framer-motion'
-import { LayoutDashboard, Users, Building2, TicketCheck, Settings, ListChecks , ClipboardList, Repeat } from 'lucide-react'
+import { LayoutDashboard, Users, Building2, TicketCheck, Settings, ListChecks , ClipboardList, Repeat, FileDown } from 'lucide-react'
 import { useAuth } from "../../context/AuthContext"
 import { Header } from "../../components/layout"
 import { Breadcrumbs } from "../../components/breadcrumbs"
@@ -14,6 +14,7 @@ const NAV = [
     { to: '/admin/scheduled-checklists', icon: Repeat, label: 'Recurring Checklists', end: false },
     { to: '/admin/tickets', icon: TicketCheck, label: 'Tickets', end: false },
     { to: '/admin/tasks', icon: ClipboardList, label: 'Tasks', end: false },
+    { to: '/admin/reports', icon: FileDown, label: 'Reports', end: false },
     { to: '/admin/settings', icon: Settings, label: 'Settings', end: false },
 ]
 
