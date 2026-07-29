@@ -1,6 +1,4 @@
-// This file just re-exports every model (and a couple of related types) from one place,
-// so other files can do `import { User, Ticket } from '../models'` instead of importing
-// each model from its own individual file.
+
 export { RefreshToken } from './RefreshToken.js';
 export { PasswordResetToken } from './PasswordResetToken.js';
 export { User } from './User.js';

@@ -25,6 +25,7 @@ import { checklistInstanceRouter, checklistInstanceItemRouter } from "./modules/
 import { notificationRouter } from "./modules/notifications/notification.routes.js"
 import { settingsRouter } from "./modules/settings/settings.routes.js"
 import { reportRouter } from "./modules/reports/report.routes.js"
+import { eventRouter } from "./modules/events/event.routes.js"
 
 class App {
     public app: Application;
@@ -77,6 +78,7 @@ class App {
 
         this.app.use("/notifications", notificationRouter)
         this.app.use("/reports", reportRouter)
+        this.app.use("/events", eventRouter)
         this.app.use((_req: Request, res: Response) => res.status(404).json({ success: false, message: 'Not found' }))
     }
 

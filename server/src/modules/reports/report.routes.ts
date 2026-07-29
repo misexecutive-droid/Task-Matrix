@@ -5,7 +5,7 @@ import { reportController } from "./report.controller.js";
 export const reportRouter = Router();
 
 reportRouter.use(authenticate);
-reportRouter.use(requireRole("ADMIN"));
+reportRouter.use(requireRole("ADMIN", "PC"));
 
 reportRouter.get("/tickets/export", reportController.exportTickets);
 reportRouter.get("/tasks/export", reportController.exportTasks);

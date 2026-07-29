@@ -1,6 +1,5 @@
 import http from "node:http";
 import type { Server } from "node:http";
-
 import App from "./src/app.js";
 import { connectDB, disconnectDB } from "./src/config/db.js";
 import { env } from "./src/config/env.js";
