@@ -5,7 +5,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useTicketsQuery, useDepartmentsQuery } from './hook';
 import { TicketForm } from './TicketForm';
 import { TicketDetail } from './TicketDetail';
-import { TicketExportDialog } from './TicketExportDialog';
+import { ExportDialog } from '../reports';
 import { TicketListControls } from './list/TicketListControls';
 import { TicketListSkeleton } from './list/TicketListSkeleton';
 import { TicketGroupedList } from './list/TicketGroupedList';
@@ -143,7 +143,7 @@ export const TicketList = () => {
               </button>
             </div>
 
-            {user?.role === 'ADMIN' && (
+            {(user?.role === 'ADMIN' || user?.role === 'PC') && (
               <button
                 type="button"
                 onClick={() => setShowExport(true)}
@@ -230,7 +230,14 @@ export const TicketList = () => {
 
       {/* Dialog Modals */}
       {showForm && <TicketForm onClose={() => setShowForm(false)} />}
-      {showExport && <TicketExportDialog onClose={() => setShowExport(false)} />}
+      {showExport && (
+        <ExportDialog
+          reportModule="tickets"
+          title="Export Tickets"
+          description="Every ticket created in the selected period — status, priority, department, assignee, and TAT."
+          onClose={() => setShowExport(false)}
+        />
+      )}
       {selected && <TicketDetail ticket={selected} onClose={() => setSelected(null)} />}
     </div>
   );

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Download } from 'lucide-react';
-import { Button } from '../../components';
+import { Button, DateRangePicker, type DateRangeValue } from '../../components';
 import { useReportExportMutation } from './useReportExport';
 import { computeRange, PRESET_LABELS, type ReportPreset } from './dateRangePresets';
 import type { ReportModule, ReportFormat } from '../../api/reports';
@@ -8,18 +8,31 @@ import type { ReportModule, ReportFormat } from '../../api/reports';
 const PRESETS: ReportPreset[] = ['daily', 'weekly', 'monthly', 'quarterly', 'yearly'];
 const FORMATS: ReportFormat[] = ['csv', 'xlsx'];
 
+type RangeMode = ReportPreset | 'custom';
+
+const endOfDay = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate(), 23, 59, 59, 999);
+
 interface ReportExportPanelProps {
   reportModule: ReportModule;
   description: string;
 }
 
 export const ReportExportPanel = ({ reportModule, description }: ReportExportPanelProps) => {
-  const [preset, setPreset] = useState<ReportPreset>('monthly');
+  const [mode, setMode] = useState<RangeMode>('monthly');
   const [format, setFormat] = useState<ReportFormat>('csv');
+  const [customRange, setCustomRange] = useState<DateRangeValue>({ from: null, to: null });
   const exportMutation = useReportExportMutation(reportModule);
 
+  const isCustom = mode === 'custom';
+  const canDownload = !isCustom || (!!customRange.from && !!customRange.to);
+
   const handleDownload = () => {
-    const { from, to } = computeRange(preset, new Date());
+    if (!canDownload) return;
+
+    const { from, to } = isCustom
+      ? { from: customRange.from!.toISOString(), to: endOfDay(customRange.to!).toISOString() }
+      : computeRange(mode, new Date());
+
     exportMutation.mutate({ from, to, format });
   };
 
@@ -27,7 +40,6 @@ export const ReportExportPanel = ({ reportModule, description }: ReportExportPan
     <div className="flex flex-col gap-5 p-5 rounded-xl border border-border/60 bg-surface">
       <p className="text-xs text-text-muted font-display">{description}</p>
 
-      {/* Period Presets */}
       <div className="flex flex-col gap-2">
         <span className="text-[11px] font-display font-semibold text-text-secondary uppercase tracking-wider">
           Period
@@ -37,9 +49,9 @@ export const ReportExportPanel = ({ reportModule, description }: ReportExportPan
             <button
               key={p}
               type="button"
-              onClick={() => setPreset(p)}
+              onClick={() => setMode(p)}
               className={`px-3 py-1.5 text-xs font-display font-medium rounded-md border transition-all cursor-pointer ${
-                preset === p
+                mode === p
                   ? 'border-primary-500/60 bg-primary-500/10 text-primary-500 font-semibold'
                   : 'border-border/60 bg-surface text-text-secondary hover:bg-surface-hover'
               }`}
@@ -47,7 +59,24 @@ export const ReportExportPanel = ({ reportModule, description }: ReportExportPan
               {PRESET_LABELS[p]}
             </button>
           ))}
+          <button
+            type="button"
+            onClick={() => setMode('custom')}
+            className={`px-3 py-1.5 text-xs font-display font-medium rounded-md border transition-all cursor-pointer ${
+              isCustom
+                ? 'border-primary-500/60 bg-primary-500/10 text-primary-500 font-semibold'
+                : 'border-border/60 bg-surface text-text-secondary hover:bg-surface-hover'
+            }`}
+          >
+            Custom Range
+          </button>
         </div>
+
+        {isCustom && (
+          <div className="pt-1">
+            <DateRangePicker value={customRange} onChange={setCustomRange} placeholder="Select a date range" />
+          </div>
+        )}
       </div>
 
       {/* Format Toggle */}
@@ -77,9 +106,10 @@ export const ReportExportPanel = ({ reportModule, description }: ReportExportPan
         className="self-start gap-1.5 font-display text-xs"
         onClick={handleDownload}
         isLoading={exportMutation.isPending}
+        disabled={!canDownload || exportMutation.isPending}
       >
         {!exportMutation.isPending && <Download size={14} />}
-        {exportMutation.isPending ? 'Preparing download…' : `Download ${PRESET_LABELS[preset]}`}
+        {exportMutation.isPending ? 'Preparing download…' : `Download ${isCustom ? 'Selected Range' : PRESET_LABELS[mode]}`}
       </Button>
     </div>
   );

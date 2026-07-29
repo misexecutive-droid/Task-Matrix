@@ -73,7 +73,6 @@ export const TicketStatusUpdatePanel = ({
         <span>Update Status</span>
       </h3>
 
-      {/* Status Picker Buttons */}
       <div className="grid grid-cols-3 gap-1.5">
         {STATUS_UPDATE_OPTIONS.map((opt) => {
           const isSelected = statusPick === opt.value;
@@ -94,7 +93,6 @@ export const TicketStatusUpdatePanel = ({
         })}
       </div>
 
-      {/* Remark Input */}
       <textarea
         value={statusRemark}
         onChange={(e) => onRemarkChange(e.target.value)}
@@ -103,7 +101,6 @@ export const TicketStatusUpdatePanel = ({
         className="w-full px-3 py-2 text-xs bg-surface border border-border/80 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-500 text-text placeholder:text-text-muted/60 resize-none transition-all"
       />
 
-      {/* Attached Photo Thumbnails */}
       {statusPhotos.length > 0 && (
         <div className="flex flex-wrap gap-2">
           {statusPhotos.map((file, index) => (
@@ -117,7 +114,6 @@ export const TicketStatusUpdatePanel = ({
         </div>
       )}
 
-      {/* Submit Error Callout */}
       {submitErrorMessage && (
         <div className="flex items-center gap-2 p-2 rounded-md bg-danger/10 border border-danger/20 text-danger text-xs font-medium">
           <AlertCircle size={14} className="shrink-0" />
@@ -125,7 +121,6 @@ export const TicketStatusUpdatePanel = ({
         </div>
       )}
 
-      {/* Upload Controls & Submit */}
       <div className="flex items-center justify-between gap-2 flex-wrap pt-0.5">
         <div className="flex items-center gap-2">
           <label className="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1.5 rounded-md border border-primary-500/40 text-primary-500 bg-primary-500/5 hover:bg-primary-500/10 cursor-pointer transition-colors focus-within:ring-2 focus-within:ring-primary-500/40">

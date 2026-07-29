@@ -3,11 +3,13 @@ import { useAuth } from '../../context/AuthContext';
 import { useTicketsQuery, useDepartmentsQuery } from '../tickets/hook';
 import { useTasksQuery, useComplianceReportQuery } from '../tasks/hook';
 import { useUsersQuery } from '../admin/hook';
+import { useUpcomingEventsQuery } from '../events/hook';
 import { DashboardHeader } from './DashboardHeader';
 import { DashboardOverview } from './DashboardOverview';
 import { DepartmentBreakdown, type DepartmentRow } from './DepartmentBreakdown';
 import { UserBreakdown, type UserRow } from './UserBreakdown';
 import { RecentActivity } from './RecentActivity';
+import { UpcomingEvents } from './UpcomingEvents';
 import { type FeedItem, lastMonths, countInMonth, trendFrom, pointDelta } from './dashboardDisplay';
 
 export const HomePage = () => {
@@ -18,6 +20,7 @@ export const HomePage = () => {
   const { data: departments } = useDepartmentsQuery();
   const { data: users } = useUsersQuery(isAdmin);
   const { data: complianceRows } = useComplianceReportQuery('month');
+  const { data: upcomingEvents, isPending: eventsPending } = useUpcomingEventsQuery(5);
 
   const tickets = ticketPage?.data ?? [];
   const isPending = ticketsPending || tasksPending;
@@ -127,7 +130,10 @@ export const HomePage = () => {
         </div>
       )}
 
-      <RecentActivity feed={feed} isPending={isPending} />
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <RecentActivity feed={feed} isPending={isPending} />
+        <UpcomingEvents events={upcomingEvents ?? []} isPending={eventsPending} />
+      </div>
     </div>
   );
 };

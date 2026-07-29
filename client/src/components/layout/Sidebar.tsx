@@ -10,12 +10,14 @@ import {
   ShieldCheck,
   ClipboardCheck,
   ShieldQuestion,
+  CalendarClock,
 } from 'lucide-react';
 
 const NAV = [
   { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
   { to: '/tasks', icon: CheckSquare, label: 'Tasks' },
   { to: '/tickets', icon: TicketCheck, label: 'Tickets' },
+  { to: '/events', icon: CalendarClock, label: 'Events' },
   { to: '/checklists', icon: ClipboardCheck, label: 'My Checklists' },
   { to: '/projects', icon: FolderKanban, label: 'Projects' },
   { to: '/calendar', icon: Calendar, label: 'Calendar' },

@@ -1,12 +1,14 @@
 import { useState } from 'react';
-import { Plus, AlertCircle, Repeat } from 'lucide-react';
+import { Plus, AlertCircle, Repeat, FileDown } from 'lucide-react';
 import { Button, Skeleton } from '../../../components';
 import { useChecklistDefinitionsQuery, useDepartmentsQuery } from '../hook';
 import { ChecklistDefinitionForm } from './ChecklistDefinitionForm';
 import { ChecklistDefinitionRow } from './ChecklistDefinitionRow';
+import { ExportDialog } from '../../reports';
 
 export const ChecklistDefinitionList = () => {
   const [showForm, setShowForm] = useState(false);
+  const [showExport, setShowExport] = useState(false);
   const { data: definitions = [], isPending, isError } = useChecklistDefinitionsQuery();
   const { data: departments = [] } = useDepartmentsQuery();
 
@@ -26,10 +28,20 @@ export const ChecklistDefinitionList = () => {
             </p>
           </div>
         </div>
-        <Button size="sm" variant="primary" className="gap-1.5" onClick={() => setShowForm(true)}>
-          <Plus size={14} />
-          New Checklist
-        </Button>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setShowExport(true)}
+            className="inline-flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-display font-medium rounded-full border border-border/60 text-text-secondary hover:bg-surface-hover hover:text-text transition-all duration-200 cursor-pointer"
+          >
+            <FileDown size={14} />
+            <span className="tracking-wide">Export</span>
+          </button>
+          <Button size="sm" variant="primary" className="gap-1.5" onClick={() => setShowForm(true)}>
+            <Plus size={14} />
+            New Checklist
+          </Button>
+        </div>
       </div>
 
       {isPending && (
@@ -66,6 +78,14 @@ export const ChecklistDefinitionList = () => {
       )}
 
       {showForm && <ChecklistDefinitionForm onClose={() => setShowForm(false)} />}
+      {showExport && (
+        <ExportDialog
+          reportModule="checklists"
+          title="Export Checklists"
+          description="Every recurring checklist instance generated in the selected period — completion progress per instance."
+          onClose={() => setShowExport(false)}
+        />
+      )}
     </div>
   );
 };

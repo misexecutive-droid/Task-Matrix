@@ -21,6 +21,7 @@ import { VerificationQueue } from './features/verification';
 import { MyErrorBoundary, NotFoundPage } from './components/error';
 import { CategoryList, SettingsLayout } from './features/settings';
 import { ReportsPage } from './features/reports';
+import { EventList } from './features/events';
 
 const ProtectedRoute = () => {
   const { token } = useAuth();
@@ -79,6 +80,7 @@ const router = createBrowserRouter([
           ] },
           { path: '/tickets', element: <TicketList /> },
           { path: '/tasks', element: <TaskList /> },
+          { path: '/events', element: <EventList /> },
           { path: '/checklists', element: <MyChecklists /> },
           { path: '/checklists/:instanceId', element: <ChecklistInstanceDetail /> },
           { path: '/dashboard', element: <Navigate to="/" replace /> },
