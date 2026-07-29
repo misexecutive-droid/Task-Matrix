@@ -81,7 +81,7 @@ export type TicketAttachment = {
   sizeBytes:        number;
   captureMethod:    CaptureMethod;
   ticketId:         string;
-  uploadedBy:       string;
+  uploadedBy:       { id: string; email: string; firstName: string; role: string } | null;
   createdAt:        string;
 };
 

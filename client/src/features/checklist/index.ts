@@ -1,4 +1,4 @@
-export { ChecklistDefinitionList } from './ChecklistDefinitionList';
-export { ChecklistDefinitionDetail } from './ChecklistDefinitionDetail';
-export { MyChecklists } from './MyChecklists';
-export { ChecklistInstanceDetail } from './ChecklistInstanceDetail';
+export { ChecklistDefinitionList } from './definition/ChecklistDefinitionList';
+export { ChecklistDefinitionDetail } from './definition/ChecklistDefinitionDetail';
+export { MyChecklists } from './instance/MyChecklists';
+export { ChecklistInstanceDetail } from './instance/ChecklistInstanceDetail';

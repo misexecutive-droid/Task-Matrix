@@ -2,7 +2,7 @@ import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Tag } from 'lucide-react';
-import { Input, Button } from '../../components';
+import { Input, Button, UserMultiSelect } from '../../components';
 import {
   Dialog,
   DialogContent,
@@ -17,7 +17,6 @@ import {
   SelectContent,
   SelectItem,
 } from '@/components/ui/select';
-import { AssigneeMultiSelect } from '../checklist/AssigneeMultiSelect';
 import { useCreateCategoryMutation, useUpdateCategoryMutation, useDepartmentsQuery } from './hook';
 import type { Category } from '@/api/categories';
 
@@ -136,7 +135,7 @@ export const CategoryForm = ({ onClose, category }: CategoryFormProps) => {
               control={control}
               name="assigneeIds"
               render={({ field }) => (
-                <AssigneeMultiSelect
+                <UserMultiSelect
                   departmentId={departmentId || undefined}
                   selected={field.value ?? []}
                   onChange={field.onChange}

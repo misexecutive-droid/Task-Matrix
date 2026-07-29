@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Plus, AlertCircle, Repeat } from 'lucide-react';
-import { Button, Skeleton } from '../../components';
-import { useChecklistDefinitionsQuery, useDepartmentsQuery } from './hook';
+import { Button, Skeleton } from '../../../components';
+import { useChecklistDefinitionsQuery, useDepartmentsQuery } from '../hook';
 import { ChecklistDefinitionForm } from './ChecklistDefinitionForm';
 import { ChecklistDefinitionRow } from './ChecklistDefinitionRow';
 

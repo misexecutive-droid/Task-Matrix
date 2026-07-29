@@ -1,6 +1,6 @@
 import { Link } from 'react-router';
-import { formatDateShort } from './checklistDisplay';
-import type { ChecklistInstance } from '../../api/checklistInstances';
+import { formatDateShort } from '../checklistDisplay';
+import type { ChecklistInstance } from '../../../api/checklistInstances';
 
 interface ChecklistInstanceCardProps {
   instance: ChecklistInstance;

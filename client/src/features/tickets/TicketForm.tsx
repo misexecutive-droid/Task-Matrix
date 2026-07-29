@@ -1,23 +1,11 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useEffect, useRef, useState } from 'react';
-import { z } from 'zod';
+import { useEffect, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { motion, AnimatePresence } from 'framer-motion';
-import {
-  Ticket,
-  Zap,
-  User,
-  Building2,
-  UserCheck,
-  AlertCircle,
-  Sparkles,
-  UploadCloud,
-  X,
-} from 'lucide-react';
+import { Ticket, AlertCircle } from 'lucide-react';
 
-import { Input, Button } from '../../components';
+import { Button } from '../../components';
 import {
   Dialog,
   DialogContent,
@@ -25,59 +13,21 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog';
-import {
-  Select,
-  SelectTrigger,
-  SelectValue,
-  SelectContent,
-  SelectItem,
-} from '@/components/ui/select';
 import { useCreateTicketMutation, useAssignableUsersQuery, useDepartmentsQuery } from './hook';
 import { useCategoriesQuery } from '../settings/hook';
 import { ticketApi } from '../../api/ticket';
-
-const ANY_DEPARTMENT = '__any__';
-const UNASSIGNED = '__unassigned__';
-const NO_CATEGORY = '__none__';
-
-const ticketSchema = z.object({
-  title: z.string().min(1, 'Title is required'),
-  description: z.string().min(1, 'Description is required'),
-  priority: z.enum(['LOW', 'MEDIUM', 'HIGH', 'CRITICAL']),
-  assignmentMode: z.enum(['AUTO', 'MANUAL']),
-  categoryId: z.string().optional().or(z.literal('')),
-  departmentId: z.string().optional().or(z.literal('')),
-  assigneeId: z.string().optional().or(z.literal('')),
-  dueDate: z.string().optional().or(z.literal('')),
-  dueTime: z.string().optional().or(z.literal('')),
-}).refine(
-  (data) => data.assignmentMode !== 'MANUAL' || (!!data.dueDate && !!data.dueTime),
-  { message: 'Pick a due date and time', path: ['dueDate'] },
-).refine(
-  (data) => {
-    if (data.assignmentMode !== 'MANUAL' || !data.dueDate || !data.dueTime) return true;
-    return new Date(`${data.dueDate}T${data.dueTime}`).getTime() > Date.now();
-  },
-  { message: 'Due date/time must be in the future', path: ['dueTime'] },
-)
-
-
-type TicketFields = z.infer<typeof ticketSchema>;
+import { ticketSchema, type TicketFields } from './form/ticketFormSchema';
+import { AssignmentModeToggle } from './form/AssignmentModeToggle';
+import { CategoryField } from './form/CategoryField';
+import { TicketDetailsFields } from './form/TicketDetailsFields';
+import { PhotoUploadField } from './form/PhotoUploadField';
+import { PriorityField } from './form/PriorityField';
+import { DepartmentAssigneeFields } from './form/DepartmentAssigneeFields';
+import { DueDateField } from './form/DueDateField';
 
 interface TicketFormProps {
   onClose: () => void;
 }
-
-const PRIORITIES: { value: TicketFields['priority']; label: string; activeClass: string }[] = [
-  { value: 'LOW', label: 'Low', activeClass: 'border-blue-500/60 bg-blue-500/10 text-blue-400 ring-2 ring-blue-500/20' },
-  { value: 'MEDIUM', label: 'Medium', activeClass: 'border-amber-500/60 bg-amber-500/10 text-amber-400 ring-2 ring-amber-500/20' },
-  { value: 'HIGH', label: 'High', activeClass: 'border-orange-500/60 bg-orange-500/10 text-orange-400 ring-2 ring-orange-500/20' },
-  { value: 'CRITICAL', label: 'Critical', activeClass: 'border-rose-500/60 bg-rose-500/10 text-rose-400 ring-2 ring-rose-500/20' },
-];
-
-const LABEL_CLASS = 'text-xs font-display font-medium text-text-secondary uppercase tracking-wider flex items-center gap-1.5';
-const SELECT_CLASS = 'w-full px-3 h-10 text-base sm:text-sm font-display bg-surface text-text rounded-md border border-border focus:outline-none focus:ring-2 focus:ring-primary-500/30 transition-all cursor-pointer hover:border-border/80';
-const SELECT_CLASS_DISABLED = `${SELECT_CLASS} disabled:opacity-50 disabled:cursor-not-allowed`;
 
 export const TicketForm = ({ onClose }: TicketFormProps) => {
   const { data: departments } = useDepartmentsQuery();
@@ -86,12 +36,11 @@ export const TicketForm = ({ onClose }: TicketFormProps) => {
   const queryClient = useQueryClient();
 
   const [photos, setPhotos] = useState<File[]>([]);
-  const fileInputRef = useRef<HTMLInputElement | null>(null);
-
   const addPhotos = (files: FileList | null) => {
     if (!files || !files.length) return;
     setPhotos(prev => [...prev, ...Array.from(files)]);
   };
+  const removePhoto = (index: number) => setPhotos(prev => prev.filter((_, idx) => idx !== index));
 
   const {
     register,
@@ -166,7 +115,7 @@ export const TicketForm = ({ onClose }: TicketFormProps) => {
 
   return (
     <Dialog open onOpenChange={v => { if (!v) onClose(); }}>
-     
+
       <DialogContent
         className="
           left-0 right-0 top-auto bottom-0 translate-x-0 translate-y-0 w-full max-w-full
@@ -207,246 +156,36 @@ export const TicketForm = ({ onClose }: TicketFormProps) => {
         <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col flex-1 min-h-0" noValidate>
           <div className="flex flex-col gap-5 sm:gap-6 px-5 sm:px-7 py-5 sm:py-6 overflow-y-auto flex-1 min-h-0 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
 
-             {/* Assignment Mode Toggle   */}
-            <div className="flex flex-col gap-2">
-              <label className={LABEL_CLASS}>Assignment Strategy</label>
-              <div className="grid grid-cols-2 gap-1.5 p-1.5 bg-surface-muted/50 border border-border/50 rounded-lg">
-                <button
-                  type="button"
-                  onClick={() => setValue('assignmentMode', 'MANUAL')}
-                  className={`flex items-center justify-center gap-1.5 sm:gap-2 py-3 sm:py-2.5 px-1 text-xs font-display font-medium rounded-md transition-all text-center ${assignmentMode === 'MANUAL'
-                      ? 'bg-surface text-text shadow-sm border border-border/80'
-                      : 'text-text-muted hover:text-text'
-                    }`}
-                >
-                  <User className="w-3.5 h-3.5 shrink-0" /> <span className="truncate">Manual Dispatch</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setValue('assignmentMode', 'AUTO')}
-                  className={`flex items-center justify-center gap-1.5 sm:gap-2 py-3 sm:py-2.5 px-1 text-xs font-display font-medium rounded-md transition-all text-center ${assignmentMode === 'AUTO'
-                      ? 'bg-primary-500/15 text-primary-400 border border-primary-500/30 shadow-sm'
-                      : 'text-text-muted hover:text-text'
-                    }`}
-                >
-                  <Zap className="w-3.5 h-3.5 text-primary-400 shrink-0" /> <span className="truncate">Auto Assign</span>
-                </button>
-              </div>
-            </div>
+            <AssignmentModeToggle mode={assignmentMode} onChange={m => setValue('assignmentMode', m)} />
 
-            {/* Category Selector — picking one auto-fills department, default assignee, and TAT below */}
-            <div className="flex flex-col gap-2">
-              <label className={LABEL_CLASS}>
-                <Sparkles className="w-3.5 h-3.5" /> Category
-              </label>
-              <Select
-                value={categoryId || NO_CATEGORY}
-                onValueChange={v => setValue('categoryId', v === NO_CATEGORY ? '' : v)}
-              >
-                <SelectTrigger className={SELECT_CLASS}>
-                  <SelectValue placeholder="No category" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={NO_CATEGORY} className="font-display text-xs">No category</SelectItem>
-                  {categories?.map(c => (
-                    <SelectItem key={c.id} value={c.id} className="font-display text-xs">{c.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Title Input */}
-            <Input
-              id="title"
-              label="Title"
-              placeholder="e.g. Fix authentication timeout on mobile"
-              error={errors.title?.message}
-              className="font-display"
-              {...register('title')}
+            <CategoryField
+              categoryId={categoryId}
+              onChange={v => setValue('categoryId', v)}
+              categories={categories}
             />
 
-            <div className="flex flex-col gap-2">
-              <label htmlFor="description" className={LABEL_CLASS}>
-                Description
-              </label>
-              <textarea
-                id="description"
-                rows={3}
-                placeholder="Describe the issue or expectations…"
-                className="w-full px-3 py-2.5 text-base sm:text-sm font-display bg-surface text-text rounded-md border border-border focus:outline-none focus:ring-2 focus:ring-primary-500/30 placeholder:text-text-muted/60 resize-none transition-all hover:border-border/80"
-                {...register('description')}
-              />
-              {errors.description && (
-                <p className="text-xs text-rose-500 flex items-center gap-1 font-display">
-                  <AlertCircle className="w-3 h-3" /> {errors.description.message}
-                </p>
-              )}
-            </div>
+            <TicketDetailsFields register={register} errors={errors} />
 
-            {/* Photos — attach a picture of the issue right away, instead of having to reopen the
-              ticket afterward. Uploaded via the existing ticket-attachments endpoint once the
-              ticket itself has been created (see onSubmit above). */}
-            <div className="flex flex-col gap-2">
-              <label className={LABEL_CLASS}>Photos (optional)</label>
-              <div
-                onClick={() => fileInputRef.current?.click()}
-                className="group border border-dashed border-border/80 hover:border-primary-500/50 bg-surface/40 hover:bg-primary-500/5 p-4 rounded-xl flex flex-col items-center justify-center cursor-pointer transition-all duration-200"
-              >
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  multiple
-                  className="hidden"
-                  onChange={e => { addPhotos(e.target.files); e.target.value = ''; }}
-                />
-                <div className="p-2 rounded-full bg-surface-muted group-hover:bg-primary-500/10 text-text-muted group-hover:text-primary-500 transition-colors mb-1.5">
-                  <UploadCloud className="w-4.5 h-4.5" />
-                </div>
-                <p className="text-xs font-medium text-text group-hover:text-primary-500 transition-colors">
-                  Click to attach a picture of the issue
-                </p>
-                <p className="text-[10px] text-text-muted mt-0.5">PNG, JPG, WEBP up to 10MB</p>
-              </div>
+            <PhotoUploadField photos={photos} onAddPhotos={addPhotos} onRemovePhoto={removePhoto} />
 
-              {photos.length > 0 && (
-                <div className="flex flex-wrap gap-2">
-                  {photos.map((file, i) => (
-                    <div key={i} className="relative size-16 rounded-lg border border-border overflow-hidden">
-                      <img src={URL.createObjectURL(file)} alt="" className="w-full h-full object-cover" />
-                      <button
-                        type="button"
-                        onClick={() => setPhotos(prev => prev.filter((_, idx) => idx !== i))}
-                        className="absolute -top-1 -right-1 size-4 rounded-full bg-surface border border-border flex items-center justify-center text-text-muted hover:text-danger cursor-pointer"
-                        aria-label="Remove photo"
-                      >
-                        <X size={10} />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
+            <PriorityField value={priority} onChange={v => setValue('priority', v)} />
 
-            {/* Priority Selector */}
-            <div className="flex flex-col gap-2">
-              <label className={LABEL_CLASS}>Priority Level</label>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-2.5">
-                {PRIORITIES.map((p) => {
-                  const isSelected = priority === p.value;
-                  return (
-                    <button
-                      key={p.value}
-                      type="button"
-                      onClick={() => setValue('priority', p.value)}
-                      className={`px-2 py-3 sm:py-2.5 text-xs font-display font-medium rounded-md border transition-all duration-200 text-center ${isSelected
-                          ? p.activeClass
-                          : 'border-border/60 bg-surface/50 text-text-muted hover:bg-surface/80 hover:text-text'
-                        }`}
-                    >
-                      {p.label}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
+            <DepartmentAssigneeFields
+              departmentId={departmentId}
+              onDepartmentChange={v => setValue('departmentId', v)}
+              departments={departments}
+              assigneeId={assigneeId}
+              onAssigneeChange={v => setValue('assigneeId', v)}
+              assignableUsers={assignableUsers}
+              locked={!!selectedCategory}
+            />
 
-           
-
-            {/* Department & Assignee Fields */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="flex flex-col gap-2">
-                <label className={LABEL_CLASS}>
-                  <Building2 className="w-3.5 h-3.5" /> Department
-                </label>
-                <Select
-                  value={departmentId || ANY_DEPARTMENT}
-                  onValueChange={v => setValue('departmentId', v === ANY_DEPARTMENT ? '' : v)}
-                  disabled={!!selectedCategory}
-                >
-                  <SelectTrigger className={SELECT_CLASS_DISABLED}>
-                    <SelectValue placeholder="Any department" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value={ANY_DEPARTMENT} className="font-display text-xs">Any department</SelectItem>
-                    {departments?.map(d => (
-                      <SelectItem key={d.id} value={d.id} className="font-display text-xs">{d.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="flex flex-col gap-2">
-                <label className={LABEL_CLASS}>
-                  <UserCheck className="w-3.5 h-3.5" /> Assignee
-                </label>
-                <Select
-                  value={assigneeId || UNASSIGNED}
-                  onValueChange={v => setValue('assigneeId', v === UNASSIGNED ? '' : v)}
-                  disabled={!!selectedCategory}
-                >
-                  <SelectTrigger className={SELECT_CLASS_DISABLED}>
-                    <SelectValue placeholder="Unassigned" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value={UNASSIGNED} className="font-display text-xs">Unassigned</SelectItem>
-                    {assignableUsers?.map(u => (
-                      <SelectItem key={u.id} value={u.id} className="font-display text-xs">
-                        {u.firstName} {u.lastName ?? ''} ({u.role})
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            {/* TAT Dynamic Field with Animated Height */}
-            <AnimatePresence mode="wait">
-              {assignmentMode === 'MANUAL' ? (
-                <motion.div
-                  key="manual-tat"
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: 'auto' }}
-                  exit={{ opacity: 0, height: 0 }}
-                  transition={{ duration: 0.15 }}
-                  className="grid grid-cols-2 gap-3"
-                >
-                  <Input
-                    id="dueDate"
-                    label="Due date"
-                    type="date"
-                    min={new Date().toISOString().slice(0, 10)}
-                    error={errors.dueDate?.message}
-                    className="font-display"
-                    {...register('dueDate')}
-                  />
-                  <Input
-                    id="dueTime"
-                    label="Due time"
-                    type="time"
-                    error={errors.dueTime?.message}
-                    className="font-display"
-                    {...register('dueTime')}
-                  />
-                </motion.div>
-              ) : (
-                <motion.div
-                  key="auto-tat"
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: 'auto' }}
-                  exit={{ opacity: 0, height: 0 }}
-                  transition={{ duration: 0.15 }}
-                  className="p-3 rounded-md bg-primary-500/5 border border-primary-500/20 text-xs text-primary-400 font-display flex items-center gap-2.5"
-                >
-                  <Sparkles className="w-4 h-4 shrink-0 text-primary-400" />
-                  <span>
-                    Auto-assigned tickets are given a default TAT of{' '}
-                    <strong>{selectedCategory?.tatHours ?? 24} hours</strong>
-                    {selectedCategory?.tatHours ? ' (from this category)' : ''}.
-                  </span>
-                </motion.div>
-              )}
-            </AnimatePresence>
+            <DueDateField
+              mode={assignmentMode}
+              register={register}
+              errors={errors}
+              categoryTatHours={selectedCategory?.tatHours}
+            />
 
             {/* Global Mutation Error */}
             {mutation.isError && (

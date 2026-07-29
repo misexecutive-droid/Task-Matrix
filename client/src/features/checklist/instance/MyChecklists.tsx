@@ -1,10 +1,10 @@
 import { AlertCircle, ClipboardCheck } from 'lucide-react';
-import { Skeleton } from '../../components';
-import { useMyChecklistInstancesQuery } from './hook';
+import { Skeleton } from '../../../components';
+import { useMyChecklistInstancesQuery } from '../hook';
 import { ChecklistInstanceCard } from './ChecklistInstanceCard';
-import { RECURRENCE_LABEL } from './checklistDisplay';
-import type { ChecklistInstance } from '../../api/checklistInstances';
-import type { ChecklistRecurrence } from '../../api/checklistDefinitions';
+import { RECURRENCE_LABEL } from '../checklistDisplay';
+import type { ChecklistInstance } from '../../../api/checklistInstances';
+import type { ChecklistRecurrence } from '../../../api/checklistDefinitions';
 
 export const MyChecklists = () => {
   const { data: instances = [], isPending, isError } = useMyChecklistInstancesQuery();

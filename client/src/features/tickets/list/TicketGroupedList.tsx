@@ -61,7 +61,6 @@ export const TicketGroupedList = ({
   onSelectTicket,
   departmentNames,
 }: TicketGroupedListProps) => {
-  // Compute global starting offsets per group deterministically without render side-effects
   const groupOffsets = useMemo(() => {
     let count = 0;
     return groups.map((group) => {

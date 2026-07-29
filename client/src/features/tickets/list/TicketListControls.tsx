@@ -16,7 +16,6 @@ export const TicketListControls = ({
   statusFilter,
   onStatusFilterChange,
 }: TicketListControlsProps) => {
-  // Memoize dropdown items to keep reference identity stable across parent renders
   const statusFilterActions: DropdownAction[] = useMemo(
     () =>
       STATUS_FILTERS.map((f) => ({

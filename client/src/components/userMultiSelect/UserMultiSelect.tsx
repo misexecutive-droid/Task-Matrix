@@ -1,7 +1,7 @@
 import { Loader2 } from 'lucide-react';
-import { useAssignableUsersQuery } from './hook';
+import { useAssignableUsersQuery } from '../../features/tickets/hook';
 
-interface AssigneeMultiSelectProps {
+interface UserMultiSelectProps {
   departmentId?: string;
   selected: string[];
   onChange: (ids: string[]) => void;
@@ -10,7 +10,7 @@ interface AssigneeMultiSelectProps {
 // Picks specific users within a department — shadcn's Select is single-value only, so this is a
 // small bordered checkbox-list instead. Disabled until a department is chosen since assignable
 // users are scoped server-side by departmentId.
-export const AssigneeMultiSelect = ({ departmentId, selected, onChange }: AssigneeMultiSelectProps) => {
+export const UserMultiSelect = ({ departmentId, selected, onChange }: UserMultiSelectProps) => {
   const { data: users, isLoading } = useAssignableUsersQuery(departmentId);
 
   const toggle = (id: string) => {

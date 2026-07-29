@@ -3,7 +3,7 @@ import { useId, useRef, useState } from 'react';
 export interface TrendSeries {
   key: string;
   label: string;
-  color: string; // any valid CSS color (hex, var(...), etc.)
+  color: string;
   values: number[];
   unit?: string;
 }

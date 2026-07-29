@@ -1,8 +1,8 @@
 import { Link } from 'react-router';
 import { Repeat, Users, Pause, Play, Trash2, Loader2, ChevronRight } from 'lucide-react';
-import { useDeleteChecklistDefinitionMutation, useSetChecklistDefinitionActiveMutation } from './hook';
-import { RECURRENCE_LABEL } from './checklistDisplay';
-import type { ChecklistDefinition } from '../../api/checklistDefinitions';
+import { useDeleteChecklistDefinitionMutation, useSetChecklistDefinitionActiveMutation } from '../hook';
+import { RECURRENCE_LABEL } from '../checklistDisplay';
+import type { ChecklistDefinition } from '../../../api/checklistDefinitions';
 
 interface ChecklistDefinitionRowProps {
   definition: ChecklistDefinition;

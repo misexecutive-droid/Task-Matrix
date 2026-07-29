@@ -1,9 +1,9 @@
 import { useParams, useNavigate } from 'react-router';
 import { ArrowLeft, AlertCircle, Repeat, Users, Calendar } from 'lucide-react';
-import { Skeleton } from '../../components';
-import { useChecklistDefinitionQuery, useInstancesForDefinitionQuery, useDepartmentsQuery } from './hook';
-import { ChecklistInstanceRow } from './ChecklistInstanceRow';
-import { formatDate } from './checklistDisplay';
+import { Skeleton } from '../../../components';
+import { useChecklistDefinitionQuery, useInstancesForDefinitionQuery, useDepartmentsQuery } from '../hook';
+import { ChecklistInstanceRow } from '../instance/ChecklistInstanceRow';
+import { formatDate } from '../checklistDisplay';
 
 export const ChecklistDefinitionDetail = () => {
   const { definitionId = '' } = useParams();

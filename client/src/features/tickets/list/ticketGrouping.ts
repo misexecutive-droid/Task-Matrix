@@ -1,7 +1,6 @@
 import type { Ticket } from '../../../api/ticket';
 
-// Groups tickets by departmentId, sorted alphabetically by department name with
-// "No department" always last.
+
 export const groupByDepartment = (tickets: Ticket[], departmentNames: Map<string, string>) => {
   const groups = new Map<string, { departmentId: string | null; departmentName: string; tickets: Ticket[] }>();
 
