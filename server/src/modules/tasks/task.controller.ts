@@ -1,6 +1,6 @@
 import type { Request , Response } from "express" // Express's types for the incoming request and outgoing response
 import { taskService } from "./task.service.js" // the layer that actually talks to the database
-import { createTaskSchema , updateTaskSchema, verifyTaskSchema } from "./task.validation.js" // zod schemas used to validate/parse incoming request bodies
+import { createTaskSchema , updateTaskSchema, verifyTaskSchema, complianceReportQuerySchema } from "./task.validation.js" // zod schemas used to validate/parse incoming request bodies
 import { asyncHandler } from "../../utils/asyncHandler.js" // wraps async route handlers so thrown errors get passed to Express's error handling instead of crashing the app
 
 // the controller layer: turns HTTP requests into calls to the service layer, and turns the service's results back into HTTP responses.
@@ -48,5 +48,17 @@ export const taskController = {
     remove : asyncHandler(async (req : Request , res : Response) => {
         await taskService.remove(req.params.id , req.user!)
         res.json({ success : true}) // no data to return, just confirm success
-    })
+    }),
+
+    // GET /tasks/reports/compliance - checklist completion rate over time.
+    // ADMIN/PC get the org-wide view (optionally narrowed to one department via ?departmentId=);
+    // everyone else is forced to their own tasks (as owner or assignee) regardless of query params.
+    complianceReport : asyncHandler(async (req : Request , res : Response) => {
+        const query = complianceReportQuerySchema.parse(req.query);
+        const isPrivileged = req.user!.role === "ADMIN" || req.user!.role === "PC";
+        const departmentId = isPrivileged ? query.departmentId : undefined;
+        const userId = isPrivileged ? undefined : req.user!.sub;
+        const data = await taskService.complianceReport(query.groupBy, departmentId, query.from, query.to, userId);
+        res.json({ success : true, data })
+    }),
 }

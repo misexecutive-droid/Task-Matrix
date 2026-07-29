@@ -119,7 +119,7 @@ export const taskService = {
         return task;
     },
 
-    async complianceReport(groupBy: "hour" | "day" | "week" | "month", departmentId?: string, from?: string, to?: string) {
+    async complianceReport(groupBy: "hour" | "day" | "week" | "month", departmentId?: string, from?: string, to?: string, userId?: string) {
         const DATE_FORMATS: Record<"hour" | "day" | "week" | "month", string> = {
             hour: '%Y-%m-%dT%H:00',
             day: '%Y-%m-%d',
@@ -141,6 +141,14 @@ export const taskService = {
             { $lookup: { from: "tasks", localField: "checklist.taskId", foreignField: "_id", as: "task" } },
             { $unwind: "$task" },
             ...(departmentId ? [{ $match: { "task.departmentId": new Types.ObjectId(departmentId) } }] : []),
+            ...(userId ? [{
+                $match: {
+                    $or: [
+                        { "task.userId": new Types.ObjectId(userId) },
+                        { "task.assigneeId": new Types.ObjectId(userId) },
+                    ],
+                },
+            }] : []),
             { $lookup: { from: "taskimages", localField: "_id", foreignField: "taskChecklistItemId", as: "images" } },
             {
                 $addFields: {
