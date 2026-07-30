@@ -26,29 +26,39 @@ import { notificationRouter } from "./modules/notifications/notification.routes.
 import { settingsRouter } from "./modules/settings/settings.routes.js"
 import { reportRouter } from "./modules/reports/report.routes.js"
 import { eventRouter } from "./modules/events/event.routes.js"
+import { createApiLimiter, createAuthLimiter } from "./middleware/rateLimiter/rateLimiter.js"
+import helmet from "helmet"
+import compression from "compression"
+import type { Store } from "express-rate-limit"
+
 
 class App {
     public app: Application;
 
-    constructor() {
+    constructor(rateLimitStore? : Store) {
         this.app = express()
-        this.initMiddlewares()
-        this.initRoutes()
+        this.initMiddlewares(rateLimitStore)
+        this.initRoutes(rateLimitStore)
         this.initErrorHandling()
     }
 
-    private initMiddlewares(): void {
+    private initMiddlewares(rateLimitStore?:Store): void {
+        this.app.use(helmet({
+            crossOriginResourcePolicy : { policy : "cross-origin"} // needed so /uploads images still load cross-origin
+        }))
+        this.app.use(compression())
         this.app.use(cors({ origin: env.CLIENT_URL, credentials: true }))
         this.app.use(express.json())
         this.app.use(cookieParser())
         this.app.set("etag", false)
         if (env.NODE_ENV != 'test') this.app.use(morgan('dev'))
+        this.app.use(createApiLimiter(rateLimitStore))
         this.app.use('/uploads', express.static(path.resolve('uploads')))
     }
 
-    private initRoutes(): void {
+    private initRoutes(rateLimitStore?: Store): void {
         this.app.get('/health', (_req: Request, res: Response) => res.json({ status: 'ok' }));
-        this.app.use('/auth', authRouter);
+        this.app.use('/auth', createAuthLimiter(rateLimitStore), authRouter);
         this.app.use('/users', userRouter);
         this.app.use('/stores', StoreRouter);
         this.app.use('/departments', departmentRouter);

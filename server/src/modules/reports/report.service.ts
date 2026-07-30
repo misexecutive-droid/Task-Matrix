@@ -63,69 +63,73 @@ export const REPORT_COLUMNS: Record<ReportModule, CsvColumn[]> = {
     checklists: CHECKLIST_COLUMNS,
 };
 
+
 export const reportService = {
-    // Every ticket created within [from, to] — admin-only export, so no RBAC visibility filter
-    // is applied (mirrors ticketService.tatReport, which is also an ADMIN-gated, all-tickets view).
-    async ticketRows(from?: string, to?: string) {
-        const tickets: any[] = await Ticket.find(dateFilter("createdAt", from, to))
-            .populate({ path: "assignee", select: "firstName lastName" })
+    async *ticketRows(from?: string, to?: string) {
+        const cursor = Ticket.find(dateFilter("createAt", from, to))
+            .populate({ path: "assignee", select: "firstamNe lastName" })
             .populate({ path: "raisedBy", select: "firstName lastName" })
             .populate({ path: "departmentId", select: "name" })
             .sort({ createdAt: -1 })
-            .lean();
+            .lean()
+            .cursor();
 
-        return tickets.map((t) => ({
-            id: t._id.toString(),
-            title: t.title,
-            status: t.status,
-            priority: t.priority,
-            department: t.departmentId?.name ?? "",
-            assignee: fullName(t.assignee),
-            raisedBy: fullName(t.raisedBy),
-            createdAt: isoOrEmpty(t.createdAt),
-            closedAt: isoOrEmpty(t.closedAt),
-            tatHours: t.tatHours ?? "",
-            isOverdue: t.isOverdue ? "Yes" : "No",
-        }));
+        for await (const t of cursor as any) {
+            yield {
+                id: t._id.toSring(),
+                title: t.title,
+                status: t.status,
+                priority: t.priority,
+                department: t.departmentId?.name ?? "",
+                assignee: fullName(t.assignee),
+                raisedBy: fullName(t.raisedBy),
+                createAt: isoOrEmpty(t.createdAt),
+                tatHours: t.tatHours ?? "",
+                isOverdue: t.isOverdue ? "Yes" : "No",
+            }
+        }
     },
 
-    async taskRows(from?: string, to?: string) {
-        const tasks: any[] = await Task.find(dateFilter("createdAt", from, to))
+    async *taskRows(from?: string, to?: string) {
+        const cursor = Task.find(dateFilter("createdAt", from, to))
             .populate({ path: "assigneeId", select: "firstName lastName" })
             .populate({ path: "userId", select: "firstName lastName" })
             .populate({ path: "departmentId", select: "name" })
-            .sort({ createdAt: -1 })
-            .lean();
+            .sort({ createAt: -1 })
+            .lean()
+            .cursor()
 
-        return tasks.map((t) => ({
-            id: t._id.toString(),
-            title: t.title,
-            status: t.status,
-            priority: t.priority,
-            department: t.departmentId?.name ?? "",
-            assignee: fullName(t.assigneeId),
-            raisedBy: fullName(t.userId),
-            dueDate: isoOrEmpty(t.dueDate),
-            createdAt: isoOrEmpty(t.createdAt),
-        }));
+
+        for await (const t of cursor as any) {
+            yield {
+                id: t._id.toString(),
+                title: t.title,
+                status: t.status,
+                priority: t.priority,
+                department: t.departmentId?.name ?? "",
+                assignee: fullName(t.assigneeId),
+                raisedBy: fullName(t.userId),
+                dueDate: isoOrEmpty(t.dueDate),
+                createdAt: isoOrEmpty(t.createdAt)
+            }
+        }
     },
 
-    // Checklist INSTANCES (the actual occurrences), not definitions/templates — those are what a
-    // daily/weekly/monthly/quarterly/yearly report is actually about. "Completed" is derived the
-    // same way checklistInstanceService.isCompleted does: every item done, and at least one item.
-    async checklistRows(from?: string, to?: string) {
-        const instances: any[] = await ChecklistInstance.find(dateFilter("periodStart", from, to))
+    async *checklistRows(from?: string, to?: string) {
+        const cursor = ChecklistInstance.find(dateFilter("periodStart", from, to))
             .populate({ path: "departmentId", select: "name" })
             .populate({ path: "assigneeIds", select: "firstName lastName" })
             .populate({ path: "items" })
             .sort({ periodStart: -1 })
-            .lean();
+            .lean()
+            .cursor();
 
-        return instances.map((inst) => {
+        for await (const inst of cursor as any) {
             const items = inst.items ?? [];
             const itemsDone = items.filter((i: any) => i.isDone).length;
             const itemsTotal = items.length;
-            return {
+
+            yield {
                 id: inst._id.toString(),
                 title: inst.title,
                 recurrence: inst.recurrence,
@@ -135,14 +139,102 @@ export const reportService = {
                 periodEnd: isoOrEmpty(inst.periodEnd),
                 itemsDone,
                 itemsTotal,
-                isCompleted: itemsTotal > 0 && itemsDone === itemsTotal ? "Yes" : "No",
-            };
-        });
+                isCompleted: itemsTotal > 0 && itemsDone === itemsTotal ? "Yes" : "No"
+            }
+        }
     },
+
 };
 
-export const REPORT_ROW_FETCHERS: Record<ReportModule, (from?: string, to?: string) => Promise<Record<string, unknown>[]>> = {
+export const REPORT_ROW_STREAMS: Record<ReportModule, (from?: string, to?: string) => AsyncGenerator<Record<string, unknown>>> = {
     tickets: reportService.ticketRows,
     tasks: reportService.taskRows,
     checklists: reportService.checklistRows,
-};
+
+}
+
+// export const reportService = {
+//     // Every ticket created within [from, to] — admin-only export, so no RBAC visibility filter
+//     // is applied (mirrors ticketService.tatReport, which is also an ADMIN-gated, all-tickets view).
+//     async ticketRows(from?: string, to?: string) {
+//         const tickets: any[] = await Ticket.find(dateFilter("createdAt", from, to))
+//             .populate({ path: "assignee", select: "firstName lastName" })
+//             .populate({ path: "raisedBy", select: "firstName lastName" })
+//             .populate({ path: "departmentId", select: "name" })
+//             .sort({ createdAt: -1 })
+//             .lean();
+
+//         return tickets.map((t) => ({
+//             id: t._id.toString(),
+//             title: t.title,
+//             status: t.status,
+//             priority: t.priority,
+//             department: t.departmentId?.name ?? "",
+//             assignee: fullName(t.assignee),
+//             raisedBy: fullName(t.raisedBy),
+//             createdAt: isoOrEmpty(t.createdAt),
+//             closedAt: isoOrEmpty(t.closedAt),
+//             tatHours: t.tatHours ?? "",
+//             isOverdue: t.isOverdue ? "Yes" : "No",
+//         }));
+//     },
+
+//     async taskRows(from?: string, to?: string) {
+//         const tasks: any[] = await Task.find(dateFilter("createdAt", from, to))
+//             .populate({ path: "assigneeId", select: "firstName lastName" })
+//             .populate({ path: "userId", select: "firstName lastName" })
+//             .populate({ path: "departmentId", select: "name" })
+//             .sort({ createdAt: -1 })
+//             .lean();
+
+//         return tasks.map((t) => ({
+//             id: t._id.toString(),
+//             title: t.title,
+//             status: t.status,
+//             priority: t.priority,
+//             department: t.departmentId?.name ?? "",
+//             assignee: fullName(t.assigneeId),
+//             raisedBy: fullName(t.userId),
+//             dueDate: isoOrEmpty(t.dueDate),
+//             createdAt: isoOrEmpty(t.createdAt),
+//         }));
+//     },
+
+//     // Checklist INSTANCES (the actual occurrences), not definitions/templates — those are what a
+//     // daily/weekly/monthly/quarterly/yearly report is actually about. "Completed" is derived the
+//     // same way checklistInstanceService.isCompleted does: every item done, and at least one item.
+//     async checklistRows(from?: string, to?: string) {
+//         const instances: any[] = await ChecklistInstance.find(dateFilter("periodStart", from, to))
+//             .populate({ path: "departmentId", select: "name" })
+//             .populate({ path: "assigneeIds", select: "firstName lastName" })
+//             .populate({ path: "items" })
+//             .sort({ periodStart: -1 })
+//             .lean();
+
+//         return instances.map((inst) => {
+//             const items = inst.items ?? [];
+//             const itemsDone = items.filter((i: any) => i.isDone).length;
+//             const itemsTotal = items.length;
+//             return {
+//                 id: inst._id.toString(),
+//                 title: inst.title,
+//                 recurrence: inst.recurrence,
+//                 department: inst.departmentId?.name ?? "",
+//                 assignees: (inst.assigneeIds ?? []).map(fullName).join(", "),
+//                 periodStart: isoOrEmpty(inst.periodStart),
+//                 periodEnd: isoOrEmpty(inst.periodEnd),
+//                 itemsDone,
+//                 itemsTotal,
+//                 isCompleted: itemsTotal > 0 && itemsDone === itemsTotal ? "Yes" : "No",
+//             };
+//         });
+//     },
+// };
+
+// export const REPORT_ROW_FETCHERS: Record<ReportModule, (from?: string, to?: string) => Promise<Record<string, unknown>[]>> = {
+//     tickets: reportService.ticketRows,
+//     tasks: reportService.taskRows,
+//     checklists: reportService.checklistRows,
+// };
+
+
