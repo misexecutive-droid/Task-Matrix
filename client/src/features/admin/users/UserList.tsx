@@ -11,38 +11,18 @@ import {
 } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
+import type { AdminUser, Role } from '../../../api/admin';
+import {
+  useUsersQuery,
+  useDepartmentsQuery,
+  useUpdateUserMutation,
+  useDeleteUserMutation,
+} from '../hook';
 
 /** Utility for intelligent Tailwind class merging */
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
-
-// --- Types & Mocks ---
-export type Role = 'ADMIN' | 'MANAGER' | 'AGENT' | 'USER' | 'PC';
-
-export interface AdminUser {
-  id: string;
-  firstName: string;
-  lastName?: string | null;
-  email: string;
-  role: Role;
-  departmentId?: string | null;
-  isActive: boolean;
-}
-
-// Mocking hooks for standalone compilation
-const useUsersQuery = () => ({
-  data: [
-    { id: '1', firstName: 'Alice', lastName: 'Johnson', email: 'alice@example.com', role: 'ADMIN', departmentId: 'd1', isActive: true },
-    { id: '2', firstName: 'Bob', lastName: 'Smith', email: 'bob@example.com', role: 'MANAGER', departmentId: 'd1', isActive: true },
-    { id: '3', firstName: 'Charlie', lastName: 'Davis', email: 'charlie@example.com', role: 'AGENT', departmentId: null, isActive: false },
-  ] as AdminUser[],
-  isPending: false,
-  isError: false,
-});
-const useDepartmentsQuery = () => ({ data: [{ id: 'd1', name: 'Engineering' }] });
-const useUpdateUserMutation = () => ({ mutate: (data: any) => console.log('Update', data), isPending: false, variables: null as any });
-const useDeleteUserMutation = () => ({ mutate: (id: string) => console.log('Delete', id), isPending: false, variables: null as any });
 
 // Lazy-loaded modal chunk
 const UserForm = lazy(() =>

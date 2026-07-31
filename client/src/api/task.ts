@@ -73,7 +73,7 @@ export const taskApi = {
     delete: (id: string) =>
         apiFetch<{ success: boolean }>(`/tasks/${id}`, { method: 'DELETE' }),
 
-    getComplianceReport: (groupBy: 'hour' | 'day' | 'week' | 'month' = 'month', from?: string, to?: string) => {
+    getComplianceReport: (groupBy: 'hour' | 'day' | 'week' | 'month' | 'year' = 'month', from?: string, to?: string) => {
         const params = new URLSearchParams({ groupBy });
         if (from) params.set('from', from);
         if (to) params.set('to', to);

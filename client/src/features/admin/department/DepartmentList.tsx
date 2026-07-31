@@ -5,19 +5,12 @@ import { twMerge } from 'tailwind-merge';
 
 import type { Department } from "../../../api/departments";
 import { DepartmentCard } from "./DepartmentCard";
-
-const useDepartmentsQuery = () => ({
-  data: [
-    { id: '1', name: 'Engineering', isActive: true },
-    { id: '2', name: 'Human Resources', isActive: true },
-    { id: '3', name: 'Marketing', isActive: false },
-  ] as Department[],
-  isPending: false,
-  isError: false,
-});
-const useUsersQuery = () => ({ data: [{ id: 'u1', departmentId: '1' }, { id: 'u2', departmentId: '1' }, { id: 'u3', departmentId: '2' }] });
-const useUpdateDepartmentMutation = () => ({ mutate: (data: any) => console.log('Update', data), isPending: false, variables: null as any });
-const useDeleteDepartmentMutation = () => ({ mutate: (id: string) => console.log('Delete', id), isPending: false, variables: null as any });
+import {
+  useDepartmentsQuery,
+  useUsersQuery,
+  useUpdateDepartmentMutation,
+  useDeleteDepartmentMutation,
+} from "../hook";
 
 const DepartmentForm = lazy(() =>
   import("./DepartmentForm").then(module => ({ default: module.DepartmentForm })).catch(() => ({ 

@@ -2,18 +2,11 @@ import React from 'react';
 import { Trash2, Pencil, Building2, Users, Loader2 } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
+import type { Department } from '../../../api/departments';
 
 /** Utility for intelligent Tailwind class merging */
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
-}
-
-// --- Types ---
-// Mocking the imported type to ensure the component is fully copy-pasteable
-export interface Department {
-  id: string;
-  name: string;
-  isActive: boolean;
 }
 
 interface DepartmentCardProps {

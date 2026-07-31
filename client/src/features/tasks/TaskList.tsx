@@ -37,9 +37,10 @@ const groupByDepartment = (tasks: Task[], departmentNames: Map<string, string>) 
 interface TaskListProps {
     userId?: string;
     hideHeader?: boolean;
+    dateRange?: { from: Date | null; to: Date | null };
 }
 
-export const TaskList = ({ userId, hideHeader = false }: TaskListProps = {}) => {
+export const TaskList = ({ userId, hideHeader = false, dateRange }: TaskListProps = {}) => {
     const { user } = useAuth();
     const isAdmin = user?.role === "ADMIN";
     const isVerifier = user?.role === "PC" || user?.role === "ADMIN";
@@ -56,9 +57,24 @@ export const TaskList = ({ userId, hideHeader = false }: TaskListProps = {}) => 
     );
     const departmentNames = new Map((departments ?? []).map(d => [d.id, d.name]));
 
-    const filtered = filter === 'all'
+    // Optional client-side date filter (createdAt) — only active when a range is passed in,
+    // so every other caller of TaskList that doesn't pass dateRange is unaffected.
+    const dateFiltered = !dateRange?.from
         ? (tasks ?? [])
-        : (tasks ?? []).filter(t => t.status === filter);
+        : (tasks ?? []).filter(t => {
+            const created = new Date(t.createdAt);
+            const from = new Date(dateRange.from!.getFullYear(), dateRange.from!.getMonth(), dateRange.from!.getDate());
+            if (created < from) return false;
+            if (dateRange.to) {
+                const to = new Date(dateRange.to.getFullYear(), dateRange.to.getMonth(), dateRange.to.getDate(), 23, 59, 59, 999);
+                if (created > to) return false;
+            }
+            return true;
+        });
+
+    const filtered = filter === 'all'
+        ? dateFiltered
+        : dateFiltered.filter(t => t.status === filter);
 
     const departmentGroups = groupByDepartment(filtered, departmentNames);
 
@@ -70,7 +86,7 @@ export const TaskList = ({ userId, hideHeader = false }: TaskListProps = {}) => 
         { key: 'done', label: 'Done' },
     ];
 
-    const isEmpty = view === 'board' ? (tasks ?? []).length === 0 : filtered.length === 0;
+    const isEmpty = view === 'board' ? dateFiltered.length === 0 : filtered.length === 0;
 
     return (
         <div className={['flex flex-col gap-6', view === 'board' ? 'max-w-6xl' : 'max-w-3xl'].join(' ')}>
@@ -220,7 +236,7 @@ export const TaskList = ({ userId, hideHeader = false }: TaskListProps = {}) => 
 
             {!isPending && !isError && !isEmpty && view === 'board' && (
                 <TaskBoard
-                    tasks={tasks ?? []}
+                    tasks={dateFiltered}
                     assigneeNames={assigneeNames}
                     isAdmin={isAdmin}
                     isVerifier={isVerifier}

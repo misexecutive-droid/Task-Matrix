@@ -15,6 +15,7 @@ import { DepartmentList } from './features/admin/department';
 import { ChecklistTemplateList } from './features/admin/checklistTemplate';
 import { TatReport } from './features/admin/report';
 import { AdminTaskList } from './features/admin/AdminTaskList';
+import { AdminAnalytics } from './features/admin/analytics';
 import { SettingsPage } from './features/admin/SettingsPage';
 import { ChecklistDefinitionList, ChecklistDefinitionDetail, MyChecklists, ChecklistInstanceDetail } from './features/checklist';
 import { VerificationQueue } from './features/verification';
@@ -106,6 +107,7 @@ const router = createBrowserRouter([
               { path: '/admin/scheduled-checklists/:definitionId', element: <ChecklistDefinitionDetail /> },
               { path: '/admin/tickets', element: <TicketList /> },
               { path: '/admin/tasks', element: <AdminTaskList /> },
+              { path: '/admin/analytics', element: <AdminAnalytics /> },
               { path: '/admin/reports', element: <ReportsPage /> },
               { path: '/admin/settings', element: <SettingsPage /> },
             ],

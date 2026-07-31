@@ -51,6 +51,19 @@ export type ChecklistInstance = {
 
 export type VerifyChecklistInstancePayload = { action: 'APPROVE' | 'REJECT'; note?: string };
 
+export type ComplianceReportGroupBy = 'hour' | 'day' | 'week' | 'month' | 'year';
+
+// Same shape as task.ts's ComplianceReportRow — the recurring-checklist sibling report, bucketed
+// by each instance's periodStart rather than item createdAt (see checklistInstance.service.ts).
+export type ComplianceReportRow = {
+  bucket: string;
+  totalItems: number;
+  doneItems: number;
+  completionRate: number | null;
+  itemsRequiringPhotos: number;
+  qualityRate: number | null;
+};
+
 const buildQuery = (params: Record<string, string | undefined>) => {
   const search = new URLSearchParams();
   for (const [key, value] of Object.entries(params)) {
@@ -97,4 +110,12 @@ export const checklistInstanceApi = {
 
   deleteImage: (id: string) =>
     apiFetch<ApiResponse<{ deleted: boolean }>>(`/checklist-instance-images/${id}`, { method: 'DELETE' }),
+
+  getComplianceReport: (groupBy: ComplianceReportGroupBy = 'month', departmentId?: string, from?: string, to?: string) => {
+    const params = new URLSearchParams({ groupBy });
+    if (departmentId) params.set('departmentId', departmentId);
+    if (from) params.set('from', from);
+    if (to) params.set('to', to);
+    return apiFetch<ApiResponse<ComplianceReportRow[]>>(`/checklist-instances/reports/compliance?${params.toString()}`);
+  },
 };

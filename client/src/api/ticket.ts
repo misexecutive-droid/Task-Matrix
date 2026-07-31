@@ -4,13 +4,15 @@ export type Priority       = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
 export type AssignmentMode = 'AUTO' | 'MANUAL';
 export type TicketStatus   = 'OPEN' | 'IN_PROGRESS' | 'IN_REVIEW' | 'CLOSED' | 'ON_HOLD';
 
-export type TatReportGroupBy = "hour" | "day" | "week" | "month"
+export type TatReportGroupBy = "hour" | "day" | "week" | "month" | "year"
 
 export type TatReportRow = {
   bucket : string;
-  count : number;
+  createdCount : number;
+  closedCount : number;
   avgTatHours : number | null;
   overdueCount : number;
+  completionRate : number | null;
 }
 
 export type CaptureMethod = 'LIVE' | 'GALLERY';
@@ -247,6 +249,10 @@ export const ticketApi = {
       body:   JSON.stringify({ body }),
     }),
 
-  getTatReport : ( groupBy : TatReportGroupBy = "day") =>
-    apiFetch<ApiResponse<TatReportRow[]>>(`/tickets/reports/tat?groupBy=${groupBy}`),
+  getTatReport : ( groupBy : TatReportGroupBy = "day", from?: string, to?: string) => {
+    const params = new URLSearchParams({ groupBy });
+    if (from) params.set('from', from);
+    if (to) params.set('to', to);
+    return apiFetch<ApiResponse<TatReportRow[]>>(`/tickets/reports/tat?${params.toString()}`);
+  },
 };

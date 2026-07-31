@@ -5,39 +5,13 @@ import { z } from 'zod';
 import { Building2, X, AlertCircle, Loader2 } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
+import { useCreateDepartmentMutation, useUpdateDepartmentMutation } from '../hook';
+import type { Department } from '../../../api/departments';
 
 /** Utility for intelligent Tailwind class merging */
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
-
-// --- Types & Mocks ---
-export interface Department {
-  id: string;
-  name: string;
-  isActive: boolean;
-}
-
-// Mocking the mutations to ensure standalone compilation
-const useCreateDepartmentMutation = () => ({
-  mutate: (data: any, options?: { onSuccess: () => void }) => {
-    console.log('Create:', data);
-    setTimeout(() => options?.onSuccess?.(), 1000);
-  },
-  isPending: false,
-  isError: false,
-  error: null as Error | null,
-});
-
-const useUpdateDepartmentMutation = () => ({
-  mutate: (data: any, options?: { onSuccess: () => void }) => {
-    console.log('Update:', data);
-    setTimeout(() => options?.onSuccess?.(), 1000);
-  },
-  isPending: false,
-  isError: false,
-  error: null as Error | null,
-});
 
 // --- Schema ---
 const departmentSchema = z.object({

@@ -8,9 +8,10 @@ import {
   TicketCheck, 
   Settings, 
   ListChecks, 
-  ClipboardList, 
-  Repeat, 
-  FileDown 
+  ClipboardList,
+  Repeat,
+  FileDown,
+  BarChart3
 } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -27,6 +28,7 @@ function cn(...inputs: ClassValue[]) {
 // --- Navigation Config ---
 const NAV = [
   { to: '/admin', icon: LayoutDashboard, label: 'Overview', end: true },
+  { to: '/admin/analytics', icon: BarChart3, label: 'Analytics', end: false },
   { to: '/admin/users', icon: Users, label: 'Users', end: false },
   { to: '/admin/departments', icon: Building2, label: 'Departments', end: false },
   { to: '/admin/checklist-templates', icon: ListChecks, label: 'Checklists', end: false },

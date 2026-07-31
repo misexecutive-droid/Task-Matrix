@@ -1,53 +1,27 @@
 import React, { useState } from "react";
-import { 
-  ClipboardList, 
-  Users, 
-  FileDown, 
-  ChevronDown,
-  X
+import {
+  ClipboardList,
+  Users,
+  FileDown,
 } from "lucide-react";
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
+import { useUsersQuery } from "./hook";
+import { TaskList } from "../tasks";
+import { ExportDialog } from "../reports";
+import { DateRangePicker, type DateRangeValue } from "../../components";
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from "@/components/ui/select";
 
 /** Utility for intelligent Tailwind class merging */
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
-
-// --- Types & Mocks (Replace with actual imports in production) ---
-// import { useUsersQuery } from "./hook";
-// import { TaskList } from "../tasks";
-// import { ExportDialog } from "../reports";
-
-const useUsersQuery = () => ({
-  data: [
-    { id: '1', firstName: 'Alice', lastName: 'Johnson' },
-    { id: '2', firstName: 'Bob', lastName: 'Smith' },
-  ]
-});
-
-const TaskList = ({ userId, hideHeader }: { userId?: string, hideHeader?: boolean }) => (
-  <div className="flex-1 w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm p-8 flex items-center justify-center text-slate-400 dark:text-slate-500 animate-pulse">
-    [TaskList Component: {userId ? `Filtered by ${userId}` : 'All Users'}]
-  </div>
-);
-
-const ExportDialog = ({ onClose }: { reportModule: string; title: string; description: string; onClose: () => void }) => (
-  <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-200">
-    <div className="w-full max-w-md bg-white dark:bg-slate-950 p-6 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 animate-in zoom-in-95">
-      <div className="flex justify-between items-center mb-4">
-        <h3 className="text-lg font-bold dark:text-white">Export Tasks</h3>
-        <button onClick={onClose} className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
-          <X className="w-5 h-5" />
-        </button>
-      </div>
-      <p className="text-sm text-slate-500 dark:text-slate-400 mb-6">Every task created in the selected period — status, priority, department, and assignee.</p>
-      <button onClick={onClose} className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl transition-colors">
-        Confirm Export
-      </button>
-    </div>
-  </div>
-);
 
 // --- Constants ---
 const ALL_USERS = "__all__";
@@ -56,6 +30,7 @@ const ALL_USERS = "__all__";
 export const AdminTaskList = () => {
   const { data: users = [] } = useUsersQuery();
   const [userId, setUserId] = useState("");
+  const [dateRange, setDateRange] = useState<DateRangeValue>({ from: null, to: null });
   const [showExport, setShowExport] = useState(false);
 
   return (
@@ -82,36 +57,30 @@ export const AdminTaskList = () => {
 
           {/* Action Controls */}
           <div className="flex items-center gap-3 w-full sm:w-auto">
-            
-            {/* User Filter */}
-            <div className="relative group/filter flex-1 sm:w-64">
-              <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-slate-400 group-hover/filter:text-indigo-500 transition-colors">
-                <Users className="w-4 h-4" />
-              </div>
-              
-              <select
-                value={userId || ALL_USERS}
-                onChange={e => setUserId(e.target.value === ALL_USERS ? "" : e.target.value)}
-                className={cn(
-                  "w-full h-10 pl-9 pr-10 appearance-none transition-all cursor-pointer outline-none",
-                  "text-sm font-medium bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm",
-                  "text-slate-700 dark:text-slate-200 hover:border-slate-300 dark:hover:border-slate-700",
-                  "focus-visible:ring-2 focus-visible:ring-indigo-500/20 focus-visible:border-indigo-500"
-                )}
-                aria-label="Filter tasks by user"
-              >
-                <option value={ALL_USERS}>All users</option>
-                {users.map(u => (
-                  <option key={u.id} value={u.id}>
-                    {u.firstName} {u.lastName ?? ""}
-                  </option>
-                ))}
-              </select>
 
-              <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-slate-400 group-hover/filter:text-slate-600 dark:group-hover/filter:text-slate-300">
-                <ChevronDown className="w-4 h-4" />
-              </div>
-            </div>
+            {/* User Filter */}
+            <Select value={userId || ALL_USERS} onValueChange={v => setUserId(v === ALL_USERS ? "" : v)}>
+              <SelectTrigger className="flex-1 sm:w-56 h-10 text-sm" aria-label="Filter tasks by user">
+                <Users className="w-4 h-4 shrink-0 text-slate-400" />
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={ALL_USERS}>All users</SelectItem>
+                {users.map(u => (
+                  <SelectItem key={u.id} value={u.id}>
+                    {u.firstName} {u.lastName ?? ""}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            {/* Date Range Filter */}
+            <DateRangePicker
+              value={dateRange}
+              onChange={setDateRange}
+              placeholder="Filter by date"
+              className="flex-1 sm:w-64"
+            />
 
             {/* Export Button */}
             <button
@@ -135,7 +104,7 @@ export const AdminTaskList = () => {
 
         {/* List Content */}
         <section aria-label="Task List" className="flex flex-col flex-1">
-          <TaskList userId={userId || undefined} hideHeader />
+          <TaskList userId={userId || undefined} dateRange={dateRange} hideHeader />
         </section>
 
         {/* Modal Entry */}

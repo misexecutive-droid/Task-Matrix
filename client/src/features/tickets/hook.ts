@@ -222,11 +222,11 @@ export const useAssignableUsersQuery = (departmentId?: string) => {
   });
 };
 
-export const useTatReportQuery = (groupBy: TatReportGroupBy) => {
+export const useTatReportQuery = (groupBy: TatReportGroupBy, from?: string, to?: string) => {
   const { token, user } = useAuth();
   return useQuery({
-    queryKey: ["tickets", "tat-report", groupBy],
-    queryFn: () => ticketApi.getTatReport(groupBy).then(r => r.data),
+    queryKey: ["tickets", "tat-report", groupBy, from, to],
+    queryFn: () => ticketApi.getTatReport(groupBy, from, to).then(r => r.data),
     enabled: !!token && user?.role === "ADMIN",
     retry: handleQueryRetry,
   });
