@@ -1,16 +1,18 @@
 import { useParams, useNavigate } from 'react-router';
-import { ArrowLeft, AlertCircle, CheckSquare, Square } from 'lucide-react';
+import { ArrowLeft, AlertCircle, ShieldCheck, ShieldAlert, ShieldQuestion } from 'lucide-react';
 import { Skeleton } from '../../../components';
-import { useChecklistInstanceQuery, useSetChecklistInstanceItemDoneMutation } from '../hook';
+import { useChecklistInstanceQuery } from '../hook';
+import { ChecklistInstanceItemCard } from './ChecklistInstanceItemCard';
 import { formatDate } from '../checklistDisplay';
+import { useAuth } from '../../../context/AuthContext';
 
 // Shared between a user's own "My Checklists" link and the admin oversight link from
 // ChecklistDefinitionDetail — the server authorizes both (ADMIN or an assignee of the instance).
 export const ChecklistInstanceDetail = () => {
   const { instanceId = '' } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const { data: instance, isPending, isError } = useChecklistInstanceQuery(instanceId);
-  const setItemDone = useSetChecklistInstanceItemDoneMutation(instanceId);
 
   if (isPending) {
     return (
@@ -33,6 +35,8 @@ export const ChecklistInstanceDetail = () => {
   const total = instance.items.length;
   const done = instance.items.filter(i => i.isDone).length;
   const progress = total ? Math.round((done / total) * 100) : 0;
+  const canWork = user?.role === 'ADMIN' || (!!user && instance.assigneeIds.includes(user.id));
+  const isLocked = instance.verificationStatus === 'APPROVED';
 
   return (
     <div className="flex flex-col gap-6 max-w-2xl">
@@ -60,32 +64,40 @@ export const ChecklistInstanceDetail = () => {
         </div>
       </div>
 
+      {instance.verificationStatus === 'PENDING' && (
+        <div className="flex items-center gap-2.5 p-3.5 rounded-lg bg-primary-500/10 border border-primary-500/25 text-primary-600 dark:text-primary-300 text-xs font-mono">
+          <ShieldQuestion size={16} className="shrink-0" />
+          Every item is checked off — awaiting PC/Admin verification.
+        </div>
+      )}
+
+      {instance.verificationStatus === 'APPROVED' && (
+        <div className="flex items-center gap-2.5 p-3.5 rounded-lg bg-emerald-500/10 border border-emerald-500/25 text-emerald-600 dark:text-emerald-400 text-xs font-mono">
+          <ShieldCheck size={16} className="shrink-0" />
+          Verified{instance.verifiedAt ? ` on ${formatDate(instance.verifiedAt)}` : ''}.
+          {instance.verificationNote ? ` "${instance.verificationNote}"` : ''}
+        </div>
+      )}
+
+      {instance.verificationStatus === 'REJECTED' && (
+        <div className="flex items-start gap-2.5 p-3.5 rounded-lg bg-rose-500/10 border border-rose-500/25 text-rose-600 dark:text-rose-400 text-xs font-mono">
+          <ShieldAlert size={16} className="shrink-0 mt-0.5" />
+          <span>
+            Sent back for changes{instance.verificationNote ? `: "${instance.verificationNote}"` : '.'} Fix the
+            flagged items and re-check everything to resubmit.
+          </span>
+        </div>
+      )}
+
       <div className="flex flex-col gap-2">
         {instance.items.map(item => (
-          <button
+          <ChecklistInstanceItemCard
             key={item.id}
-            type="button"
-            onClick={() => setItemDone.mutate({ itemId: item.id, isDone: !item.isDone })}
-            className={`flex items-center gap-3 p-3 rounded-lg border text-left transition-all duration-200 cursor-pointer ${
-              item.isDone ? 'border-border/50 bg-surface opacity-75' : 'border-border bg-surface hover:border-primary-500/30 hover:shadow-sm'
-            }`}
-          >
-            <span className={`flex items-center justify-center size-7 rounded-lg shrink-0 transition-colors ${
-              item.isDone ? 'bg-emerald-500/10 text-emerald-600' : 'bg-surface-hover text-text-light border border-border'
-            }`}>
-              {item.isDone ? <CheckSquare size={15} /> : <Square size={15} />}
-            </span>
-            <div className="flex-1 min-w-0">
-              <p className={`text-sm font-mono ${item.isDone ? 'line-through text-text-muted' : 'text-text'}`}>
-                {item.label}
-              </p>
-              {item.isDone && item.completedAt && (
-                <p className="text-[11px] text-text-muted font-mono mt-0.5">
-                  Completed {formatDate(item.completedAt)}
-                </p>
-              )}
-            </div>
-          </button>
+            item={item}
+            instanceId={instanceId}
+            canWork={canWork}
+            isLocked={isLocked}
+          />
         ))}
       </div>
     </div>

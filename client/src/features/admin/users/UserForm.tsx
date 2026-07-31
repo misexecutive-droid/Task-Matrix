@@ -3,7 +3,7 @@ import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { UserPlus, Eye, EyeOff, AlertCircle } from 'lucide-react';
-import { Input, Button } from '../../components';
+import { Input, Button } from '../../../components';
 import {
   Dialog,
   DialogContent,
@@ -18,8 +18,8 @@ import {
   SelectContent,
   SelectItem,
 } from '@/components/ui/select';
-import { useCreateUserMutation, useUpdateUserMutation, useDepartmentsQuery } from './hook';
-import type { AdminUser, Role } from '../../api/admin';
+import { useCreateUserMutation, useUpdateUserMutation, useDepartmentsQuery } from '../hook';
+import type { AdminUser, Role } from '../../../api/admin';
 
 const NO_DEPARTMENT = '__none__';
 

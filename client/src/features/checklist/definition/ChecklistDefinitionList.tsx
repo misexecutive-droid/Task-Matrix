@@ -24,7 +24,8 @@ export const ChecklistDefinitionList = () => {
           <div>
             <h1 className="text-xl font-mono font-semibold text-text">Recurring Checklists</h1>
             <p className="text-sm text-text-muted mt-0.5">
-              {definitions.length} checklist{definitions.length !== 1 ? 's' : ''} — auto-generated on a schedule for assigned team members
+              {definitions.length} checklist{definitions.length !== 1 ? 's' : ''} — auto-generated on a schedule for
+              assigned team members. For a one-off checklist on a single task or ticket, use Checklist Templates instead.
             </p>
           </div>
         </div>

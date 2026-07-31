@@ -8,12 +8,13 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog';
-import { useCreateChecklistDefinitionMutation, useDepartmentsQuery } from '../hook';
+import { useCreateChecklistDefinitionMutation, useDepartmentsQuery, useChecklistTemplatesQuery } from '../hook';
 import { emptyItemDraft, type ItemDraft } from './ChecklistDefinitionItemDraftRow';
 import { ChecklistDetailsFields } from './form/ChecklistDetailsFields';
 import { ChecklistScheduleFields } from './form/ChecklistScheduleFields';
 import { ChecklistAssigneesField } from './form/ChecklistAssigneesField';
 import { ChecklistItemsEditor } from './form/ChecklistItemsEditor';
+import { ImportFromTemplateField } from './form/ImportFromTemplateField';
 import type { ChecklistRecurrence } from '../../../api/checklistDefinitions';
 
 interface ChecklistDefinitionFormProps {
@@ -30,6 +31,7 @@ export const ChecklistDefinitionForm = ({ onClose }: ChecklistDefinitionFormProp
   const [itemDrafts, setItemDrafts] = useState<ItemDraft[]>([emptyItemDraft()]);
 
   const { data: departments } = useDepartmentsQuery();
+  const { data: templates } = useChecklistTemplatesQuery();
   const createDefinition = useCreateChecklistDefinitionMutation();
 
   const updateDraft = (i: number, patch: Partial<ItemDraft>) =>
@@ -40,7 +42,28 @@ export const ChecklistDefinitionForm = ({ onClose }: ChecklistDefinitionFormProp
     setAssigneeIds([]);
   };
 
-  const items = itemDrafts.filter((d) => d.label.trim()).map((d) => ({ label: d.label.trim() }));
+  const handleImportTemplate = (templateId: string) => {
+    const template = templates?.find((t) => t.id === templateId);
+    if (!template) return;
+    setItemDrafts((drafts) => [
+      ...drafts.filter((d) => d.label.trim()),
+      ...template.items.map((item) => ({
+        label: item.label,
+        requiredImageCount: String(item.requiredImageCount),
+        maxImageCount: item.maxImageCount != null ? String(item.maxImageCount) : '',
+        requiresLivePhoto: item.requiresLivePhoto,
+      })),
+    ]);
+  };
+
+  const items = itemDrafts
+    .filter((d) => d.label.trim())
+    .map((d) => ({
+      label: d.label.trim(),
+      requiredImageCount: Number(d.requiredImageCount) || 0,
+      maxImageCount: d.maxImageCount ? Number(d.maxImageCount) : undefined,
+      requiresLivePhoto: d.requiresLivePhoto,
+    }));
   const canSubmit = !!name.trim() && !!departmentId && !!startDate && assigneeIds.length > 0 && items.length > 0;
 
   const handleSubmit = () => {
@@ -82,7 +105,8 @@ export const ChecklistDefinitionForm = ({ onClose }: ChecklistDefinitionFormProp
                   New Recurring Checklist
                 </DialogTitle>
                 <p className="text-xs text-text-muted font-display mt-0.5 truncate sm:whitespace-normal">
-                  Define a checklist that regenerates on a schedule for specific team members.
+                  Regenerates automatically on a schedule and assigns to specific team members. For a
+                  one-off checklist on a single task or ticket, create a Checklist Template instead.
                 </p>
               </div>
             </div>
@@ -112,6 +136,8 @@ export const ChecklistDefinitionForm = ({ onClose }: ChecklistDefinitionFormProp
             selected={assigneeIds}
             onChange={setAssigneeIds}
           />
+
+          <ImportFromTemplateField templates={templates} onImport={handleImportTemplate} />
 
           <ChecklistItemsEditor
             itemDrafts={itemDrafts}

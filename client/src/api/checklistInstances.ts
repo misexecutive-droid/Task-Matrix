@@ -1,31 +1,55 @@
 import { apiFetch } from './http';
 import type { ApiResponse, ChecklistRecurrence } from './checklistDefinitions';
+import type { CaptureMethod } from './ticket';
 
 export type ChecklistInstanceStatus = 'OPEN' | 'COMPLETED';
+export type ChecklistVerificationStatus = 'NOT_SUBMITTED' | 'PENDING' | 'APPROVED' | 'REJECTED';
+
+export type ChecklistInstanceImage = {
+  id:                      string;
+  url:                     string;
+  originalFilename:        string | null;
+  mimeType:                string;
+  sizeBytes:               number;
+  captureMethod:           CaptureMethod;
+  checklistInstanceItemId: string;
+  uploadedBy:              string;
+  createdAt:               string;
+};
 
 export type ChecklistInstanceItem = {
-  id:          string;
-  label:       string;
-  order:       number;
-  isDone:      boolean;
-  completedAt: string | null;
-  completedBy: string | null;
-  instanceId:  string;
+  id:                 string;
+  label:              string;
+  order:              number;
+  isDone:             boolean;
+  completedAt:        string | null;
+  completedBy:        string | null;
+  requiredImageCount: number;
+  maxImageCount:      number | null;
+  requiresLivePhoto:  boolean;
+  instanceId:         string;
+  images:             ChecklistInstanceImage[];
 };
 
 export type ChecklistInstance = {
-  id:           string;
-  definitionId: string;
-  title:        string;
-  recurrence:   ChecklistRecurrence;
-  departmentId: string;
-  assigneeIds:  string[];
-  periodKey:    string;
-  periodStart:  string;
-  periodEnd:    string;
-  generatedAt:  string;
-  items:        ChecklistInstanceItem[];
+  id:               string;
+  definitionId:     string;
+  title:            string;
+  recurrence:       ChecklistRecurrence;
+  departmentId:     string;
+  assigneeIds:      string[];
+  periodKey:        string;
+  periodStart:      string;
+  periodEnd:        string;
+  generatedAt:      string;
+  verificationStatus: ChecklistVerificationStatus;
+  verifiedBy:         string | null;
+  verifiedAt:         string | null;
+  verificationNote:   string | null;
+  items:            ChecklistInstanceItem[];
 };
+
+export type VerifyChecklistInstancePayload = { action: 'APPROVE' | 'REJECT'; note?: string };
 
 const buildQuery = (params: Record<string, string | undefined>) => {
   const search = new URLSearchParams();
@@ -46,9 +70,31 @@ export const checklistInstanceApi = {
   getForDefinition: (definitionId: string) =>
     apiFetch<ApiResponse<ChecklistInstance[]>>(`/checklist-instances${buildQuery({ definitionId })}`),
 
+  getPendingVerification: () =>
+    apiFetch<ApiResponse<ChecklistInstance[]>>('/checklist-instances/pending-verification'),
+
   setItemDone: (itemId: string, isDone: boolean) =>
     apiFetch<ApiResponse<ChecklistInstanceItem>>(`/checklist-instance-items/${itemId}`, {
       method: 'PATCH',
       body: JSON.stringify({ isDone }),
     }),
+
+  verify: (id: string, payload: VerifyChecklistInstancePayload) =>
+    apiFetch<ApiResponse<ChecklistInstance>>(`/checklist-instances/${id}/verify`, {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    }),
+
+  uploadImages: (itemId: string, files: File[], captureMethod: CaptureMethod) => {
+    const formData = new FormData();
+    files.forEach(f => formData.append('images', f));
+    formData.append('captureMethod', captureMethod);
+    return apiFetch<ApiResponse<ChecklistInstanceImage[]>>(`/checklist-instance-items/${itemId}/images`, {
+      method: 'POST',
+      body: formData,
+    });
+  },
+
+  deleteImage: (id: string) =>
+    apiFetch<ApiResponse<{ deleted: boolean }>>(`/checklist-instance-images/${id}`, { method: 'DELETE' }),
 };

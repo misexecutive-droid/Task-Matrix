@@ -1,0 +1,1 @@
+export { TatReport } from './TatReport';

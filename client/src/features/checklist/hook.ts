@@ -6,7 +6,9 @@ import {
   type CreateChecklistDefinitionPayload,
   type ListChecklistDefinitionsParams,
 } from '../../api/checklistDefinitions';
-import { checklistInstanceApi, type ChecklistInstanceStatus } from '../../api/checklistInstances';
+import { checklistInstanceApi, type ChecklistInstanceStatus, type VerifyChecklistInstancePayload } from '../../api/checklistInstances';
+import type { CaptureMethod } from '../../api/ticket';
+import { useEntityMutation } from '../../lib/queryHelpers';
 
 const errorMessage = (err: unknown, fallback: string) => (err instanceof Error ? err.message : fallback);
 
@@ -130,4 +132,46 @@ export const useSetChecklistInstanceItemDoneMutation = (instanceId: string) => {
   });
 };
 
+export const useUploadChecklistInstanceImagesMutation = (instanceId: string) =>
+  useEntityMutation({
+    mutationFn: ({ itemId, files, captureMethod }: { itemId: string; files: File[]; captureMethod: CaptureMethod }) =>
+      checklistInstanceApi.uploadImages(itemId, files, captureMethod).then(r => r.data),
+    invalidateKeys: [KEYS.instanceDetail(instanceId)],
+    successMessage: 'Photos uploaded',
+    errorFallback: 'Failed to upload photos',
+  });
+
+export const useDeleteChecklistInstanceImageMutation = (instanceId: string) =>
+  useEntityMutation({
+    mutationFn: (id: string) => checklistInstanceApi.deleteImage(id),
+    invalidateKeys: [KEYS.instanceDetail(instanceId)],
+    successMessage: 'Photo deleted',
+    errorFallback: 'Failed to delete photo',
+  });
+
+// Powers the PC/Admin verification queue's Checklists section — instances with every item done,
+// awaiting review. Scoped server-side (PC gets their own department, ADMIN gets every department).
+export const usePendingVerificationChecklistInstancesQuery = () => {
+  const { token } = useAuth();
+  return useQuery({
+    queryKey: ['checklist-instances', 'pending-verification'],
+    queryFn: () => checklistInstanceApi.getPendingVerification().then(r => r.data),
+    enabled: !!token,
+    retry: handleQueryRetry,
+  });
+};
+
+export const useVerifyChecklistInstanceMutation = () =>
+  useEntityMutation({
+    mutationFn: ({ id, payload }: { id: string; payload: VerifyChecklistInstancePayload }) =>
+      checklistInstanceApi.verify(id, payload).then(r => r.data),
+    setDetailData: (updated) => ({ key: KEYS.instanceDetail(updated.id), data: updated }),
+    invalidateKeys: [['checklist-instances']],
+    successMessage: (updated) => (updated.verificationStatus === 'APPROVED' ? 'Checklist verified' : 'Checklist sent back'),
+    errorFallback: 'Failed to verify checklist',
+  });
+
 export { useDepartmentsQuery, useAssignableUsersQuery } from '../tickets/hook';
+// Templates are a separate one-off feature (see ChecklistDefinition model comment), but the
+// definition form lets admins import a template's step labels as a starting point.
+export { useChecklistTemplatesQuery } from '../admin/hook';

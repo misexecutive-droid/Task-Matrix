@@ -1,18 +1,22 @@
 import { useState } from 'react';
-import { 
-  ShieldCheck, 
-  Check, 
-  X, 
-  Loader2, 
-  Ticket as TicketIcon, 
-  CheckSquare, 
-  CheckCircle2
+import {
+  ShieldCheck,
+  Check,
+  X,
+  Loader2,
+  Ticket as TicketIcon,
+  CheckSquare,
+  CheckCircle2,
+  Repeat,
 } from 'lucide-react';
 import { Button } from '../../components';
 import { useTicketsByStatusQuery, useVerifyTicketMutation } from '../tickets/hook';
 import { useTasksByStatusQuery, useVerifyTaskMutation } from '../tasks/hook';
+import { usePendingVerificationChecklistInstancesQuery, useVerifyChecklistInstanceMutation } from '../checklist/hook';
+import { formatDate } from '../checklist/checklistDisplay';
 import type { Ticket } from '../../api/ticket';
 import type { Task } from '../../api/task';
+import type { ChecklistInstance } from '../../api/checklistInstances';
 
 interface QueueRowProps {
   icon: React.ReactNode;
@@ -134,6 +138,20 @@ const TaskRow = ({ task }: { task: Task }) => {
   );
 };
 
+const ChecklistRow = ({ instance }: { instance: ChecklistInstance }) => {
+  const verifyMut = useVerifyChecklistInstanceMutation();
+  return (
+    <QueueRow
+      icon={<Repeat size={18} />}
+      title={instance.title}
+      subtitle={`${formatDate(instance.periodStart)} – ${formatDate(instance.periodEnd)} · every item checked off`}
+      isPending={verifyMut.isPending}
+      onApprove={(note) => verifyMut.mutate({ id: instance.id, payload: { action: 'APPROVE', note } })}
+      onReject={(note) => verifyMut.mutate({ id: instance.id, payload: { action: 'REJECT', note } })}
+    />
+  );
+};
+
 const SkeletonRow = () => (
   <div className="flex items-center gap-3.5 p-4 rounded-xl border border-border/40 bg-surface/30 animate-pulse">
     <div className="size-10 rounded-lg bg-border/50 shrink-0" />
@@ -161,8 +179,9 @@ const EmptyState = ({ label }: { label: string }) => (
 export const VerificationQueue = () => {
   const { data: tickets = [], isPending: ticketsPending } = useTicketsByStatusQuery('IN_REVIEW');
   const { data: tasks = [], isPending: tasksPending } = useTasksByStatusQuery('pending_verification');
+  const { data: checklists = [], isPending: checklistsPending } = usePendingVerificationChecklistInstancesQuery();
 
-  const totalItems = tickets.length + tasks.length;
+  const totalItems = tickets.length + tasks.length + checklists.length;
 
   return (
     <div className="flex flex-col gap-8 max-w-4xl mx-auto w-full">
@@ -225,6 +244,29 @@ export const VerificationQueue = () => {
             )}
             {!tasksPending && tasks.length === 0 && <EmptyState label="tasks" />}
             {tasks.map(t => <TaskRow key={t.id} task={t} />)}
+          </div>
+        </section>
+
+        {/* Checklists Section */}
+        <section className="flex flex-col gap-3">
+          <div className="flex items-center gap-2 mb-1">
+            <h2 className="text-xs font-semibold text-text-muted uppercase tracking-widest">Checklists</h2>
+            {!checklistsPending && checklists.length > 0 && (
+              <span className="px-2 py-0.5 rounded-full bg-border/50 text-[10px] font-medium text-text-muted">
+                {checklists.length}
+              </span>
+            )}
+          </div>
+
+          <div className="flex flex-col gap-3">
+            {checklistsPending && (
+              <>
+                <SkeletonRow />
+                <SkeletonRow />
+              </>
+            )}
+            {!checklistsPending && checklists.length === 0 && <EmptyState label="checklists" />}
+            {checklists.map(c => <ChecklistRow key={c.id} instance={c} />)}
           </div>
         </section>
       </div>

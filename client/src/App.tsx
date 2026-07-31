@@ -10,10 +10,10 @@ import { TicketList, useTicketSocket } from './features/tickets';
 import { TaskList } from './features/tasks';
 import { useNotificationSocket } from './features/notifications/useNotificationSocket';
 import { AdminLayout } from './features/admin/AdminLayout';
-import { UserList } from './features/admin/UserList';
-import { DepartmentList } from "./features/admin/DepartmentList"
-import { ChecklistTemplateList } from "./features/admin/ChecklistTemplateList"
-import { TatReport } from "./features/admin/TatReport"
+import { UserList } from './features/admin/users';
+import { DepartmentList } from './features/admin/department';
+import { ChecklistTemplateList } from './features/admin/checklistTemplate';
+import { TatReport } from './features/admin/report';
 import { AdminTaskList } from './features/admin/AdminTaskList';
 import { SettingsPage } from './features/admin/SettingsPage';
 import { ChecklistDefinitionList, ChecklistDefinitionDetail, MyChecklists, ChecklistInstanceDetail } from './features/checklist';

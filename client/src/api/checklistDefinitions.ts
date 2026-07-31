@@ -3,10 +3,13 @@ import { apiFetch } from './http';
 export type ChecklistRecurrence = 'DAILY' | 'WEEKLY' | 'MONTHLY' | 'QUARTERLY' | 'YEARLY' | 'ONE_TIME';
 
 export type ChecklistDefinitionItem = {
-  id:           string;
-  label:        string;
-  order:        number;
-  definitionId: string;
+  id:                 string;
+  label:              string;
+  order:              number;
+  requiredImageCount: number;
+  maxImageCount:      number | null;
+  requiresLivePhoto:  boolean;
+  definitionId:       string;
 };
 
 export type ChecklistDefinition = {
@@ -25,8 +28,11 @@ export type ChecklistDefinition = {
 export type ApiResponse<T> = { success: boolean; data: T };
 
 export type CreateChecklistDefinitionItemPayload = {
-  label:  string;
-  order?: number;
+  label:               string;
+  order?:              number;
+  requiredImageCount?: number;
+  maxImageCount?:      number;
+  requiresLivePhoto?:  boolean;
 };
 
 export type CreateChecklistDefinitionPayload = {
