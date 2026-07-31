@@ -16,7 +16,7 @@ export const createTaskSchema = z.object({
 
 
 export const complianceReportQuerySchema = z.object({
-    groupBy : z.enum(["hour", "day", "week", "month"]).default("day"),
+    groupBy : z.enum(["hour", "day", "week", "month", "year"]).default("day"),
     departmentId : objectId.optional(),
     from : z.string().optional(),
     to : z.string().optional()

@@ -11,6 +11,17 @@ type CreateNotificationInput = {
   message: string; // the full human-readable text
   ticketId?: string; // optional link back to the related ticket, if any
   taskId?: string; // optional link back to the related task, if any
+  checklistInstanceId?: string; // optional link back to the related recurring checklist instance, if any
+};
+
+// A recurring ChecklistInstance, reduced to just the fields its verification notifications need.
+// Kept separate from VerifiableEntity below since it supports MULTIPLE assignees (assigneeIds)
+// instead of one, and has no storeId/userId concept.
+type VerifiableChecklistInstance = {
+  _id: any;
+  title: string;
+  departmentId?: any;
+  assigneeIds?: any[];
 };
 
 // A ticket or task, reduced to just the fields the PC-verification notifications need.
@@ -127,6 +138,38 @@ export const notificationService = {
       title: kind === 'TICKET' ? 'Ticket put on hold' : 'Task put on hold',
       message: `"${entity.title}" was put on hold: ${remark}`,
       ...idField,
+    });
+  },
+
+  // Checklist-instance equivalent of notifyPendingVerification — a recurring checklist has no
+  // storeId and can have several assignees rather than one, so this scopes PCs by departmentId
+  // only rather than reusing the ticket/task departmentId-or-storeId `$or`.
+  async notifyChecklistPendingVerification(instance: VerifiableChecklistInstance) {
+    if (!instance.departmentId) return [];
+    const pcs = await User.find({ role: 'PC', departmentId: instance.departmentId }).select('_id');
+    const recipientIds = pcs.map((p) => p._id.toString());
+    if (!recipientIds.length) return [];
+
+    return notificationService.notifyMany(recipientIds, {
+      type: 'CHECKLIST_PENDING_VERIFICATION',
+      title: 'Checklist awaiting verification',
+      message: `"${instance.title}" is ready for your review.`,
+      checklistInstanceId: instance._id.toString(),
+    });
+  },
+
+  // Checklist-instance equivalent of notifyVerificationResult — notifies every assignee on the
+  // instance (not just one), since a recurring checklist can be shared by several people.
+  async notifyChecklistVerificationResult(instance: VerifiableChecklistInstance, action: 'APPROVE' | 'REJECT', note: string | undefined) {
+    const recipientIds = (instance.assigneeIds ?? []).map((id) => id.toString());
+    if (!recipientIds.length) return [];
+
+    const verb = action === 'APPROVE' ? 'verified' : 'sent back for changes';
+    return notificationService.notifyMany(recipientIds, {
+      type: `CHECKLIST_${action === 'APPROVE' ? 'APPROVED' : 'REJECTED'}`,
+      title: action === 'APPROVE' ? 'Verified' : 'Sent back for changes',
+      message: note ? `"${instance.title}" was ${verb}: ${note}` : `"${instance.title}" was ${verb}.`,
+      checklistInstanceId: instance._id.toString(),
     });
   },
 

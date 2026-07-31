@@ -10,6 +10,11 @@ const envSchema = z.object({
     REDIS_URL : z.string().default("redis://localhost:6379"),
     CLUSTER_WORKERS : z.coerce.number().optional(),
 
+    // Minutes ahead of UTC for the org's local calendar day (default 330 = IST, UTC+5:30). Used
+    // only by the checklist recurrence engine so "due today" matches the admin's local date
+    // instead of the server's UTC date.
+    CHECKLIST_TIMEZONE_OFFSET_MINUTES : z.coerce.number().default(330),
+
     JWT_ACCESS_SECRET : z.string().min(10),
     JWT_ACCESS_EXPIRES_IN : z.string().default('15m'),
     JWT_REFRESH_EXPIRES_IN_DAYS : z.coerce.number().default(30),

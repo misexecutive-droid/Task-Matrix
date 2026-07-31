@@ -363,46 +363,85 @@ export const ticketService = {
     return ticket;
   },
 
- async tatReport(groupBy: 'hour' | 'day' | 'week' | 'month', from?: string, to?: string) {
-    const DATE_FORMATS: Record<'hour' | 'day' | 'week' | 'month', string> = {
+ async tatReport(groupBy: 'hour' | 'day' | 'week' | 'month' | 'year', from?: string, to?: string) {
+    const DATE_FORMATS: Record<'hour' | 'day' | 'week' | 'month' | 'year', string> = {
       hour:  '%Y-%m-%dT%H:00',
       day:   '%Y-%m-%d',
       week:  '%G-W%V',
       month: '%Y-%m',
+      year:  '%Y',
     }
 
-    const match : Record<string , any> = { closedAt : { $ne : null}}
-    if(from) match.closedAt.$gte = new Date(from);
-    if(to) match.closedAt.$lte = new Date(to);
+    // Two independent pipelines run in one round trip via $facet: "closed" buckets tickets by
+    // closedAt (same as before — TAT/overdue math only makes sense for tickets that have closed),
+    // "created" buckets tickets by createdAt so we know the total raised per bucket too. Neither
+    // population is a subset of the other (a ticket created in bucket X might close in bucket Y),
+    // so completionRate below is a period throughput ratio (closed-this-period / created-this-period),
+    // not a per-cohort "% of tickets from this period that got resolved" rate.
+    const closedMatch : Record<string , any> = { closedAt : { $ne : null}}
+    if(from) closedMatch.closedAt = { ...closedMatch.closedAt, $gte : new Date(from)};
+    if(to) closedMatch.closedAt = { ...closedMatch.closedAt, $lte : new Date(to)};
 
-    const rows = await Ticket.aggregate([
-      { $match : match},
+    const createdMatch : Record<string , any> = {}
+    if(from || to) {
+      createdMatch.createdAt = {}
+      if(from) createdMatch.createdAt.$gte = new Date(from);
+      if(to) createdMatch.createdAt.$lte = new Date(to);
+    }
+
+    const [facet] = await Ticket.aggregate([
       {
-        $project : {
-          bucket : { $dateToString : { format : DATE_FORMATS[groupBy] , date : "$closedAt"}},
-          tatActualHours : { $divide : [{ $subtract : ["$closedAt" , "$createdAt"]}, 1000*60*60]},
-          isOverdue : 1,
-        },
-
-      },
-      {
-        $group : {
-          _id : "$bucket",
-          count : { $sum : 1},
-          avgTatHours : { $avg : "$tatActualHours"},
-          overdueCount : { $sum : { $cond : ["$isOverdue", 1,0]}},
-
+        $facet : {
+          closed : [
+            { $match : closedMatch },
+            {
+              $project : {
+                bucket : { $dateToString : { format : DATE_FORMATS[groupBy] , date : "$closedAt"}},
+                tatActualHours : { $divide : [{ $subtract : ["$closedAt" , "$createdAt"]}, 1000*60*60]},
+                isOverdue : 1,
+              },
+            },
+            {
+              $group : {
+                _id : "$bucket",
+                closedCount : { $sum : 1},
+                avgTatHours : { $avg : "$tatActualHours"},
+                overdueCount : { $sum : { $cond : ["$isOverdue", 1,0]}},
+              }
+            },
+          ],
+          created : [
+            { $match : createdMatch },
+            {
+              $group : {
+                _id : { $dateToString : { format : DATE_FORMATS[groupBy] , date : "$createdAt"}},
+                createdCount : { $sum : 1 },
+              }
+            },
+          ],
         }
-      },
-      { $sort : { _id : 1}}
+      }
     ]);
 
-    return rows.map(r => ({
-      bucket : r._id as string,
-      count : r.count as number,
-      avgTatHours : r.avgTatHours != null ? Math.round(r.avgTatHours * 10) / 10 : null,
-      overdueCount : r.overdueCount as number 
+    const closedByBucket = new Map<string, { closedCount : number; avgTatHours : number | null; overdueCount : number }>(
+      facet.closed.map((r : any) => [r._id as string, { closedCount : r.closedCount, avgTatHours : r.avgTatHours, overdueCount : r.overdueCount }])
+    );
+    const createdByBucket = new Map<string, number>(facet.created.map((r : any) => [r._id as string, r.createdCount as number]));
 
-    }))
+    const buckets = [...new Set([...closedByBucket.keys(), ...createdByBucket.keys()])].sort();
+
+    return buckets.map(bucket => {
+      const closed = closedByBucket.get(bucket);
+      const createdCount = createdByBucket.get(bucket) ?? 0;
+      const closedCount = closed?.closedCount ?? 0;
+      return {
+        bucket,
+        createdCount,
+        closedCount,
+        avgTatHours : closed?.avgTatHours != null ? Math.round(closed.avgTatHours * 10) / 10 : null,
+        overdueCount : closed?.overdueCount ?? 0,
+        completionRate : createdCount ? Math.round((closedCount / createdCount) * 1000) / 10 : null,
+      }
+    });
   }
 }

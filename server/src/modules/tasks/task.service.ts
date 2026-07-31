@@ -119,12 +119,13 @@ export const taskService = {
         return task;
     },
 
-    async complianceReport(groupBy: "hour" | "day" | "week" | "month", departmentId?: string, from?: string, to?: string, userId?: string) {
-        const DATE_FORMATS: Record<"hour" | "day" | "week" | "month", string> = {
+    async complianceReport(groupBy: "hour" | "day" | "week" | "month" | "year", departmentId?: string, from?: string, to?: string, userId?: string) {
+        const DATE_FORMATS: Record<"hour" | "day" | "week" | "month" | "year", string> = {
             hour: '%Y-%m-%dT%H:00',
             day: '%Y-%m-%d',
             week: '%G-W%V',
             month: '%Y-%m',
+            year: '%Y',
         };
 
         const match: Record<string, any> = {};

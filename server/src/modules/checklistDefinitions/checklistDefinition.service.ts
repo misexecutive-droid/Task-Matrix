@@ -2,6 +2,7 @@ import { ChecklistDefinition, type ChecklistRecurrence } from "../../models/Chec
 import { ChecklistDefinitionItem } from "../../models/ChecklistDefinitionItem.js"
 import { ChecklistInstance } from "../../models/ChecklistInstance.js"
 import { ChecklistInstanceItem } from "../../models/ChecklistInstanceItem.js"
+import { ChecklistInstanceImage } from "../../models/ChecklistInstanceImage.js"
 import { generateInstanceForDefinition } from "../../jobs/checklistInstanceGenerator.job.js"
 import { AppError } from "../../utils/AppError.js"
 import type { AccessTokenPayload } from "../../middleware/auth/auth.js"
@@ -68,6 +69,10 @@ export const checklistDefinitionService = {
         const instances = await ChecklistInstance.find({ definitionId: id }, { _id: 1 })
         const instanceIds = instances.map(instance => instance._id)
         if (instanceIds.length) {
+            // Clean up every item's evidence photos too, same convention as checklist.service.ts's
+            // removeChecklist — don't leave orphaned ChecklistInstanceImage records behind.
+            const items = await ChecklistInstanceItem.find({ instanceId: { $in: instanceIds } }, { _id: 1 })
+            await ChecklistInstanceImage.deleteMany({ checklistInstanceItemId: { $in: items.map(i => i._id) } })
             await ChecklistInstanceItem.deleteMany({ instanceId: { $in: instanceIds } })
             await ChecklistInstance.deleteMany({ definitionId: id })
         }

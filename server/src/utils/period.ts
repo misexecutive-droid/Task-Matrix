@@ -7,9 +7,16 @@ export type Period = { periodKey: string; periodStart: Date; periodEnd: Date }
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000
 
-// Truncates a Date to UTC midnight of its calendar day, discarding time-of-day.
-const toDateOnlyUTC = (date: Date): Date =>
-    new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()))
+// Truncates a Date to UTC midnight of its calendar day, discarding time-of-day. `offsetMinutes` is
+// the org's local-timezone offset ahead of UTC — shifting by it before reading the calendar day
+// turns "UTC calendar day" into "org's local calendar day", which is what admins actually mean by
+// "today" when they pick a startDate from a plain <input type="date"> (itself parsed as UTC
+// midnight, so without this shift a local "today" can still read as UTC "yesterday" for several
+// hours after local midnight).
+const toDateOnlyUTC = (date: Date, offsetMinutes: number): Date => {
+    const shifted = new Date(date.getTime() + offsetMinutes * 60_000)
+    return new Date(Date.UTC(shifted.getUTCFullYear(), shifted.getUTCMonth(), shifted.getUTCDate()))
+}
 
 const addDaysUTC = (date: Date, days: number): Date => {
     const result = new Date(date)
@@ -66,10 +73,11 @@ const ONE_TIME_KEY = "ONE_TIME"
 
 // Returns the currently-due period for a definition's recurrence, or null if its startDate is
 // still in the future (nothing to generate yet). `now` is passed in rather than read internally
-// so callers (and tests) can pin a fixed instant.
-export const getCurrentPeriod = (recurrence: ChecklistRecurrence, startDate: Date, now: Date): Period | null => {
-    const anchor = toDateOnlyUTC(startDate)
-    const today = toDateOnlyUTC(now)
+// so callers (and tests) can pin a fixed instant. `offsetMinutes` is the org's local-timezone
+// offset ahead of UTC (env.CHECKLIST_TIMEZONE_OFFSET_MINUTES) — see toDateOnlyUTC above.
+export const getCurrentPeriod = (recurrence: ChecklistRecurrence, startDate: Date, now: Date, offsetMinutes: number): Period | null => {
+    const anchor = toDateOnlyUTC(startDate, offsetMinutes)
+    const today = toDateOnlyUTC(now, offsetMinutes)
 
     switch (recurrence) {
         case "DAILY":

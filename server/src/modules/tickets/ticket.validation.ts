@@ -27,7 +27,7 @@ export const paginatioinSchema = z.object({
 })
 
 export const tatReportQuerySchema = z.object({
-    groupBy : z.enum(["hour", "day", "week", "month"]).default("day"),
+    groupBy : z.enum(["hour", "day", "week", "month", "year"]).default("day"),
     from : z.string().optional(),
     to : z.string().optional(),
 })

@@ -18,6 +18,10 @@ const TICKET_UPLOAD_DIR = path.resolve("uploads", "tickets")
 // checklist item, kept in its own folder so the two features' files never collide.
 const TICKET_ATTACHMENT_UPLOAD_DIR = path.resolve("uploads", "ticket-attachments")
 
+// Evidence photos uploaded against a recurring ChecklistInstance's items (see
+// checklistInstanceImages module) — kept separate from the Ticket-side checklistImages folder.
+const CHECKLIST_INSTANCE_UPLOAD_DIR = path.resolve("uploads", "checklist-instances")
+
 
 // A fresh clone of this repo won't have an uploads/ folder yet — we don't (and shouldn't) commit
 // an empty folder of user-uploaded content to git, so create it at startup if it's missing.
@@ -30,6 +34,9 @@ if (!fs.existsSync(TICKET_UPLOAD_DIR)) {
 }
 if (!fs.existsSync(TICKET_ATTACHMENT_UPLOAD_DIR)) {
     fs.mkdirSync(TICKET_ATTACHMENT_UPLOAD_DIR, { recursive: true })
+}
+if (!fs.existsSync(CHECKLIST_INSTANCE_UPLOAD_DIR)) {
+    fs.mkdirSync(CHECKLIST_INSTANCE_UPLOAD_DIR, { recursive: true })
 }
 
 const storage = multer.diskStorage({
@@ -52,6 +59,15 @@ const ticketStorage = multer.diskStorage({
 
 const ticketAttachmentStorage = multer.diskStorage({
     destination: (_req, _file, cb) => cb(null, TICKET_ATTACHMENT_UPLOAD_DIR),
+    filename: (_req, file, cb) => {
+        const randomName = crypto.randomBytes(16).toString("hex");
+        const ext = path.extname(file.originalname).toLowerCase();
+        cb(null, `${randomName}${ext}`)
+    },
+})
+
+const checklistInstanceStorage = multer.diskStorage({
+    destination: (_req, _file, cb) => cb(null, CHECKLIST_INSTANCE_UPLOAD_DIR),
     filename: (_req, file, cb) => {
         const randomName = crypto.randomBytes(16).toString("hex");
         const ext = path.extname(file.originalname).toLowerCase();
@@ -91,3 +107,6 @@ export const checklistImageUpload = (req : Request , res : Response , next : Nex
 
 export const ticketAttachmentUpload = (req : Request , res : Response , next : NextFunction) =>
     buildImageUpload(ticketAttachmentStorage).array("images", settingsService.getCached().maxUploadFiles)(req,res,next)
+
+export const checklistInstanceImageUpload = (req : Request , res : Response , next : NextFunction) =>
+    buildImageUpload(checklistInstanceStorage).array("images", settingsService.getCached().maxUploadFiles)(req,res,next)

@@ -8,13 +8,14 @@ import { ChecklistDefinitionItem } from "../models/ChecklistDefinitionItem.js"
 import { ChecklistInstance } from "../models/ChecklistInstance.js"
 import { ChecklistInstanceItem } from "../models/ChecklistInstanceItem.js"
 import { getCurrentPeriod } from "../utils/period.js"
+import { env } from "../config/env.js"
 
 // Stamps out the currently-due ChecklistInstance for one definition, or does nothing if its period
 // was already generated or its startDate hasn't arrived yet. Shared by the sweep below and by
 // checklistDefinition.service.ts's create() — a freshly-created, already-due definition gets its
 // first instance immediately instead of waiting for the next hourly tick.
 export const generateInstanceForDefinition = async (definition: HydratedDocument<any>, now: Date) => {
-    const period = getCurrentPeriod(definition.recurrence, definition.startDate, now)
+    const period = getCurrentPeriod(definition.recurrence, definition.startDate, now, env.CHECKLIST_TIMEZONE_OFFSET_MINUTES)
     if (!period) return null
 
     const alreadyGenerated = await ChecklistInstance.exists({
@@ -49,6 +50,11 @@ export const generateInstanceForDefinition = async (definition: HydratedDocument
             items.map((item, index) => ({
                 label: item.label,
                 order: item.order ?? index,
+                // Photo requirements are authored once on the definition item and copied onto
+                // every instance it stamps out — an instance item never edits these itself.
+                requiredImageCount: item.requiredImageCount,
+                maxImageCount: item.maxImageCount,
+                requiresLivePhoto: item.requiresLivePhoto,
                 instanceId: instance._id,
             })),
         )
@@ -66,7 +72,11 @@ export const generateInstanceForDefinition = async (definition: HydratedDocument
 
 const generateDueInstances = async () => {
     const now = new Date()
-    const definitions = await ChecklistDefinition.find({ isActive: true, startDate: { $lte: now } })
+    // Widen the pre-filter by the same org-timezone offset getCurrentPeriod uses, so a definition
+    // whose startDate is "today" in local time but still "tomorrow" by raw UTC clock isn't excluded
+    // before generateInstanceForDefinition ever gets a chance to evaluate it.
+    const localNow = new Date(now.getTime() + env.CHECKLIST_TIMEZONE_OFFSET_MINUTES * 60_000)
+    const definitions = await ChecklistDefinition.find({ isActive: true, startDate: { $lte: localNow } })
 
     for (const definition of definitions) {
         // Each definition is isolated in its own try/catch — one bad/malformed definition must

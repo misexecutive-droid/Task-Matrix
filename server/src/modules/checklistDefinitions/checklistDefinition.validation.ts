@@ -4,6 +4,9 @@ import { CHECKLIST_RECURRENCES } from "../../models/ChecklistDefinition.js"
 const definitionItemShape = z.object({
     label: z.string().min(1),
     order: z.number().int().min(0).optional(),
+    requiredImageCount: z.number().int().min(0).optional(),
+    maxImageCount: z.number().int().min(0).optional(),
+    requiresLivePhoto: z.boolean().optional(),
 })
 
 export const createChecklistDefinitionSchema = z.object({
