@@ -2,7 +2,7 @@ import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { CalendarClock } from 'lucide-react';
-import { Input, Button } from '../../components';
+import { Input, Textarea, Button } from '../../components';
 import {
   Dialog,
   DialogContent,
@@ -134,18 +134,13 @@ export const EventForm = ({ onClose, event }: EventFormProps) => {
             {...register('eventDate')}
           />
 
-          <div className="flex flex-col gap-1.5">
-            <label htmlFor="description" className="text-sm font-display font-medium text-text-secondary">
-              Description
-            </label>
-            <textarea
-              id="description"
-              rows={3}
-              placeholder="Optional details"
-              className="w-full px-3 py-2 text-sm bg-surface text-text rounded-sm border border-border focus:outline-none focus:ring-4 focus:border-primary-600 focus:ring-primary-600/15 placeholder:text-text-light"
-              {...register('description')}
-            />
-          </div>
+          <Textarea
+            id="description"
+            label="Description"
+            rows={3}
+            placeholder="Optional details"
+            {...register('description')}
+          />
 
           {mutation.isError && (
             <p className="text-xs text-danger text-center">

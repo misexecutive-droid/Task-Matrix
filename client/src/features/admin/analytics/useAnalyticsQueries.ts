@@ -6,10 +6,6 @@ import { checklistInstanceApi } from '../../../api/checklistInstances';
 import { handleQueryRetry } from '../../../lib/queryHelpers';
 import type { GroupBy } from './GroupByControl';
 
-// All three hooks below share the 'analytics' query-key namespace so none of them collide with
-// other pages calling the same endpoints under a different key (e.g. features/tasks/hook.ts's
-// useComplianceReportQuery, which powers the dashboard's Monthly Target gauge).
-
 export const useTaskComplianceReportQuery = (groupBy: GroupBy, from?: string, to?: string) => {
   const { token, user } = useAuth();
   return useQuery({
@@ -39,3 +35,13 @@ export const useChecklistInstanceComplianceReportQuery = (groupBy: GroupBy, from
     retry: handleQueryRetry,
   });
 };
+
+
+// export const useDepartmentComplianceReporttQuery = (groupBy : GroupBy, from?: string , to?: string) => {
+//   const { token , user} = useAuth();
+// }
+
+
+// export const useDepartmentPerPersonWiseConplianceReportQuery = ( groupBy : GroupBy, from?: string , to?: string) => {
+//   const { token, user } = useAuth()
+// }

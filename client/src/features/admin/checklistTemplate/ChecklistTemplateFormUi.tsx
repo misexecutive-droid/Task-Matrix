@@ -12,6 +12,7 @@ import {
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
+import { Input } from '../../../components';
 import { useAssignableUsersQuery } from '../../tickets/hook';
 import { ItemDraftRow, emptyItemDraft, type ItemDraft } from './ItemDraftRow';
 
@@ -105,27 +106,14 @@ export const ChecklistTemplateFormUI = ({ departments, isSaving, saveError, onSu
           
           {/* Basic Info */}
           <section className="p-5 rounded-xl bg-slate-50/50 dark:bg-slate-900/50 border border-slate-200/60 dark:border-slate-800/60 space-y-5">
-            <div className="space-y-2">
-              <label htmlFor="name" className="text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
-                Template Name
-              </label>
-              <input
-                id="name"
-                type="text"
-                value={name}
-                onChange={e => { setName(e.target.value); setValidationError(null); }}
-                placeholder="e.g., Daily Store Opening, Restroom Cleaning..."
-                className={cn(
-                  "w-full h-11 px-4 bg-white dark:bg-slate-950 border rounded-lg text-sm transition-all focus:outline-none focus:ring-2 focus:ring-offset-1 dark:focus:ring-offset-slate-950",
-                  validationError 
-                    ? "border-rose-300 focus:border-rose-500 focus:ring-rose-500/20" 
-                    : "border-slate-200 dark:border-slate-800 focus:border-indigo-500 focus:ring-indigo-500/20"
-                )}
-              />
-              {validationError && (
-                <p className="text-xs text-rose-500 font-medium mt-1.5">{validationError}</p>
-              )}
-            </div>
+            <Input
+              id="name"
+              label="Template Name"
+              value={name}
+              onChange={e => { setName(e.target.value); setValidationError(null); }}
+              placeholder="e.g., Daily Store Opening, Restroom Cleaning..."
+              error={validationError ?? undefined}
+            />
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
               <div className="space-y-2">

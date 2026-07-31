@@ -5,6 +5,7 @@ import { z } from 'zod';
 import { Building2, X, AlertCircle, Loader2 } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
+import { Input } from '../../../components';
 import { useCreateDepartmentMutation, useUpdateDepartmentMutation } from '../hook';
 import type { Department } from '../../../api/departments';
 
@@ -88,31 +89,14 @@ export const DepartmentForm = ({ onClose, department }: DepartmentFormProps) => 
           <div className="p-6 space-y-6">
             
             {/* Input Group */}
-            <div className="space-y-2">
-              <label htmlFor="name" className="text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
-                Department Name
-              </label>
-              <input
-                id="name"
-                type="text"
-                placeholder="e.g. Customer Support"
-                autoFocus
-                {...register('name')}
-                className={cn(
-                  "w-full h-11 px-4 bg-white dark:bg-slate-950 border rounded-xl text-sm text-slate-900 dark:text-white transition-all duration-200",
-                  "focus:outline-none focus:ring-2 focus:ring-offset-1 dark:focus:ring-offset-slate-950",
-                  errors.name 
-                    ? "border-rose-300 focus:border-rose-500 focus:ring-rose-500/20 text-rose-900 dark:text-rose-100 placeholder:text-rose-300 dark:placeholder:text-rose-700" 
-                    : "border-slate-200 dark:border-slate-800 focus:border-indigo-500 focus:ring-indigo-500/20 placeholder:text-slate-400 dark:placeholder:text-slate-500"
-                )}
-              />
-              {errors.name && (
-                <p className="text-xs font-medium text-rose-500 flex items-center gap-1.5 mt-1.5 animate-in slide-in-from-top-1 duration-200">
-                  <AlertCircle className="w-3.5 h-3.5" />
-                  {errors.name.message}
-                </p>
-              )}
-            </div>
+            <Input
+              id="name"
+              label="Department Name"
+              placeholder="e.g. Customer Support"
+              autoFocus
+              error={errors.name?.message}
+              {...register('name')}
+            />
 
             {/* Mutation Error Alert */}
             {mutation.isError && (

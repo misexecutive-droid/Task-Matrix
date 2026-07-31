@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Plus } from 'lucide-react';
-import { Button } from '../../components';
+import { Button, Input } from '../../components';
 import {
   useAddTaskChecklistMutation,
   useAssignableUsersQuery,
@@ -85,16 +85,14 @@ export const NewChecklistForm = ({ taskId, onDone }: NewChecklistFormProps) => {
         </div>
       )}
 
-      <div>
-        <label className="block text-sm font-mono font-medium text-text mb-1">Checklist Title</label>
-        <input
-          autoFocus
-          value={title}
-          onChange={e => setTitle(e.target.value)}
-          placeholder="e.g., Pre-flight Inspection"
-          className="w-full px-4 py-2.5 text-base bg-surface text-text rounded-lg border border-border focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all"
-        />
-      </div>
+      <Input
+        id="checklist-title"
+        label="Checklist Title"
+        autoFocus
+        value={title}
+        onChange={e => setTitle(e.target.value)}
+        placeholder="e.g., Pre-flight Inspection"
+      />
 
       <div className="flex flex-col gap-3 mt-2">
         <h4 className="text-sm font-mono font-medium text-text-secondary">Tasks ({itemDrafts.length})</h4>

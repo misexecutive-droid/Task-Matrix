@@ -6,7 +6,8 @@ import {
   SelectContent,
   SelectItem,
 } from '@/components/ui/select';
-import { LABEL_CLASS, INPUT_BASE_CLASS, SELECT_TRIGGER_CLASS, RECURRENCE_OPTIONS } from './formConstants';
+import { Input } from '../../../../components';
+import { LABEL_CLASS, SELECT_TRIGGER_CLASS, RECURRENCE_OPTIONS } from './formConstants';
 import type { ChecklistRecurrence } from '../../../../api/checklistDefinitions';
 import type { Department } from '../../../../api/departments';
 
@@ -70,18 +71,15 @@ export const ChecklistScheduleFields = ({
       </div>
     </div>
 
-    <div className="space-y-2">
-      <label htmlFor="checklist-start-date" className={LABEL_CLASS}>
-        <Calendar className="w-3.5 h-3.5 text-indigo-400" />
-        {recurrence === 'ONE_TIME' ? 'Due Date' : 'Starts On'}
-      </label>
-      <input
-        id="checklist-start-date"
-        type="date"
-        value={startDate}
-        onChange={(e) => onStartDateChange(e.target.value)}
-        className={`${INPUT_BASE_CLASS} h-10 cursor-pointer text-text-secondary`}
-      />
-    </div>
+    <Input
+      id="checklist-start-date"
+      type="date"
+      label={recurrence === 'ONE_TIME' ? 'Due Date' : 'Starts On'}
+      icon={Calendar}
+      iconClassName="text-indigo-400"
+      value={startDate}
+      onChange={(e) => onStartDateChange(e.target.value)}
+      className="cursor-pointer text-text-secondary"
+    />
   </>
 );

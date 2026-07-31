@@ -3,7 +3,19 @@ import { ArrowLeft, AlertCircle, Repeat, Users, Calendar } from 'lucide-react';
 import { Skeleton } from '../../../components';
 import { useChecklistDefinitionQuery, useInstancesForDefinitionQuery, useDepartmentsQuery } from '../hook';
 import { ChecklistInstanceRow } from '../instance/ChecklistInstanceRow';
-import { formatDate } from '../checklistDisplay';
+import { formatDate, instanceProgressStatus, INSTANCE_STATUS_LABEL, type InstanceProgressStatus } from '../checklistDisplay';
+import type { ChecklistInstance } from '../../../api/checklistInstances';
+
+const STATUS_ORDER: InstanceProgressStatus[] = ['TODO', 'IN_PROGRESS', 'COMPLETED'];
+
+const groupByStatus = (instances: ChecklistInstance[]) =>
+  STATUS_ORDER.map(status => ({
+    status,
+    instances: instances.filter(i => {
+      const done = i.items.filter(x => x.isDone).length;
+      return instanceProgressStatus(done, i.items.length) === status;
+    }),
+  })).filter(group => group.instances.length > 0);
 
 export const ChecklistDefinitionDetail = () => {
   const { definitionId = '' } = useParams();
@@ -69,7 +81,7 @@ export const ChecklistDefinitionDetail = () => {
         </div>
       </div>
 
-      <div className="flex flex-col gap-2">
+      <div className="flex flex-col gap-6">
         <h2 className="text-sm font-mono font-semibold text-text-muted uppercase tracking-wider">
           Generated Instances ({instances.length})
         </h2>
@@ -78,7 +90,21 @@ export const ChecklistDefinitionDetail = () => {
             No instances generated yet.
           </div>
         )}
-        {instances.map(instance => <ChecklistInstanceRow key={instance.id} instance={instance} />)}
+        {groupByStatus(instances).map(group => (
+          <div key={group.status} className="flex flex-col gap-2">
+            <div className="flex items-center gap-2">
+              <h3 className="text-xs font-mono font-semibold text-text uppercase tracking-wider">
+                {INSTANCE_STATUS_LABEL[group.status]}
+              </h3>
+              <span className="text-xs font-mono font-medium px-1.5 py-0.5 rounded-full bg-surface-hover text-text-muted border border-border">
+                {group.instances.length}
+              </span>
+            </div>
+            <div className="flex flex-col gap-2">
+              {group.instances.map(instance => <ChecklistInstanceRow key={instance.id} instance={instance} />)}
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );

@@ -13,7 +13,7 @@ import {
   Layers,
   ArrowRight
 } from 'lucide-react';
-import { Button } from '../../components';
+import { Button, Input, Textarea } from '../../components';
 import {
   Dialog,
   DialogContent,
@@ -36,9 +36,6 @@ const NO_DEPARTMENT = '__none__';
 
 const LABEL_CLASS =
   'text-xs font-display font-semibold text-text-secondary uppercase tracking-wider flex items-center gap-1.5 select-none';
-
-const INPUT_BASE_CLASS =
-  'w-full px-3 sm:px-3.5 py-2.5 text-sm font-display bg-surface/60 text-text rounded-lg border border-border/70 focus:outline-none focus:ring-2 focus:ring-primary-500/40 focus:border-primary-500/60 transition-all duration-200 placeholder:text-text-muted/50 hover:border-border';
 
 const taskSchema = z.object({
   title:        z.string().trim().min(1, 'Title is required'),
@@ -157,37 +154,26 @@ export const TaskForm = ({ onClose }: TaskFormProps) => {
           <div className="flex flex-col gap-5 sm:gap-6 px-4 py-4 sm:px-7 sm:py-6 overflow-y-auto flex-1 min-h-0 scrollbar-thin scrollbar-thumb-border/40 hover:scrollbar-thumb-border/80">
 
             {/* Title Input */}
-            <div className="space-y-2">
-              <label htmlFor="title" className={LABEL_CLASS}>
-                <Heading className="w-3.5 h-3.5 text-primary-400" /> Task Title <span className="text-rose-400">*</span>
-              </label>
-              <input
-                id="title"
-                placeholder="e.g. Redesign the landing page hero section"
-                className={`${INPUT_BASE_CLASS} h-10`}
-                {...register('title')}
-                autoFocus
-              />
-              {errors.title?.message && (
-                <p className="text-xs font-display text-rose-400 flex items-center gap-1">
-                  <AlertCircle className="w-3 h-3 shrink-0" /> {errors.title.message}
-                </p>
-              )}
-            </div>
+            <Input
+              id="title"
+              label={<>Task Title <span className="text-danger">*</span></>}
+              icon={Heading}
+              iconClassName="text-primary-400"
+              placeholder="e.g. Redesign the landing page hero section"
+              error={errors.title?.message}
+              {...register('title')}
+              autoFocus
+            />
 
             {/* Description Area */}
-            <div className="space-y-2">
-              <label htmlFor="description" className={LABEL_CLASS}>
-                <FileText className="w-3.5 h-3.5 text-text-muted" /> Description
-              </label>
-              <textarea
-                id="description"
-                rows={3}
-                placeholder="Provide task context, constraints, acceptance criteria, or relevant links…"
-                className={`${INPUT_BASE_CLASS} resize-none leading-relaxed`}
-                {...register('description')}
-              />
-            </div>
+            <Textarea
+              id="description"
+              label="Description"
+              icon={FileText}
+              rows={3}
+              placeholder="Provide task context, constraints, acceptance criteria, or relevant links…"
+              {...register('description')}
+            />
 
             {/* Priority Selector */}
             <div className="space-y-2">
@@ -219,24 +205,16 @@ export const TaskForm = ({ onClose }: TaskFormProps) => {
             {/* Due Date & Assignment Row */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:pt-1">
               {/* Due Date */}
-              <div className="space-y-2">
-                <label htmlFor="dueDate" className={LABEL_CLASS}>
-                  <Calendar className="w-3.5 h-3.5 text-indigo-400" /> Due Date
-                </label>
-                <div className="relative">
-                  <input
-                    id="dueDate"
-                    type="date"
-                    className={`${INPUT_BASE_CLASS} h-10 cursor-pointer text-text-secondary w-full`}
-                    {...register('dueDate')}
-                  />
-                </div>
-                {errors.dueDate?.message && (
-                  <p className="text-xs font-display text-rose-400 flex items-center gap-1">
-                    <AlertCircle className="w-3 h-3 shrink-0" /> {errors.dueDate.message}
-                  </p>
-                )}
-              </div>
+              <Input
+                id="dueDate"
+                type="date"
+                label="Due Date"
+                icon={Calendar}
+                iconClassName="text-indigo-400"
+                className="cursor-pointer text-text-secondary"
+                error={errors.dueDate?.message}
+                {...register('dueDate')}
+              />
 
               {/* Department */}
               <div className="space-y-2">
