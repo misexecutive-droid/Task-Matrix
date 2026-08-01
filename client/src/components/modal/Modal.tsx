@@ -1,112 +1,79 @@
-import React, { useState } from "react";
-import { Modal } from "./Modal"; 
-import { Input } from "../input/Input";
+import type { ReactNode } from 'react';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogFooter,
+  DialogTitle,
+  DialogDescription,
+} from '../ui/dialog';
 
+const SIZE_CLASS = {
+  sm: 'sm:max-w-sm',
+  md: 'sm:max-w-md',
+  lg: 'sm:max-w-lg',
+  xl: 'sm:max-w-2xl',
+} as const;
 
-interface PersonalInfoModalProps {
+interface ModalProps {
   open: boolean;
   onClose: () => void;
+  title: ReactNode;
+  description?: ReactNode;
+  icon?: ReactNode;
+  size?: keyof typeof SIZE_CLASS;
+  footer?: ReactNode;
+  showCloseButton?: boolean;
+  contentClassName?: string;
+  headerClassName?: string;
+  bodyClassName?: string;
+  footerClassName?: string;
+  children: ReactNode;
 }
 
-export function PersonalInfoModal({ open, onClose }: PersonalInfoModalProps) {
-  // State to hold the form data matching your reference image
-  const [formData, setFormData] = useState({
-    firstName: "Musharof",
-    lastName: "Chowdhury",
-    email: "randomuser@pimjo.com",
-    phone: "+09 363 398 46",
-    bio: "Team Manager",
-  });
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-  };
-
-  // Custom footer matching the "Close" and "Save Changes" buttons in the image
-  const modalFooter = (
-    <div className="flex w-full items-center justify-end gap-3 pt-2">
-      <button
-        type="button"
-        onClick={onClose}
-        className="px-5 py-2.5 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors outline-none focus:ring-2 focus:ring-slate-200"
-      >
-        Close
-      </button>
-      <button
-        type="button"
-        onClick={() => {
-          console.log("Saved Data:", formData);
-          onClose();
-        }}
-        className="px-5 py-2.5 text-sm font-medium text-white bg-indigo-500 rounded-lg hover:bg-indigo-600 transition-colors outline-none focus:ring-2 focus:ring-indigo-500/50 shadow-sm"
-      >
-        Save Changes
-      </button>
-    </div>
-  );
-
-  return (
-    <Modal
-      open={open}
-      onClose={onClose}
-      size="large" // Using 'large' from your SIZE_CLASSES to accommodate the 2-column layout well
-      title={
-        <span className="text-lg font-bold text-slate-800 dark:text-white">
-          Personal Information
-        </span>
-      }
-      footer={modalFooter}
+export const Modal = ({
+  open,
+  onClose,
+  title,
+  description,
+  icon,
+  size = 'md',
+  footer,
+  showCloseButton = true,
+  contentClassName = '',
+  headerClassName = '',
+  bodyClassName = '',
+  footerClassName = '',
+  children,
+}: ModalProps) => (
+  <Dialog open={open} onOpenChange={(next) => { if (!next) onClose(); }}>
+    <DialogContent
+      showCloseButton={showCloseButton}
+      className={`w-[95vw] ${SIZE_CLASS[size]} p-0 flex flex-col overflow-hidden ${contentClassName}`}
     >
-      {/* Grid container for the inputs */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-5 py-4">
-        
-        {/* Row 1 */}
-        <Input
-          id="firstName"
-          name="firstName"
-          label={<span className="normal-case tracking-normal text-sm text-slate-800 font-medium">First Name</span>}
-          value={formData.firstName}
-          onChange={handleChange}
-        />
-        <Input
-          id="lastName"
-          name="lastName"
-          label={<span className="normal-case tracking-normal text-sm text-slate-800 font-medium">Last Name</span>}
-          value={formData.lastName}
-          onChange={handleChange}
-        />
+      <DialogHeader className={`shrink-0 px-5 pt-5 pb-4 border-b border-border/40 ${headerClassName}`}>
+        {icon ? (
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-primary-500/10 text-primary-500 border border-primary-500/20 shrink-0">
+              {icon}
+            </div>
+            <DialogTitle>{title}</DialogTitle>
+          </div>
+        ) : (
+          <DialogTitle>{title}</DialogTitle>
+        )}
+        {description && <DialogDescription>{description}</DialogDescription>}
+      </DialogHeader>
 
-        {/* Row 2 */}
-        <Input
-          id="email"
-          name="email"
-          type="email"
-          label={<span className="normal-case tracking-normal text-sm text-slate-800 font-medium">Email Address</span>}
-          value={formData.email}
-          onChange={handleChange}
-        />
-        <Input
-          id="phone"
-          name="phone"
-          type="tel"
-          label={<span className="normal-case tracking-normal text-sm text-slate-800 font-medium">Phone</span>}
-          value={formData.phone}
-          onChange={handleChange}
-        />
-
-        {/* Row 3 (Full Width) */}
-        <div className="md:col-span-2">
-          <Input
-            id="bio"
-            name="bio"
-            label={<span className="normal-case tracking-normal text-sm text-slate-800 font-medium">Bio</span>}
-            value={formData.bio}
-            onChange={handleChange}
-          />
-        </div>
-        
+      <div className={`flex flex-col gap-5 px-5 py-4 overflow-y-auto flex-1 min-h-0 ${bodyClassName}`}>
+        {children}
       </div>
-    </Modal>
-  );
-}
+
+      {footer && (
+        <DialogFooter className={`shrink-0 px-5 py-4 border-t border-border/40 ${footerClassName}`}>
+          {footer}
+        </DialogFooter>
+      )}
+    </DialogContent>
+  </Dialog>
+);

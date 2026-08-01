@@ -16,3 +16,4 @@ export { UserMultiSelect } from './userMultiSelect';
 export { AccessoriesListEditor } from './accessoriesListEditor';
 export { DateRangePicker } from './dateRangePicker';
 export type { DateRangeValue } from './dateRangePicker';
+export { Modal } from './modal';

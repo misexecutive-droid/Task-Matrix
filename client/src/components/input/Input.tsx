@@ -83,7 +83,6 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
           )}
         </div>
 
-        {/* Validation Error */}
         {error && (
           <p
             id={errorId}

@@ -1,13 +1,6 @@
 import { useState } from 'react';
 import { ListChecks, AlertCircle } from 'lucide-react';
-import { Button } from '../../../components';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from '@/components/ui/dialog';
+import { Button, Modal } from '../../../components';
 import { useCreateChecklistDefinitionMutation, useDepartmentsQuery, useChecklistTemplatesQuery } from '../hook';
 import { emptyItemDraft, type ItemDraft } from './ChecklistDefinitionItemDraftRow';
 import { ChecklistDetailsFields } from './form/ChecklistDetailsFields';
@@ -93,38 +86,42 @@ export const ChecklistDefinitionForm = ({ onClose }: ChecklistDefinitionFormProp
     );
   };
 
+  const footer = (
+    <>
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        onClick={onClose}
+        disabled={createDefinition.isPending}
+        className="w-full sm:w-auto h-10 sm:h-9 px-4 text-sm sm:text-xs font-display border-border/60 hover:bg-surface-hover hover:text-text rounded-lg transition-all"
+      >
+        Cancel
+      </Button>
+      <Button
+        type="button"
+        variant="primary"
+        size="sm"
+        onClick={handleSubmit}
+        disabled={!canSubmit}
+        isLoading={createDefinition.isPending}
+        className="w-full sm:w-auto h-10 sm:h-9 px-4 text-sm sm:text-xs font-display bg-gradient-to-r from-primary-500 to-indigo-600 hover:from-primary-600 hover:to-indigo-700 text-white shadow-md shadow-primary-500/20 rounded-lg transition-all active:scale-[0.98] disabled:from-surface-dark disabled:to-surface-dark disabled:text-text-muted disabled:shadow-none disabled:border disabled:border-border/50"
+      >
+        Create Checklist
+      </Button>
+    </>
+  );
+
   return (
-    <Dialog open onOpenChange={(v) => { if (!v) onClose(); }}>
-      <DialogContent className="w-[95vw] sm:w-full sm:max-w-xl border-border/50 bg-surface/90 backdrop-blur-xl shadow-2xl p-0 rounded-2xl max-h-[90vh] flex flex-col overflow-hidden transition-all">
-
-        {/* Ambient Top Glow Banner */}
-        <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-primary-500 via-indigo-500 to-purple-500 opacity-90 z-10" />
-
-        {/* Pinned Header */}
-        <DialogHeader className="shrink-0 px-4 pt-5 sm:px-7 sm:pt-7 pb-4 border-b border-border/40">
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <div className="relative hidden sm:block p-2.5 rounded-xl bg-primary-500/10 text-primary-400 border border-primary-500/25 shadow-inner shrink-0">
-                <ListChecks className="w-5 h-5" />
-                <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-primary-500"></span>
-                </span>
-              </div>
-              <div className="min-w-0">
-                <DialogTitle className="text-base font-semibold tracking-tight text-text flex items-center gap-2 truncate">
-                  New Recurring Checklist
-                </DialogTitle>
-                <p className="text-xs text-text-muted font-display mt-0.5 truncate sm:whitespace-normal">
-                  Regenerates automatically on a schedule and assigns to specific team members. For a
-                  one-off checklist on a single task or ticket, create a Checklist Template instead.
-                </p>
-              </div>
-            </div>
-          </div>
-        </DialogHeader>
-
-        <div className="flex flex-col gap-5 sm:gap-6 px-4 py-4 sm:px-7 sm:py-6 overflow-y-auto flex-1 min-h-0 scrollbar-thin scrollbar-thumb-border/40 hover:scrollbar-thumb-border/80">
+    <Modal
+      open
+      onClose={onClose}
+      size="xl"
+      icon={<ListChecks className="w-5 h-5" />}
+      title="New Recurring Checklist"
+      description="Regenerates automatically on a schedule and assigns to specific team members. For a one-off checklist on a single task or ticket, create a Checklist Template instead."
+      footer={footer}
+    >
           <ChecklistDetailsFields
             name={name}
             onNameChange={setName}
@@ -167,32 +164,6 @@ export const ChecklistDefinitionForm = ({ onClose }: ChecklistDefinitionFormProp
               </p>
             </div>
           )}
-        </div>
-
-        <DialogFooter className="shrink-0 px-4 py-4 sm:px-7 border-t border-border/40 flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-2.5 sm:gap-3">
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={onClose}
-            disabled={createDefinition.isPending}
-            className="w-full sm:w-auto h-10 sm:h-9 px-4 text-sm sm:text-xs font-display border-border/60 hover:bg-surface-hover hover:text-text rounded-lg transition-all"
-          >
-            Cancel
-          </Button>
-          <Button
-            type="button"
-            variant="primary"
-            size="sm"
-            onClick={handleSubmit}
-            disabled={!canSubmit}
-            isLoading={createDefinition.isPending}
-            className="w-full sm:w-auto h-10 sm:h-9 px-4 text-sm sm:text-xs font-display bg-gradient-to-r from-primary-500 to-indigo-600 hover:from-primary-600 hover:to-indigo-700 text-white shadow-md shadow-primary-500/20 rounded-lg transition-all active:scale-[0.98] disabled:from-surface-dark disabled:to-surface-dark disabled:text-text-muted disabled:shadow-none disabled:border disabled:border-border/50"
-          >
-            Create Checklist
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+    </Modal>
   );
 };
