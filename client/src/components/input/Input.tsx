@@ -34,11 +34,11 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
     const errorId = error && id ? `${id}-error` : undefined;
 
     return (
-      <div className={cn("flex flex-col gap-1.5 w-full", containerClassName)}>
-        {/* Label */}
+      <div className={cn("flex flex-col gap-2 w-full", containerClassName)}>
+        {/* Label - Updated to match image (standard case, medium font, slate-800) */}
         <label
           htmlFor={id}
-          className="flex items-center gap-1.5 text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider transition-colors"
+          className="flex items-center gap-1.5 text-sm font-medium text-slate-800 dark:text-slate-200 transition-colors"
         >
           {Icon && (
             <Icon 
@@ -57,14 +57,15 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
             aria-invalid={!!error}
             aria-describedby={errorId}
             className={cn(
-              "w-full h-11 px-4 text-sm font-medium transition-all duration-200 ease-in-out",
-              "bg-white dark:bg-slate-950 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500",
-              "border rounded-xl outline-none appearance-none",
-              "disabled:bg-slate-50 dark:disabled:bg-slate-900/50 disabled:text-slate-400 dark:disabled:text-slate-600 disabled:cursor-not-allowed",
-              suffix && "pr-11", // Add padding to prevent text from overlapping the suffix
+              "w-full h-11 px-4 text-sm transition-all duration-200 ease-in-out",
+              // Updated text color to match the lighter grayish-blue input values in the image
+              "bg-white dark:bg-slate-950 text-slate-500 dark:text-slate-400 placeholder:text-slate-400",
+              "border rounded-lg outline-none appearance-none",
+              "disabled:bg-slate-50 dark:disabled:bg-slate-900/50 disabled:text-slate-400 disabled:cursor-not-allowed",
+              suffix && "pr-11",
               error
                 ? "border-rose-300 dark:border-rose-700/80 focus:border-rose-500 focus:ring-4 focus:ring-rose-500/20"
-                : "border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/20",
+                : "border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 focus:border-[#4f46e5] focus:ring-2 focus:ring-[#4f46e5]/20",
               className
             )}
             {...props}
@@ -87,7 +88,7 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
           <p
             id={errorId}
             role="alert"
-            className="flex items-center gap-1.5 text-xs font-medium text-rose-500 dark:text-rose-400 mt-0.5 animate-in slide-in-from-top-1 fade-in duration-200"
+            className="flex items-center gap-1.5 text-xs font-medium text-rose-500 dark:text-rose-400 animate-in slide-in-from-top-1 fade-in duration-200"
           >
             <AlertCircle className="w-3.5 h-3.5 shrink-0" />
             {error}
