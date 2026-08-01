@@ -1,0 +1,1 @@
+export { AccessoriesListEditor } from './AccessoriesListEditor';

@@ -24,7 +24,7 @@ export const Form: React.FC<FormProps> = ({
       onSubmit={handleSubmit}
       className={[
         'w-full max-w-md p-6 bg-surface',
-        'rounded-lg shadow-md',
+        'rounded-md shadow-md',
         'flex flex-col gap-6',
         className,
       ].join(' ')}

@@ -2,6 +2,8 @@ import { apiFetch } from './http';
 
 export type ChecklistRecurrence = 'DAILY' | 'WEEKLY' | 'MONTHLY' | 'QUARTERLY' | 'YEARLY' | 'ONE_TIME';
 
+export type ChecklistItemType = 'STANDARD' | 'AUDIT';
+
 export type ChecklistDefinitionItem = {
   id:                 string;
   label:              string;
@@ -9,6 +11,9 @@ export type ChecklistDefinitionItem = {
   requiredImageCount: number;
   maxImageCount:      number | null;
   requiresLivePhoto:  boolean;
+  itemType:           ChecklistItemType;
+  auditUserIds:       string[];
+  accessories:        string[];
   definitionId:       string;
 };
 
@@ -33,6 +38,9 @@ export type CreateChecklistDefinitionItemPayload = {
   requiredImageCount?: number;
   maxImageCount?:      number;
   requiresLivePhoto?:  boolean;
+  itemType?:           ChecklistItemType;
+  auditUserIds?:       string[];
+  accessories?:        string[];
 };
 
 export type CreateChecklistDefinitionPayload = {

@@ -1,10 +1,15 @@
 import { Camera } from 'lucide-react';
+import { UserMultiSelect, AccessoriesListEditor } from '../../../components';
+import type { ChecklistItemType } from '../../../api/checklistDefinitions';
 
 export type ItemDraft = {
   label:              string;
   requiredImageCount: string;
   maxImageCount:      string;
   requiresLivePhoto:  boolean;
+  itemType:           ChecklistItemType;
+  auditUserIds:       string[];
+  accessories:        string[];
 };
 
 export const emptyItemDraft = (): ItemDraft => ({
@@ -12,18 +17,24 @@ export const emptyItemDraft = (): ItemDraft => ({
   requiredImageCount: '0',
   maxImageCount: '',
   requiresLivePhoto: false,
+  itemType: 'STANDARD',
+  auditUserIds: [],
+  accessories: [],
 });
 
 interface ChecklistDefinitionItemDraftRowProps {
-  index:    number;
-  draft:    ItemDraft;
-  onChange: (index: number, patch: Partial<ItemDraft>) => void;
+  index:        number;
+  draft:        ItemDraft;
+  onChange:     (index: number, patch: Partial<ItemDraft>) => void;
+  departmentId?: string;
 }
 
 // Sibling of admin/checklist/ItemDraftRow.tsx — same photo-requirement controls (min/max count,
 // live-photo-only), minus the per-item assignee dropdown, since assignment here lives at the
-// checklist level via assigneeIds, not per-item.
-export const ChecklistDefinitionItemDraftRow = ({ index, draft, onChange }: ChecklistDefinitionItemDraftRowProps) => (
+// checklist level via assigneeIds, not per-item — EXCEPT for itemType "AUDIT", which is the one
+// deliberate exception: it names specific users (auditUserIds) who must each independently submit
+// their own evidence against this one step (see ChecklistInstanceItemSubmission on the backend).
+export const ChecklistDefinitionItemDraftRow = ({ index, draft, onChange, departmentId }: ChecklistDefinitionItemDraftRowProps) => (
   <div className="flex flex-col gap-2 p-3 rounded-lg border border-border/70 bg-surface">
     <input
       value={draft.label}
@@ -67,6 +78,39 @@ export const ChecklistDefinitionItemDraftRow = ({ index, draft, onChange }: Chec
         />
         <span>Live photo only</span>
       </label>
+
+      <div className="flex items-center rounded-lg border border-border/60 bg-background p-0.5 text-xs font-display">
+        {(['STANDARD', 'AUDIT'] as const).map(type => (
+          <button
+            key={type}
+            type="button"
+            onClick={() => onChange(index, { itemType: type })}
+            className={[
+              'px-2.5 py-1 rounded-md transition-colors',
+              draft.itemType === type ? 'bg-primary-500 text-white' : 'text-text-muted hover:text-text',
+            ].join(' ')}
+          >
+            {type === 'STANDARD' ? 'Standard' : 'Audit'}
+          </button>
+        ))}
+      </div>
     </div>
+
+    {draft.itemType === 'AUDIT' && (
+      <div className="flex flex-col gap-3 mt-1 pt-3 border-t border-dashed border-border/60">
+        <div className="flex flex-col gap-1.5">
+          <span className="text-sm font-display font-medium text-text-secondary">Auditors</span>
+          <UserMultiSelect
+            departmentId={departmentId}
+            selected={draft.auditUserIds}
+            onChange={ids => onChange(index, { auditUserIds: ids })}
+          />
+        </div>
+        <AccessoriesListEditor
+          accessories={draft.accessories}
+          onChange={accessories => onChange(index, { accessories })}
+        />
+      </div>
+    )}
   </div>
 );

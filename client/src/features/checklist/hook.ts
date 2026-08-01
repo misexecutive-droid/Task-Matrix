@@ -7,6 +7,8 @@ import {
   type ListChecklistDefinitionsParams,
 } from '../../api/checklistDefinitions';
 import { checklistInstanceApi, type ChecklistInstanceStatus, type VerifyChecklistInstancePayload } from '../../api/checklistInstances';
+import { checklistInstanceItemSubmissionApi } from '../../api/checklistInstanceItemSubmissions';
+import type { ChecklistInstanceItemSubmissionAccessory } from '../../api/checklistInstances';
 import type { CaptureMethod } from '../../api/ticket';
 import { useEntityMutation } from '../../lib/queryHelpers';
 
@@ -144,6 +146,52 @@ export const useUploadChecklistInstanceImagesMutation = (instanceId: string) =>
 export const useDeleteChecklistInstanceImageMutation = (instanceId: string) =>
   useEntityMutation({
     mutationFn: (id: string) => checklistInstanceApi.deleteImage(id),
+    invalidateKeys: [KEYS.instanceDetail(instanceId)],
+    successMessage: 'Photo deleted',
+    errorFallback: 'Failed to delete photo',
+  });
+
+// Mutations below act on one AUDIT item's per-auditor ChecklistInstanceItemSubmission (see
+// ChecklistInstanceItemAuditCard.tsx) — all invalidate the same instance-detail key as the
+// STANDARD-item mutations above, since a submission change also flips its parent item's derived
+// isDone (and possibly the instance's verificationStatus) server-side.
+export const useSetChecklistInstanceItemSubmissionDoneMutation = (instanceId: string) =>
+  useEntityMutation({
+    mutationFn: ({ id, isDone }: { id: string; isDone: boolean }) =>
+      checklistInstanceItemSubmissionApi.setDone(id, isDone).then(r => r.data),
+    invalidateKeys: [KEYS.instanceDetail(instanceId)],
+    errorFallback: 'Failed to update submission',
+  });
+
+export const useUpdateChecklistInstanceItemSubmissionAccessoriesMutation = (instanceId: string) =>
+  useEntityMutation({
+    mutationFn: ({ id, accessories }: { id: string; accessories: ChecklistInstanceItemSubmissionAccessory[] }) =>
+      checklistInstanceItemSubmissionApi.updateAccessories(id, accessories).then(r => r.data),
+    invalidateKeys: [KEYS.instanceDetail(instanceId)],
+    errorFallback: 'Failed to update accessories',
+  });
+
+export const useUpdateChecklistInstanceItemSubmissionRemarksMutation = (instanceId: string) =>
+  useEntityMutation({
+    mutationFn: ({ id, remarks }: { id: string; remarks: string | null }) =>
+      checklistInstanceItemSubmissionApi.updateRemarks(id, remarks).then(r => r.data),
+    invalidateKeys: [KEYS.instanceDetail(instanceId)],
+    successMessage: 'Remarks saved',
+    errorFallback: 'Failed to save remarks',
+  });
+
+export const useUploadChecklistInstanceItemSubmissionImagesMutation = (instanceId: string) =>
+  useEntityMutation({
+    mutationFn: ({ submissionId, files, captureMethod }: { submissionId: string; files: File[]; captureMethod: CaptureMethod }) =>
+      checklistInstanceItemSubmissionApi.uploadImages(submissionId, files, captureMethod).then(r => r.data),
+    invalidateKeys: [KEYS.instanceDetail(instanceId)],
+    successMessage: 'Photos uploaded',
+    errorFallback: 'Failed to upload photos',
+  });
+
+export const useDeleteChecklistInstanceItemSubmissionImageMutation = (instanceId: string) =>
+  useEntityMutation({
+    mutationFn: (id: string) => checklistInstanceItemSubmissionApi.deleteImage(id),
     invalidateKeys: [KEYS.instanceDetail(instanceId)],
     successMessage: 'Photo deleted',
     errorFallback: 'Failed to delete photo',

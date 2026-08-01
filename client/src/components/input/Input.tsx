@@ -1,56 +1,101 @@
 import React from "react";
-import type { LucideIcon } from "lucide-react";
+import { AlertCircle, type LucideIcon } from "lucide-react";
+import { clsx, type ClassValue } from "clsx";
+import { twMerge } from "tailwind-merge";
 
-interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
-  label:          React.ReactNode;
-  error?:         string;
-  suffix?:        React.ReactNode;
-  icon?:          LucideIcon;
+function cn(...inputs: ClassValue[]) {
+  return twMerge(clsx(inputs));
+}
+
+export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
+  label: React.ReactNode;
+  error?: string;
+  suffix?: React.ReactNode;
+  icon?: LucideIcon;
   iconClassName?: string;
+  containerClassName?: string;
 }
 
 export const Input = React.forwardRef<HTMLInputElement, InputProps>(
-  ({ label, error, id, className = "", suffix, icon: Icon, iconClassName = "text-text-muted", ...props }, ref) => (
-    <div className="flex flex-col gap-1.5 w-full">
+  (
+    {
+      label,
+      error,
+      id,
+      className,
+      suffix,
+      icon: Icon,
+      iconClassName,
+      containerClassName,
+      ...props
+    },
+    ref
+  ) => {
+    const errorId = error && id ? `${id}-error` : undefined;
 
-      <label htmlFor={id} className="flex items-center gap-1.5 text-sm font-display font-medium text-text-secondary">
-        {Icon && <Icon className={`w-3.5 h-3.5 shrink-0 ${iconClassName}`} />}
-        {label}
-      </label>
-       <div className="relative">
-      <input
-        id={id}
-        ref={ref}
-        className={[
-          'w-full px-3 h-11 sm:h-10 text-base sm:text-sm bg-surface text-text rounded-none border',
-          'transition-colors duration-150',
-          'placeholder:text-text-light',
-          'focus:outline-none focus:ring-4',
-          error
-            ? 'border-danger focus:border-danger focus:ring-danger/15'
-            : 'border-border focus:border-primary-600 focus:ring-primary-600/15',
-          'disabled:bg-surface-hover disabled:text-text-muted disabled:cursor-not-allowed',
-          className,
-        ].join(' ')}
-        {...props}
+    return (
+      <div className={cn("flex flex-col gap-1.5 w-full", containerClassName)}>
+        {/* Label */}
+        <label
+          htmlFor={id}
+          className="flex items-center gap-1.5 text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider transition-colors"
+        >
+          {Icon && (
+            <Icon 
+              className={cn("w-4 h-4 text-slate-400 dark:text-slate-500", iconClassName)} 
+              strokeWidth={2}
+            />
+          )}
+          {label}
+        </label>
 
+        {/* Input Container */}
+        <div className="relative group flex items-center">
+          <input
+            id={id}
+            ref={ref}
+            aria-invalid={!!error}
+            aria-describedby={errorId}
+            className={cn(
+              "w-full h-11 px-4 text-sm font-medium transition-all duration-200 ease-in-out",
+              "bg-white dark:bg-slate-950 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500",
+              "border rounded-xl outline-none appearance-none",
+              "disabled:bg-slate-50 dark:disabled:bg-slate-900/50 disabled:text-slate-400 dark:disabled:text-slate-600 disabled:cursor-not-allowed",
+              suffix && "pr-11", // Add padding to prevent text from overlapping the suffix
+              error
+                ? "border-rose-300 dark:border-rose-700/80 focus:border-rose-500 focus:ring-4 focus:ring-rose-500/20"
+                : "border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/20",
+              className
+            )}
+            {...props}
+          />
+          
+          {/* Suffix / Action */}
+          {suffix && (
+            <div className={cn(
+              "absolute right-3 flex items-center justify-center transition-colors duration-200",
+              "text-slate-400 group-focus-within:text-slate-600 dark:group-focus-within:text-slate-300",
+              error && "text-rose-400 group-focus-within:text-rose-500"
+            )}>
+              {suffix}
+            </div>
+          )}
+        </div>
 
-      />
-      {suffix && (
-        <span className="absolute right-3 top-1/2 -translate-y-1/2 flex item-center">
-          {suffix}
-        </span>
-      )}
+        {/* Validation Error */}
+        {error && (
+          <p
+            id={errorId}
+            role="alert"
+            className="flex items-center gap-1.5 text-xs font-medium text-rose-500 dark:text-rose-400 mt-0.5 animate-in slide-in-from-top-1 fade-in duration-200"
+          >
+            <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+            {error}
+          </p>
+        )}
       </div>
-
-      {error && (
-        <span className="text-xs font-medium text-danger">
-          {error}
-        </span>
-      )}
-
-    </div>
-  )
+    );
+  }
 );
 
-Input.displayName = 'Input';
+Input.displayName = "Input";

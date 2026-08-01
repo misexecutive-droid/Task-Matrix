@@ -3,8 +3,25 @@ import { ArrowLeft, AlertCircle, ShieldCheck, ShieldAlert, ShieldQuestion } from
 import { Skeleton } from '../../../components';
 import { useChecklistInstanceQuery } from '../hook';
 import { ChecklistInstanceItemCard } from './ChecklistInstanceItemCard';
+import { ChecklistInstanceItemAuditCard } from './ChecklistInstanceItemAuditCard';
 import { formatDate } from '../checklistDisplay';
 import { useAuth } from '../../../context/AuthContext';
+import type { ChecklistInstanceItem } from '../../../api/checklistInstances';
+
+type ItemCardContext = { instanceId: string; canWork: boolean; isLocked: boolean; currentUserId?: string };
+
+// Which card renders a given item — AUDIT items fan out into per-auditor submissions
+// (ChecklistInstanceItemAuditCard, its own currentUserId-scoped interactivity), everything else
+// keeps the original single-state card. A lookup map of render closures, not an if/else, since
+// the two cards take different prop shapes and can't share one component reference directly.
+const ITEM_CARD_RENDERERS: Record<ChecklistInstanceItem['itemType'], (item: ChecklistInstanceItem, ctx: ItemCardContext) => JSX.Element> = {
+  STANDARD: (item, ctx) => (
+    <ChecklistInstanceItemCard item={item} instanceId={ctx.instanceId} canWork={ctx.canWork} isLocked={ctx.isLocked} />
+  ),
+  AUDIT: (item, ctx) => (
+    <ChecklistInstanceItemAuditCard item={item} instanceId={ctx.instanceId} currentUserId={ctx.currentUserId} isLocked={ctx.isLocked} />
+  ),
+};
 
 // Shared between a user's own "My Checklists" link and the admin oversight link from
 // ChecklistDefinitionDetail — the server authorizes both (ADMIN or an assignee of the instance).
@@ -91,13 +108,9 @@ export const ChecklistInstanceDetail = () => {
 
       <div className="flex flex-col gap-2">
         {instance.items.map(item => (
-          <ChecklistInstanceItemCard
-            key={item.id}
-            item={item}
-            instanceId={instanceId}
-            canWork={canWork}
-            isLocked={isLocked}
-          />
+          <div key={item.id}>
+            {ITEM_CARD_RENDERERS[item.itemType](item, { instanceId, canWork, isLocked, currentUserId: user?.id })}
+          </div>
         ))}
       </div>
     </div>

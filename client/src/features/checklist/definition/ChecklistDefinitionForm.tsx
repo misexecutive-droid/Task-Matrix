@@ -52,6 +52,9 @@ export const ChecklistDefinitionForm = ({ onClose }: ChecklistDefinitionFormProp
         requiredImageCount: String(item.requiredImageCount),
         maxImageCount: item.maxImageCount != null ? String(item.maxImageCount) : '',
         requiresLivePhoto: item.requiresLivePhoto,
+        itemType: 'STANDARD' as const,
+        auditUserIds: [],
+        accessories: [],
       })),
     ]);
   };
@@ -63,8 +66,16 @@ export const ChecklistDefinitionForm = ({ onClose }: ChecklistDefinitionFormProp
       requiredImageCount: Number(d.requiredImageCount) || 0,
       maxImageCount: d.maxImageCount ? Number(d.maxImageCount) : undefined,
       requiresLivePhoto: d.requiresLivePhoto,
+      itemType: d.itemType,
+      ...(d.itemType === 'AUDIT' ? { auditUserIds: d.auditUserIds, accessories: d.accessories } : {}),
     }));
-  const canSubmit = !!name.trim() && !!departmentId && !!startDate && assigneeIds.length > 0 && items.length > 0;
+  const canSubmit =
+    !!name.trim() &&
+    !!departmentId &&
+    !!startDate &&
+    assigneeIds.length > 0 &&
+    items.length > 0 &&
+    itemDrafts.every((d) => !d.label.trim() || d.itemType !== 'AUDIT' || d.auditUserIds.length > 0);
 
   const handleSubmit = () => {
     if (!canSubmit) return;
@@ -143,6 +154,7 @@ export const ChecklistDefinitionForm = ({ onClose }: ChecklistDefinitionFormProp
             itemDrafts={itemDrafts}
             onUpdateDraft={updateDraft}
             onAddDraft={() => setItemDrafts((d) => [...d, emptyItemDraft()])}
+            departmentId={departmentId}
           />
 
           {createDefinition.isError && (

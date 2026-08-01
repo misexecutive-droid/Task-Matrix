@@ -13,5 +13,6 @@ export { Dropdown }        from './dropdown';
 export type { DropdownAction } from './dropdown';
 export { DateTimePicker }  from './dateTime';
 export { UserMultiSelect } from './userMultiSelect';
+export { AccessoriesListEditor } from './accessoriesListEditor';
 export { DateRangePicker } from './dateRangePicker';
 export type { DateRangeValue } from './dateRangePicker';

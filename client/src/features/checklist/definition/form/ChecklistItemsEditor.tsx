@@ -3,12 +3,13 @@ import { ChecklistDefinitionItemDraftRow, type ItemDraft } from '../ChecklistDef
 import { LABEL_CLASS } from './formConstants';
 
 interface ChecklistItemsEditorProps {
-  itemDrafts: ItemDraft[];
+  itemDrafts:    ItemDraft[];
   onUpdateDraft: (index: number, patch: Partial<ItemDraft>) => void;
-  onAddDraft: () => void;
+  onAddDraft:    () => void;
+  departmentId?: string;
 }
 
-export const ChecklistItemsEditor = ({ itemDrafts, onUpdateDraft, onAddDraft }: ChecklistItemsEditorProps) => (
+export const ChecklistItemsEditor = ({ itemDrafts, onUpdateDraft, onAddDraft, departmentId }: ChecklistItemsEditorProps) => (
   <div className="space-y-3 pt-2">
     <div className="flex items-center justify-between">
       <label className={LABEL_CLASS}>
@@ -26,6 +27,7 @@ export const ChecklistItemsEditor = ({ itemDrafts, onUpdateDraft, onAddDraft }: 
           index={i}
           draft={draft}
           onChange={onUpdateDraft}
+          departmentId={departmentId}
         />
       ))}
     </div>

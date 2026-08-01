@@ -1,5 +1,5 @@
 import { apiFetch } from './http';
-import type { ApiResponse, ChecklistRecurrence } from './checklistDefinitions';
+import type { ApiResponse, ChecklistRecurrence, ChecklistItemType } from './checklistDefinitions';
 import type { CaptureMethod } from './ticket';
 
 export type ChecklistInstanceStatus = 'OPEN' | 'COMPLETED';
@@ -17,6 +17,40 @@ export type ChecklistInstanceImage = {
   createdAt:               string;
 };
 
+export type ChecklistInstanceItemSubmissionImage = {
+  id:             string;
+  url:            string;
+  originalFilename: string | null;
+  mimeType:       string;
+  sizeBytes:      number;
+  captureMethod:  CaptureMethod;
+  submissionId:   string;
+  uploadedBy:     string;
+  createdAt:      string;
+};
+
+export type ChecklistInstanceItemSubmissionAccessory = { name: string; checked: boolean };
+
+// userId is always populated server-side (see checklistInstance.service.ts's populateInstance) so
+// the UI can show the auditor's name and department without a separate lookup.
+export type ChecklistInstanceItemSubmissionUser = {
+  id:           string;
+  firstName:    string;
+  lastName:     string | null;
+  departmentId: string | null;
+};
+
+export type ChecklistInstanceItemSubmission = {
+  id:          string;
+  itemId:      string;
+  userId:      ChecklistInstanceItemSubmissionUser;
+  accessories: ChecklistInstanceItemSubmissionAccessory[];
+  remarks:     string | null;
+  isDone:      boolean;
+  completedAt: string | null;
+  images:      ChecklistInstanceItemSubmissionImage[];
+};
+
 export type ChecklistInstanceItem = {
   id:                 string;
   label:              string;
@@ -27,8 +61,11 @@ export type ChecklistInstanceItem = {
   requiredImageCount: number;
   maxImageCount:      number | null;
   requiresLivePhoto:  boolean;
+  itemType:           ChecklistItemType;
+  accessories:        string[];
   instanceId:         string;
   images:             ChecklistInstanceImage[];
+  submissions:        ChecklistInstanceItemSubmission[];
 };
 
 export type ChecklistInstance = {
