@@ -3,14 +3,7 @@ import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { UserPlus, Eye, EyeOff, AlertCircle } from 'lucide-react';
-import { Input, Button } from '../../../components';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from '@/components/ui/dialog';
+import { Input, Button, Modal } from '../../../components';
 import {
   Select,
   SelectTrigger,
@@ -124,166 +117,155 @@ export const UserForm = ({ onClose, user }: UserFormProps) => {
 
   const roleWarning = !departmentId || departmentId === NO_DEPARTMENT ? ROLE_WARNINGS[role] : null;
 
+  const footer = (
+    <>
+      <Button type="button" variant="outline" size="sm" onClick={onClose} disabled={isPending}>
+        Cancel
+      </Button>
+      <Button type="submit" form="user-form" variant="primary" size="sm" isLoading={isPending}>
+        {isEditing ? 'Save changes' : 'Create user'}
+      </Button>
+    </>
+  );
+
   return (
-    <Dialog open onOpenChange={open => !open && !isPending && onClose()}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <div className="flex items-center gap-2.5">
-            <div className="p-2 rounded-lg bg-primary-500/10 text-primary-500 shrink-0">
-              <UserPlus className="w-5 h-5" />
-            </div>
-            <div>
-              <DialogTitle>{isEditing ? 'Edit user' : 'New user'}</DialogTitle>
-              <p className="text-xs text-text-muted mt-0.5">
-                {isEditing
-                  ? "Update user's profile details, assigned role, or department."
-                  : 'Create a new user account and set initial permissions.'}
-              </p>
-            </div>
-          </div>
-        </DialogHeader>
-
-        <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4 mt-2" noValidate>
-          <fieldset disabled={isPending} className="flex flex-col gap-4 disabled:opacity-60">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <Input
-                id="firstName"
-                label="First name"
-                error={errors.firstName?.message}
-                {...register('firstName')}
-              />
-              <Input
-                id="lastName"
-                label="Last name (optional)"
-                error={errors.lastName?.message}
-                {...register('lastName')}
-              />
-            </div>
-
+    <Modal
+      open
+      onClose={() => !isPending && onClose()}
+      icon={<UserPlus className="w-5 h-5" />}
+      title={isEditing ? 'Edit user' : 'New user'}
+      description={
+        isEditing
+          ? "Update user's profile details, assigned role, or department."
+          : 'Create a new user account and set initial permissions.'
+      }
+      footer={footer}
+    >
+      <form id="user-form" onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4" noValidate>
+        <fieldset disabled={isPending} className="flex flex-col gap-4 disabled:opacity-60">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <Input
-              id="email"
-              label="Email address"
-              type="email"
-              error={errors.email?.message}
-              {...register('email')}
+              id="firstName"
+              label="First name"
+              error={errors.firstName?.message}
+              {...register('firstName')}
             />
+            <Input
+              id="lastName"
+              label="Last name (optional)"
+              error={errors.lastName?.message}
+              {...register('lastName')}
+            />
+          </div>
 
-            {!isEditing && (
-              <div className="relative">
-                <Input
-                  id="password"
-                  label="Password"
-                  type={showPassword ? 'text' : 'password'}
-                  placeholder="Min. 8 characters"
-                  error={errors.password?.message}
-                  {...register('password')}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(prev => !prev)}
-                  className="absolute right-3 top-[38px] text-text-light hover:text-text-secondary transition-colors cursor-pointer"
-                  tabIndex={-1}
-                  aria-label={showPassword ? 'Hide password' : 'Show password'}
-                >
-                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                </button>
-              </div>
-            )}
+          <Input
+            id="email"
+            label="Email address"
+            type="email"
+            error={errors.email?.message}
+            {...register('email')}
+          />
 
-            <div className="flex flex-col gap-1.5">
-              <label htmlFor="role" className="text-sm font-display text-text-secondary">
-                Role
-              </label>
-              <Controller
-                control={control}
-                name="role"
-                render={({ field }) => (
-                  <Select value={field.value} onValueChange={field.onChange}>
-                    <SelectTrigger id="role" className="w-full h-10 text-sm">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="USER">User</SelectItem>
-                      <SelectItem value="AGENT">Agent</SelectItem>
-                      <SelectItem value="MANAGER">Manager</SelectItem>
-                      <SelectItem value="PC">Process coordinator (PC)</SelectItem>
-                      <SelectItem value="ADMIN">Admin</SelectItem>
-                    </SelectContent>
-                  </Select>
-                )}
+          {!isEditing && (
+            <div className="relative">
+              <Input
+                id="password"
+                label="Password"
+                type={showPassword ? 'text' : 'password'}
+                placeholder="Min. 8 characters"
+                error={errors.password?.message}
+                {...register('password')}
               />
-            </div>
-
-            <div className="flex flex-col gap-1.5">
-              <label htmlFor="departmentId" className="text-sm font-display text-text-secondary">
-                Department
-              </label>
-              <Controller
-                control={control}
-                name="departmentId"
-                render={({ field }) => (
-                  <Select
-                    value={field.value || NO_DEPARTMENT}
-                    onValueChange={v => field.onChange(v === NO_DEPARTMENT ? '' : v)}
-                    disabled={isDepartmentsLoading}
-                  >
-                    <SelectTrigger id="departmentId" className="w-full h-10 text-sm">
-                      <SelectValue
-                        placeholder={
-                          isDepartmentsLoading ? 'Loading departments...' : 'Select department'
-                        }
-                      />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value={NO_DEPARTMENT} className="text-text-muted">
-                        No department
-                      </SelectItem>
-                      {(departments ?? []).map(d => (
-                        <SelectItem key={d.id} value={d.id}>
-                          {d.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )}
-              />
-
-              {roleWarning && (
-                <div className="flex items-start gap-1.5 text-xs text-amber-600 dark:text-amber-400 font-display mt-1">
-                  <AlertCircle size={14} className="shrink-0 mt-0.5" />
-                  <span>{roleWarning}</span>
-                </div>
-              )}
-            </div>
-          </fieldset>
-
-          {mutation.isError && (
-            <div className="flex items-center gap-2 text-xs text-danger font-display bg-danger/10 p-2.5 rounded-lg">
-              <AlertCircle size={14} className="shrink-0" />
-              <span>
-                {mutation.error instanceof Error
-                  ? mutation.error.message
-                  : `Failed to ${isEditing ? 'update' : 'create'} user.`}
-              </span>
+              <button
+                type="button"
+                onClick={() => setShowPassword(prev => !prev)}
+                className="absolute right-3 top-[38px] text-text-light hover:text-text-secondary transition-colors cursor-pointer"
+                tabIndex={-1}
+                aria-label={showPassword ? 'Hide password' : 'Show password'}
+              >
+                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
             </div>
           )}
 
-          <DialogFooter className="mt-2">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={onClose}
-              disabled={isPending}
-            >
-              Cancel
-            </Button>
-            <Button type="submit" variant="primary" size="sm" isLoading={isPending}>
-              {isEditing ? 'Save changes' : 'Create user'}
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="role" className="text-sm font-display text-text-secondary">
+              Role
+            </label>
+            <Controller
+              control={control}
+              name="role"
+              render={({ field }) => (
+                <Select value={field.value} onValueChange={field.onChange}>
+                  <SelectTrigger id="role" className="w-full h-10 text-sm">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="USER">User</SelectItem>
+                    <SelectItem value="AGENT">Agent</SelectItem>
+                    <SelectItem value="MANAGER">Manager</SelectItem>
+                    <SelectItem value="PC">Process coordinator (PC)</SelectItem>
+                    <SelectItem value="ADMIN">Admin</SelectItem>
+                  </SelectContent>
+                </Select>
+              )}
+            />
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="departmentId" className="text-sm font-display text-text-secondary">
+              Department
+            </label>
+            <Controller
+              control={control}
+              name="departmentId"
+              render={({ field }) => (
+                <Select
+                  value={field.value || NO_DEPARTMENT}
+                  onValueChange={v => field.onChange(v === NO_DEPARTMENT ? '' : v)}
+                  disabled={isDepartmentsLoading}
+                >
+                  <SelectTrigger id="departmentId" className="w-full h-10 text-sm">
+                    <SelectValue
+                      placeholder={
+                        isDepartmentsLoading ? 'Loading departments...' : 'Select department'
+                      }
+                    />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={NO_DEPARTMENT} className="text-text-muted">
+                      No department
+                    </SelectItem>
+                    {(departments ?? []).map(d => (
+                      <SelectItem key={d.id} value={d.id}>
+                        {d.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            />
+
+            {roleWarning && (
+              <div className="flex items-start gap-1.5 text-xs text-amber-600 dark:text-amber-400 font-display mt-1">
+                <AlertCircle size={14} className="shrink-0 mt-0.5" />
+                <span>{roleWarning}</span>
+              </div>
+            )}
+          </div>
+        </fieldset>
+
+        {mutation.isError && (
+          <div className="flex items-center gap-2 text-xs text-danger font-display bg-danger/10 p-2.5 rounded-lg">
+            <AlertCircle size={14} className="shrink-0" />
+            <span>
+              {mutation.error instanceof Error
+                ? mutation.error.message
+                : `Failed to ${isEditing ? 'update' : 'create'} user.`}
+            </span>
+          </div>
+        )}
+      </form>
+    </Modal>
   );
 };

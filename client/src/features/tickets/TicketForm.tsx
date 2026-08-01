@@ -137,52 +137,51 @@ export const TicketForm = ({ onClose }: TicketFormProps) => {
         sm:data-[state=open]:zoom-in-95 sm:data-[state=closed]:zoom-out-95
       "
     >
-        {/* Sheet drag handle — mobile only, signals "this is a bottom sheet" */}
-        <div className="sm:hidden flex justify-center -mt-4 mb-1 shrink-0">
-          <div className="h-1.5 w-10 rounded-full bg-border/70" />
-        </div>
+      {/* Sheet drag handle — mobile only, signals "this is a bottom sheet" */}
+      <div className="sm:hidden flex justify-center -mt-4 mb-1 shrink-0">
+        <div className="h-1.5 w-10 rounded-full bg-border/70" />
+      </div>
 
-        <form id="ticket-form" onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-5 sm:gap-6" noValidate>
+      <form id="ticket-form" onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-5 sm:gap-6" noValidate>
+        <AssignmentModeToggle mode={assignmentMode} onChange={m => setValue('assignmentMode', m)} />
 
-            <AssignmentModeToggle mode={assignmentMode} onChange={m => setValue('assignmentMode', m)} />
+        <CategoryField
+          categoryId={categoryId}
+          onChange={v => setValue('categoryId', v)}
+          categories={categories}
+        />
 
-            <CategoryField
-              categoryId={categoryId}
-              onChange={v => setValue('categoryId', v)}
-              categories={categories}
-            />
+        <TicketDetailsFields register={register} errors={errors} />
 
-            <TicketDetailsFields register={register} errors={errors} />
+        <PhotoUploadField photos={photos} onAddPhotos={addPhotos} onRemovePhoto={removePhoto} />
 
-            <PhotoUploadField photos={photos} onAddPhotos={addPhotos} onRemovePhoto={removePhoto} />
+        <PriorityField value={priority} onChange={v => setValue('priority', v)} />
 
-            <PriorityField value={priority} onChange={v => setValue('priority', v)} />
+        <DepartmentAssigneeFields
+          departmentId={departmentId}
+          onDepartmentChange={v => setValue('departmentId', v)}
+          departments={departments}
+          assigneeId={assigneeId}
+          onAssigneeChange={v => setValue('assigneeId', v)}
+          assignableUsers={assignableUsers}
+          locked={!!selectedCategory}
+        />
 
-            <DepartmentAssigneeFields
-              departmentId={departmentId}
-              onDepartmentChange={v => setValue('departmentId', v)}
-              departments={departments}
-              assigneeId={assigneeId}
-              onAssigneeChange={v => setValue('assigneeId', v)}
-              assignableUsers={assignableUsers}
-              locked={!!selectedCategory}
-            />
+        <DueDateField
+          mode={assignmentMode}
+          register={register}
+          errors={errors}
+          categoryTatHours={selectedCategory?.tatHours}
+        />
 
-            <DueDateField
-              mode={assignmentMode}
-              register={register}
-              errors={errors}
-              categoryTatHours={selectedCategory?.tatHours}
-            />
-
-            {/* Global Mutation Error */}
-            {mutation.isError && (
-              <div className="p-3 rounded-md bg-rose-500/10 border border-rose-500/20 text-xs text-rose-400 font-display flex items-center gap-2.5">
-                <AlertCircle className="w-4 h-4 shrink-0" />
-                {mutation.error instanceof Error ? mutation.error.message : 'Failed to create ticket.'}
-              </div>
-            )}
-        </form>
+        {/* Global Mutation Error */}
+        {mutation.isError && (
+          <div className="p-3 rounded-md bg-rose-500/10 border border-rose-500/20 text-xs text-rose-400 font-display flex items-center gap-2.5">
+            <AlertCircle className="w-4 h-4 shrink-0" />
+            {mutation.error instanceof Error ? mutation.error.message : 'Failed to create ticket.'}
+          </div>
+        )}
+      </form>
     </Modal>
   );
 };

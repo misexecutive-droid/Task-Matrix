@@ -2,14 +2,7 @@ import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { CalendarClock } from 'lucide-react';
-import { Input, Textarea, Button } from '../../components';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from '@/components/ui/dialog';
+import { Input, Textarea, Button, Modal } from '../../components';
 import {
   Select,
   SelectTrigger,
@@ -80,80 +73,77 @@ export const EventForm = ({ onClose, event }: EventFormProps) => {
     }
   };
 
+  const footer = (
+    <>
+      <Button type="button" variant="outline" size="sm" onClick={onClose}>Cancel</Button>
+      <Button type="submit" form="event-form" variant="primary" size="sm" isLoading={mutation.isPending}>
+        {isEditing ? 'Save changes' : 'Create event'}
+      </Button>
+    </>
+  );
+
   return (
-    <Dialog open onOpenChange={v => { if (!v) onClose(); }}>
-      <DialogContent>
-        <DialogHeader>
-          <div className="flex items-center gap-2.5">
-            <CalendarClock className="w-5 h-5 text-primary-500 shrink-0" />
-            <div>
-              <DialogTitle>{isEditing ? 'Edit event' : 'New event'}</DialogTitle>
-              <p className="text-xs text-text-muted mt-0.5">
-                Deadlines, announcements, and broadcasts show up on everyone's dashboard.
-              </p>
-            </div>
-          </div>
-        </DialogHeader>
+    <Modal
+      open
+      onClose={onClose}
+      icon={<CalendarClock className="w-5 h-5" />}
+      title={isEditing ? 'Edit event' : 'New event'}
+      description="Deadlines, announcements, and broadcasts show up on everyone's dashboard."
+      footer={footer}
+    >
+      <form id="event-form" onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4" noValidate>
+        <Input
+          id="title"
+          label="Title"
+          placeholder="e.g. Payroll cutoff"
+          error={errors.title?.message}
+          {...register('title')}
+        />
 
-        <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4" noValidate>
-          <Input
-            id="title"
-            label="Title"
-            placeholder="e.g. Payroll cutoff"
-            error={errors.title?.message}
-            {...register('title')}
+        <div className="flex flex-col gap-1.5">
+          <label htmlFor="type" className="text-sm font-display font-medium text-text-secondary">
+            Type
+          </label>
+          <Controller
+            control={control}
+            name="type"
+            render={({ field }) => (
+              <Select value={field.value} onValueChange={field.onChange}>
+                <SelectTrigger id="type" className="w-full h-10 text-sm">
+                  <SelectValue placeholder="Select type" />
+                </SelectTrigger>
+                <SelectContent>
+                  {EVENT_TYPES.map(t => (
+                    <SelectItem key={t} value={t}>{EVENT_TYPE_LABELS[t]}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
           />
+        </div>
 
-          <div className="flex flex-col gap-1.5">
-            <label htmlFor="type" className="text-sm font-display font-medium text-text-secondary">
-              Type
-            </label>
-            <Controller
-              control={control}
-              name="type"
-              render={({ field }) => (
-                <Select value={field.value} onValueChange={field.onChange}>
-                  <SelectTrigger id="type" className="w-full h-10 text-sm">
-                    <SelectValue placeholder="Select type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {EVENT_TYPES.map(t => (
-                      <SelectItem key={t} value={t}>{EVENT_TYPE_LABELS[t]}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
-            />
-          </div>
+        <Input
+          id="eventDate"
+          type="datetime-local"
+          label="Date & time"
+          error={errors.eventDate?.message}
+          {...register('eventDate')}
+        />
 
-          <Input
-            id="eventDate"
-            type="datetime-local"
-            label="Date & time"
-            error={errors.eventDate?.message}
-            {...register('eventDate')}
-          />
+        <Textarea
+          id="description"
+          label="Description"
+          rows={3}
+          placeholder="Optional details"
+          {...register('description')}
+        />
 
-          <Textarea
-            id="description"
-            label="Description"
-            rows={3}
-            placeholder="Optional details"
-            {...register('description')}
-          />
-
-          {mutation.isError && (
-            <p className="text-xs text-danger text-center">
-              {mutation.error instanceof Error ? mutation.error.message : `Failed to ${isEditing ? 'update' : 'create'} event.`}
-            </p>
-          )}
-
-          <DialogFooter>
-            <Button type="button" variant="outline" size="sm" onClick={onClose}>Cancel</Button>
-            <Button type="submit" variant="primary" size="sm" isLoading={mutation.isPending}>{isEditing ? 'Save changes' : 'Create event'}</Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
+        {mutation.isError && (
+          <p className="text-xs text-danger text-center">
+            {mutation.error instanceof Error ? mutation.error.message : `Failed to ${isEditing ? 'update' : 'create'} event.`}
+          </p>
+        )}
+      </form>
+    </Modal>
   );
 };

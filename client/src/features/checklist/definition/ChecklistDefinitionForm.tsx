@@ -122,48 +122,48 @@ export const ChecklistDefinitionForm = ({ onClose }: ChecklistDefinitionFormProp
       description="Regenerates automatically on a schedule and assigns to specific team members. For a one-off checklist on a single task or ticket, create a Checklist Template instead."
       footer={footer}
     >
-          <ChecklistDetailsFields
-            name={name}
-            onNameChange={setName}
-            description={description}
-            onDescriptionChange={setDescription}
-          />
+      <ChecklistDetailsFields
+        name={name}
+        onNameChange={setName}
+        description={description}
+        onDescriptionChange={setDescription}
+      />
 
-          <ChecklistScheduleFields
-            departmentId={departmentId}
-            onDepartmentChange={handleDepartmentChange}
-            departments={departments}
-            recurrence={recurrence}
-            onRecurrenceChange={setRecurrence}
-            startDate={startDate}
-            onStartDateChange={setStartDate}
-          />
+      <ChecklistScheduleFields
+        departmentId={departmentId}
+        onDepartmentChange={handleDepartmentChange}
+        departments={departments}
+        recurrence={recurrence}
+        onRecurrenceChange={setRecurrence}
+        startDate={startDate}
+        onStartDateChange={setStartDate}
+      />
 
-          <ChecklistAssigneesField
-            departmentId={departmentId}
-            selected={assigneeIds}
-            onChange={setAssigneeIds}
-          />
+      <ChecklistAssigneesField
+        departmentId={departmentId}
+        selected={assigneeIds}
+        onChange={setAssigneeIds}
+      />
 
-          <ImportFromTemplateField templates={templates} onImport={handleImportTemplate} />
+      <ImportFromTemplateField templates={templates} onImport={handleImportTemplate} />
 
-          <ChecklistItemsEditor
-            itemDrafts={itemDrafts}
-            onUpdateDraft={updateDraft}
-            onAddDraft={() => setItemDrafts((d) => [...d, emptyItemDraft()])}
-            departmentId={departmentId}
-          />
+      <ChecklistItemsEditor
+        itemDrafts={itemDrafts}
+        onUpdateDraft={updateDraft}
+        onAddDraft={() => setItemDrafts((d) => [...d, emptyItemDraft()])}
+        departmentId={departmentId}
+      />
 
-          {createDefinition.isError && (
-            <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/25 text-xs text-rose-300 font-display flex items-start sm:items-center gap-2.5 animate-in fade-in slide-in-from-top-1 mt-2">
-              <AlertCircle className="w-4 h-4 shrink-0 text-rose-400 mt-0.5 sm:mt-0" />
-              <p className="leading-tight">
-                {createDefinition.error instanceof Error
-                  ? createDefinition.error.message
-                  : 'Failed to create checklist. Please try again.'}
-              </p>
-            </div>
-          )}
+      {createDefinition.isError && (
+        <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/25 text-xs text-rose-300 font-display flex items-start sm:items-center gap-2.5 animate-in fade-in slide-in-from-top-1 mt-2">
+          <AlertCircle className="w-4 h-4 shrink-0 text-rose-400 mt-0.5 sm:mt-0" />
+          <p className="leading-tight">
+            {createDefinition.error instanceof Error
+              ? createDefinition.error.message
+              : 'Failed to create checklist. Please try again.'}
+          </p>
+        </div>
+      )}
     </Modal>
   );
 };

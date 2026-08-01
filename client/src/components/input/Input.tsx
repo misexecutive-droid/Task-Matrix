@@ -35,7 +35,6 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
 
     return (
       <div className={cn("flex flex-col gap-2 w-full", containerClassName)}>
-        {/* Label - Updated to match image (standard case, medium font, slate-800) */}
         <label
           htmlFor={id}
           className="flex items-center gap-1.5 text-sm font-medium text-slate-800 dark:text-slate-200 transition-colors"

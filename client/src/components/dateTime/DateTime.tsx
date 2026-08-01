@@ -10,15 +10,15 @@ import {
   CalendarHeader,
   CalendarHeading,
   NavButton
-} from "@/components/tailgrids/core/calendar";
-import { DateInput, DateSegment } from "@/components/tailgrids/core/date-field";
+} from "@/components/vendor/tailgrids/core/calendar";
+import { DateInput, DateSegment } from "@/components/vendor/tailgrids/core/date-field";
 import {
   DatePicker,
   DatePickerGroup,
   DatePickerPopover,
   DatePickerTrigger
-} from "@/components/tailgrids/core/date-picker";
-import { FieldDescription, FieldLabel } from "@/components/tailgrids/core/field";
+} from "@/components/vendor/tailgrids/core/date-picker";
+import { FieldDescription, FieldLabel } from "@/components/vendor/tailgrids/core/field";
 
 export const DateTimePicker = () => {
   return (

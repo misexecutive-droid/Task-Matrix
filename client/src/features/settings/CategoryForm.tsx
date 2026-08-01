@@ -2,14 +2,7 @@ import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Tag } from 'lucide-react';
-import { Input, Button, UserMultiSelect } from '../../components';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from '@/components/ui/dialog';
+import { Input, Button, UserMultiSelect, Modal } from '../../components';
 import {
   Select,
   SelectTrigger,
@@ -78,93 +71,90 @@ export const CategoryForm = ({ onClose, category }: CategoryFormProps) => {
     }
   };
 
+  const footer = (
+    <>
+      <Button type="button" variant="outline" size="sm" onClick={onClose}>Cancel</Button>
+      <Button type="submit" form="category-form" variant="primary" size="sm" isLoading={mutation.isPending}>
+        {isEditing ? "Save changes" : "Create category"}
+      </Button>
+    </>
+  );
+
   return (
-    <Dialog open onOpenChange={v => { if (!v) onClose(); }}>
-      <DialogContent>
-        <DialogHeader>
-          <div className="flex items-center gap-2.5">
-            <Tag className="w-5 h-5 text-primary-500 shrink-0" />
-            <div>
-              <DialogTitle>{isEditing ? "Edit category" : "New category"}</DialogTitle>
-              <p className="text-xs text-text-muted mt-0.5">
-                Selecting this category on a ticket will auto-fill its department, default assignees, and TAT.
-              </p>
-            </div>
-          </div>
-        </DialogHeader>
+    <Modal
+      open
+      onClose={onClose}
+      icon={<Tag className="w-5 h-5" />}
+      title={isEditing ? "Edit category" : "New category"}
+      description="Selecting this category on a ticket will auto-fill its department, default assignees, and TAT."
+      footer={footer}
+    >
+      <form id="category-form" onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4" noValidate>
+        <Input
+          id="name"
+          label="Category name"
+          placeholder="e.g. Fan Issue"
+          error={errors.name?.message}
+          {...register('name')}
+        />
 
-        <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4" noValidate>
-          <Input
-            id="name"
-            label="Category name"
-            placeholder="e.g. Fan Issue"
-            error={errors.name?.message}
-            {...register('name')}
-          />
-
-          <div className="flex flex-col gap-1.5">
-            <label htmlFor="departmentId" className="text-sm font-display font-medium text-text-secondary">
-              Department
-            </label>
-            <Controller
-              control={control}
-              name="departmentId"
-              render={({ field }) => (
-                <Select value={field.value} onValueChange={field.onChange}>
-                  <SelectTrigger id="departmentId" className="w-full h-10 text-sm">
-                    <SelectValue placeholder={isDepartmentsLoading ? 'Loading departments...' : 'Select department'} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {departments?.map(d => (
-                      <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
-            />
-            {errors.departmentId?.message && (
-              <span className="text-xs font-medium text-danger">{errors.departmentId.message}</span>
+        <div className="flex flex-col gap-1.5">
+          <label htmlFor="departmentId" className="text-sm font-display font-medium text-text-secondary">
+            Department
+          </label>
+          <Controller
+            control={control}
+            name="departmentId"
+            render={({ field }) => (
+              <Select value={field.value} onValueChange={field.onChange}>
+                <SelectTrigger id="departmentId" className="w-full h-10 text-sm">
+                  <SelectValue placeholder={isDepartmentsLoading ? 'Loading departments...' : 'Select department'} />
+                </SelectTrigger>
+                <SelectContent>
+                  {departments?.map(d => (
+                    <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             )}
-          </div>
-
-          <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-display font-medium text-text-secondary">
-              Default assignees
-            </label>
-            <Controller
-              control={control}
-              name="assigneeIds"
-              render={({ field }) => (
-                <UserMultiSelect
-                  departmentId={departmentId || undefined}
-                  selected={field.value ?? []}
-                  onChange={field.onChange}
-                />
-              )}
-            />
-          </div>
-
-          <Input
-            id="tatHours"
-            label="TAT (hours)"
-            placeholder="Leave blank to use the system default"
-            suffix={<span className="text-xs text-text-light">hrs</span>}
-            error={errors.tatHours?.message}
-            {...register('tatHours')}
           />
-
-          {mutation.isError && (
-            <p className="text-xs text-danger text-center">
-              {mutation.error instanceof Error ? mutation.error.message : `Failed to ${isEditing ? "update" : "create"} category.`}
-            </p>
+          {errors.departmentId?.message && (
+            <span className="text-xs font-medium text-danger">{errors.departmentId.message}</span>
           )}
+        </div>
 
-          <DialogFooter>
-            <Button type="button" variant="outline" size="sm" onClick={onClose}>Cancel</Button>
-            <Button type="submit" variant="primary" size="sm" isLoading={mutation.isPending}>{isEditing ? "Save changes" : "Create category"}</Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
+        <div className="flex flex-col gap-1.5">
+          <label className="text-sm font-display font-medium text-text-secondary">
+            Default assignees
+          </label>
+          <Controller
+            control={control}
+            name="assigneeIds"
+            render={({ field }) => (
+              <UserMultiSelect
+                departmentId={departmentId || undefined}
+                selected={field.value ?? []}
+                onChange={field.onChange}
+              />
+            )}
+          />
+        </div>
+
+        <Input
+          id="tatHours"
+          label="TAT (hours)"
+          placeholder="Leave blank to use the system default"
+          suffix={<span className="text-xs text-text-light">hrs</span>}
+          error={errors.tatHours?.message}
+          {...register('tatHours')}
+        />
+
+        {mutation.isError && (
+          <p className="text-xs text-danger text-center">
+            {mutation.error instanceof Error ? mutation.error.message : `Failed to ${isEditing ? "update" : "create"} category.`}
+          </p>
+        )}
+      </form>
+    </Modal>
   );
 };
