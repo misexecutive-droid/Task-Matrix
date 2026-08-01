@@ -7,6 +7,7 @@ import { ChecklistDefinition } from "../models/ChecklistDefinition.js"
 import { ChecklistDefinitionItem } from "../models/ChecklistDefinitionItem.js"
 import { ChecklistInstance } from "../models/ChecklistInstance.js"
 import { ChecklistInstanceItem } from "../models/ChecklistInstanceItem.js"
+import { ChecklistInstanceItemSubmission } from "../models/ChecklistInstanceItemSubmission.js"
 import { getCurrentPeriod } from "../utils/period.js"
 import { env } from "../config/env.js"
 
@@ -46,7 +47,7 @@ export const generateInstanceForDefinition = async (definition: HydratedDocument
 
     const items = await ChecklistDefinitionItem.find({ definitionId: definition._id }).sort({ order: 1 })
     if (items.length) {
-        await ChecklistInstanceItem.insertMany(
+        const instanceItems = await ChecklistInstanceItem.insertMany(
             items.map((item, index) => ({
                 label: item.label,
                 order: item.order ?? index,
@@ -55,9 +56,27 @@ export const generateInstanceForDefinition = async (definition: HydratedDocument
                 requiredImageCount: item.requiredImageCount,
                 maxImageCount: item.maxImageCount,
                 requiresLivePhoto: item.requiresLivePhoto,
+                itemType: item.itemType,
+                accessories: item.accessories,
                 instanceId: instance._id,
             })),
         )
+
+        // AUDIT items fan out into one ChecklistInstanceItemSubmission per named auditor, seeded
+        // with that item's accessories checklist (all unchecked) — see ChecklistInstanceItemSubmission.ts.
+        // insertMany preserves input order, so `items[i]` and `instanceItems[i]` are the same step.
+        const submissionDrafts = items.flatMap((item, index) => {
+            if (item.itemType !== "AUDIT" || !item.auditUserIds?.length) return []
+            const instanceItem = instanceItems[index]
+            return item.auditUserIds.map(userId => ({
+                itemId: instanceItem._id,
+                userId,
+                accessories: (item.accessories ?? []).map(name => ({ name, checked: false })),
+            }))
+        })
+        if (submissionDrafts.length) {
+            await ChecklistInstanceItemSubmission.insertMany(submissionDrafts)
+        }
     }
 
     // A ONE_TIME definition has exactly one period, ever — deactivate it once generated

@@ -10,7 +10,20 @@ import type { VerifyChecklistInstanceInput } from "./checklistInstance.validatio
 export type InstanceStatusFilter = "OPEN" | "COMPLETED"
 
 const populateInstance = (query: any) =>
-    query.populate({ path: "items", populate: { path: "images" }, options: { sort: { order: 1 } } })
+    query.populate({
+        path: "items",
+        options: { sort: { order: 1 } },
+        populate: [
+            { path: "images" },
+            // AUDIT items only — populate each auditor's own submission, their user record (for
+            // name/department display), and their evidence photos. Harmless no-op for STANDARD
+            // items, which have no submissions.
+            {
+                path: "submissions",
+                populate: [{ path: "images" }, { path: "userId", select: "firstName lastName departmentId" }],
+            },
+        ],
+    })
 
 const isCompleted = (instance: any) => {
     const items = instance.items ?? []
@@ -45,7 +58,10 @@ const assertPhotosSatisfied = async (item: any) => {
 // since approval is treated as a settled decision that a later item edit shouldn't silently
 // reopen. Falling out of all-done while still PENDING pulls it back to NOT_SUBMITTED, since a PC
 // shouldn't see an incomplete checklist sitting in their queue.
-const syncVerificationStatus = async (instance: any) => {
+// Exported so checklistInstanceItemSubmission.service.ts can reuse this exact rule after an AUDIT
+// item's derived isDone flips (see ChecklistInstanceItem.ts) — verification logic lives in one
+// place regardless of which item type triggered the recompute.
+export const syncVerificationStatus = async (instance: any) => {
     const items = await ChecklistInstanceItem.find({ instanceId: instance._id })
     const allDone = items.length > 0 && items.every((i: any) => i.isDone)
 

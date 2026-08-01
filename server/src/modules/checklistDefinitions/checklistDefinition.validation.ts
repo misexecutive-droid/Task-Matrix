@@ -1,5 +1,6 @@
 import { z } from "zod"
 import { CHECKLIST_RECURRENCES } from "../../models/ChecklistDefinition.js"
+import { CHECKLIST_ITEM_TYPES } from "../../models/ChecklistDefinitionItem.js"
 
 const definitionItemShape = z.object({
     label: z.string().min(1),
@@ -7,6 +8,12 @@ const definitionItemShape = z.object({
     requiredImageCount: z.number().int().min(0).optional(),
     maxImageCount: z.number().int().min(0).optional(),
     requiresLivePhoto: z.boolean().optional(),
+    itemType: z.enum(CHECKLIST_ITEM_TYPES).optional(),
+    auditUserIds: z.array(z.string().min(1)).optional(),
+    accessories: z.array(z.string().min(1)).optional(),
+}).refine(item => item.itemType !== "AUDIT" || (item.auditUserIds?.length ?? 0) >= 1, {
+    message: "At least one auditor is required for an audit item",
+    path: ["auditUserIds"],
 })
 
 export const createChecklistDefinitionSchema = z.object({

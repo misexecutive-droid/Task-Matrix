@@ -3,6 +3,8 @@ import { ChecklistDefinitionItem } from "../../models/ChecklistDefinitionItem.js
 import { ChecklistInstance } from "../../models/ChecklistInstance.js"
 import { ChecklistInstanceItem } from "../../models/ChecklistInstanceItem.js"
 import { ChecklistInstanceImage } from "../../models/ChecklistInstanceImage.js"
+import { ChecklistInstanceItemSubmission } from "../../models/ChecklistInstanceItemSubmission.js"
+import { ChecklistInstanceItemSubmissionImage } from "../../models/ChecklistInstanceItemSubmissionImage.js"
 import { generateInstanceForDefinition } from "../../jobs/checklistInstanceGenerator.job.js"
 import { AppError } from "../../utils/AppError.js"
 import type { AccessTokenPayload } from "../../middleware/auth/auth.js"
@@ -72,7 +74,16 @@ export const checklistDefinitionService = {
             // Clean up every item's evidence photos too, same convention as checklist.service.ts's
             // removeChecklist — don't leave orphaned ChecklistInstanceImage records behind.
             const items = await ChecklistInstanceItem.find({ instanceId: { $in: instanceIds } }, { _id: 1 })
-            await ChecklistInstanceImage.deleteMany({ checklistInstanceItemId: { $in: items.map(i => i._id) } })
+            const itemIds = items.map(i => i._id)
+            await ChecklistInstanceImage.deleteMany({ checklistInstanceItemId: { $in: itemIds } })
+
+            // Audit items also fan out into per-auditor submissions (+ their own evidence photos) —
+            // clean those up too, same reasoning as the standard-item images just above.
+            const submissions = await ChecklistInstanceItemSubmission.find({ itemId: { $in: itemIds } }, { _id: 1 })
+            const submissionIds = submissions.map(s => s._id)
+            await ChecklistInstanceItemSubmissionImage.deleteMany({ submissionId: { $in: submissionIds } })
+            await ChecklistInstanceItemSubmission.deleteMany({ itemId: { $in: itemIds } })
+
             await ChecklistInstanceItem.deleteMany({ instanceId: { $in: instanceIds } })
             await ChecklistInstance.deleteMany({ definitionId: id })
         }

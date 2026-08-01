@@ -23,6 +23,8 @@ import { checklistTemplateRouter, checklistTemplateItemRouter } from "./modules/
 import { checklistDefinitionRouter } from "./modules/checklistDefinitions/checklistDefinition.routes.js"
 import { checklistInstanceRouter, checklistInstanceItemRouter } from "./modules/checklistInstances/checklistInstance.routes.js"
 import { checklistInstanceImageRouter } from "./modules/checklistInstanceImages/checklistInstanceImage.routes.js"
+import { checklistInstanceItemSubmissionRouter } from "./modules/checklistInstanceItemSubmissions/checklistInstanceItemSubmission.routes.js"
+import { checklistInstanceItemSubmissionImageRouter } from "./modules/checklistInstanceItemSubmissionImages/checklistInstanceItemSubmissionImage.routes.js"
 import { notificationRouter } from "./modules/notifications/notification.routes.js"
 import { settingsRouter } from "./modules/settings/settings.routes.js"
 import { reportRouter } from "./modules/reports/report.routes.js"
@@ -79,6 +81,8 @@ class App {
         this.app.use('/checklist-instances', checklistInstanceRouter);
         this.app.use('/checklist-instance-items', checklistInstanceItemRouter);
         this.app.use('/checklist-instance-images', checklistInstanceImageRouter);
+        this.app.use('/checklist-instance-item-submissions', checklistInstanceItemSubmissionRouter);
+        this.app.use('/checklist-instance-item-submission-images', checklistInstanceItemSubmissionImageRouter);
 
         this.app.use('/task-checklists', taskChecklistRouter);
         this.app.use('/task-checklist-items', taskChecklistItemRouter);

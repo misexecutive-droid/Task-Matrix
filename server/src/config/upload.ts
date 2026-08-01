@@ -22,6 +22,11 @@ const TICKET_ATTACHMENT_UPLOAD_DIR = path.resolve("uploads", "ticket-attachments
 // checklistInstanceImages module) — kept separate from the Ticket-side checklistImages folder.
 const CHECKLIST_INSTANCE_UPLOAD_DIR = path.resolve("uploads", "checklist-instances")
 
+// Evidence photos uploaded against one auditor's ChecklistInstanceItemSubmission (see
+// checklistInstanceItemSubmissionImages module) — an AUDIT item's photos belong to a specific
+// auditor's submission, not the item's own pool, so they get their own folder too.
+const CHECKLIST_INSTANCE_SUBMISSION_UPLOAD_DIR = path.resolve("uploads", "checklist-instance-submissions")
+
 
 // A fresh clone of this repo won't have an uploads/ folder yet — we don't (and shouldn't) commit
 // an empty folder of user-uploaded content to git, so create it at startup if it's missing.
@@ -37,6 +42,9 @@ if (!fs.existsSync(TICKET_ATTACHMENT_UPLOAD_DIR)) {
 }
 if (!fs.existsSync(CHECKLIST_INSTANCE_UPLOAD_DIR)) {
     fs.mkdirSync(CHECKLIST_INSTANCE_UPLOAD_DIR, { recursive: true })
+}
+if (!fs.existsSync(CHECKLIST_INSTANCE_SUBMISSION_UPLOAD_DIR)) {
+    fs.mkdirSync(CHECKLIST_INSTANCE_SUBMISSION_UPLOAD_DIR, { recursive: true })
 }
 
 const storage = multer.diskStorage({
@@ -68,6 +76,15 @@ const ticketAttachmentStorage = multer.diskStorage({
 
 const checklistInstanceStorage = multer.diskStorage({
     destination: (_req, _file, cb) => cb(null, CHECKLIST_INSTANCE_UPLOAD_DIR),
+    filename: (_req, file, cb) => {
+        const randomName = crypto.randomBytes(16).toString("hex");
+        const ext = path.extname(file.originalname).toLowerCase();
+        cb(null, `${randomName}${ext}`)
+    },
+})
+
+const checklistInstanceSubmissionStorage = multer.diskStorage({
+    destination: (_req, _file, cb) => cb(null, CHECKLIST_INSTANCE_SUBMISSION_UPLOAD_DIR),
     filename: (_req, file, cb) => {
         const randomName = crypto.randomBytes(16).toString("hex");
         const ext = path.extname(file.originalname).toLowerCase();
@@ -110,3 +127,6 @@ export const ticketAttachmentUpload = (req : Request , res : Response , next : N
 
 export const checklistInstanceImageUpload = (req : Request , res : Response , next : NextFunction) =>
     buildImageUpload(checklistInstanceStorage).array("images", settingsService.getCached().maxUploadFiles)(req,res,next)
+
+export const checklistInstanceItemSubmissionImageUpload = (req : Request , res : Response , next : NextFunction) =>
+    buildImageUpload(checklistInstanceSubmissionStorage).array("images", settingsService.getCached().maxUploadFiles)(req,res,next)

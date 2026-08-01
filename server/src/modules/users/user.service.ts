@@ -4,29 +4,22 @@ import { auditService } from "../audit/audit.service.js"
 import { AccessTokenPayload } from "../../middleware/auth/auth.js"
 import type { CreateUserInput, UpdateUserInput } from "./user.validation.js"
 
-// The service layer holds the actual business logic and database queries. Routes/controllers
-// call these functions; this is where the real rules live (like "you can't deactivate yourself").
 export const userService = {
     async list() {
-        // Fetch every user, newest first (`createdAt: -1` means descending order by creation date).
         return User.find().sort({ createdAt: -1 })
     },
 
     async getById(id: string) {
         const user = await User.findById(id)
-        // If no user was found with that id, throw a standardized 404-style error instead of
-        // silently returning nothing - this lets the controller/error middleware respond properly.
         if (!user) throw AppError.notFound('User not found');
         return user;
     },
 
     async create(input: CreateUserInput , actorId : string) {
-        // Make sure nobody else is already registered with this email before creating a duplicate.
         const existing = await User.findOne({ email: input.email });
         if (existing) throw AppError.conflict('Email already registered')
 
 
-        // Build a new (unsaved) User document from the input fields (email, firstName, role, etc).
         const user = new User({ ...input });
         // We deliberately set `.password` as a separate step rather than passing it in the object
         // above. On the User model, `password` is a "virtual" property with a custom setter -
@@ -94,14 +87,20 @@ export const userService = {
         return user;
     },
 
-    // This powers the "assignable users" dropdown/picker used when assigning a ticket to someone.
-    // `user` here is the decoded token payload of whoever is logged in and asking for this list
-    // (could be an ADMIN, MANAGER, or other role) - NOT necessarily an admin, since this endpoint
-    // is reachable by any authenticated user (see user.routes.ts - it's placed before the
+    // This powers the "assignable users" dropdown/picker 
+    //  when assigning a ticket to someone.
+    // `user` here is the decoded token payload of 
+    // whoever is logged in and asking for this list
+    // (could be an ADMIN, MANAGER, or other role) - 
+    // NOT necessarily an admin, since this endpoint
+    // is reachable by any authenticated user
+    //  (see user.routes.ts - it's placed before the
     // `requireRole('ADMIN')` gate).
     async listAssignable( user : AccessTokenPayload, departmentId?: string ) {
-        // Start with the baseline rule: only show users who are currently active - there's no
-        // point offering a deactivated user as someone to assign a ticket to. Every role (including
+        // Start with the baseline rule: 
+        //  show users who are currently active - there's no
+        // point offering a deactivated 
+        // user as someone to assign a ticket to. Every role (including
         // plain USER) is assignable - ticketService.visibilityFilter/assertCanMutate treat USER the
         // same as AGENT for tickets assigned to them, so there's no trap here.
         const filter: Record <string , unknown> = { isActive : true };
