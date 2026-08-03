@@ -1,0 +1,234 @@
+import { useState } from 'react';
+import {
+  Trash2, Loader2, CheckSquare, Camera, X, RotateCcw, Image as ImageIcon, AlertCircle
+} from 'lucide-react';
+import {
+  useUpdateTaskChecklistItemMutation,
+  useUpdateTaskItemRemarksMutation,
+  useCompleteTaskChecklistItemMutation,
+  useDeleteTaskChecklistItemMutation,
+  useUploadTaskImagesMutation,
+  useDeleteTaskImageMutation,
+} from './hook';
+import type { TaskChecklistItem, CaptureMethod } from '../../api/taskChecklist';
+import { UPLOADS_BASE } from '../../lib/uploadsBase';
+
+export const ChecklistItemRow = ({
+  item, taskId, isAdmin, canWork,
+}: {
+  item:     TaskChecklistItem;
+  taskId:   string;
+  isAdmin:  boolean;
+  canWork:  boolean;
+}) => {
+  const [remarks, setRemarks] = useState(item.remarks ?? '');
+
+  const updateItem    = useUpdateTaskChecklistItemMutation(taskId);
+  const updateRemarks = useUpdateTaskItemRemarksMutation(taskId);
+  const completeItem  = useCompleteTaskChecklistItemMutation(taskId);
+  const deleteItem    = useDeleteTaskChecklistItemMutation(taskId);
+  const uploadImages  = useUploadTaskImagesMutation(taskId);
+  const deleteImage   = useDeleteTaskImageMutation(taskId);
+
+  const images = item.images ?? [];
+  const qualifying = item.requiresLivePhoto
+    ? images.filter(i => i.captureMethod === 'LIVE').length
+    : images.length;
+
+  const handleFiles = (files: FileList | null, captureMethod: CaptureMethod) => {
+    if (!files || !files.length) return;
+    uploadImages.mutate({ itemId: item.id, files: Array.from(files), captureMethod });
+  };
+
+  const photosSatisfied = item.requiredImageCount > 0 && qualifying >= item.requiredImageCount;
+
+  return (
+    <div
+      className={`group/card flex flex-col gap-4 p-4 sm:p-5 rounded-xl border transition-all duration-200 ${
+        item.isDone
+          ? 'bg-surface-hover/40 border-border/60 opacity-80'
+          : 'bg-surface border-border shadow-xs hover:shadow-sm hover:border-border-hover'
+      }`}
+    >
+      {/* Header Row */}
+      <div className="flex items-start gap-3 sm:gap-3.5">
+        <span
+          className={`mt-0.5 flex items-center justify-center w-6 h-6 rounded-md shrink-0 transition-all ${
+            item.isDone
+              ? 'bg-blue-500 text-white shadow-xs'
+              : 'bg-surface text-text-light border-[1.5px] border-border-hover shadow-xs'
+          }`}
+        >
+          {item.isDone && <CheckSquare size={14} strokeWidth={3} />}
+        </span>
+
+        <div className="flex-1 min-w-0">
+          <p className={`text-[15px] font-medium leading-snug ${
+            item.isDone ? 'line-through text-text-light' : 'text-text'
+          }`}>
+            {item.label}
+          </p>
+
+          <div className="flex items-center gap-2 mt-2 flex-wrap">
+            <span className="inline-flex text-xs font-semibold text-text-secondary bg-surface-hover px-2 py-0.5 rounded-md border border-border/60">
+              {item.isDone && item.completedAt
+                ? `Completed ${new Date(item.completedAt).toLocaleDateString()}`
+                : item.dueAt
+                  ? `Due ${new Date(item.dueAt).toLocaleDateString()}`
+                  : 'No due date'}
+            </span>
+
+            {item.requiredImageCount > 0 && (
+              <span className={`inline-flex items-center gap-1.5 text-xs font-bold px-2 py-0.5 rounded-md border ${
+                photosSatisfied
+                  ? 'bg-blue-50 text-blue-700 border-blue-200'
+                  : 'bg-warning/10 text-warning border-warning/30'
+              }`}>
+                <Camera size={12} strokeWidth={2.5} />
+                {qualifying}/{item.requiredImageCount} {item.requiresLivePhoto ? 'Live' : 'Photos'}
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* Admin actions — always visible on touch (no hover), reveal-on-hover on pointer devices */}
+        <div className="flex items-center gap-1.5 opacity-100 sm:opacity-0 sm:group-hover/card:opacity-100 transition-opacity focus-within:opacity-100">
+          {isAdmin && item.isDone && (
+            <button
+              type="button"
+              onClick={() => updateItem.mutate({ id: item.id, payload: { isDone: false } })}
+              disabled={updateItem.isPending}
+              className="p-1.5 text-text-light hover:text-warning hover:bg-warning/10 rounded-md transition-colors cursor-pointer disabled:opacity-50 outline-none focus-visible:ring-2 focus-visible:ring-warning/30"
+              title="Reopen item"
+              aria-label="Reopen item"
+            >
+              <RotateCcw size={16} />
+            </button>
+          )}
+          {isAdmin && (
+            <button
+              type="button"
+              onClick={() => deleteItem.mutate(item.id)}
+              disabled={deleteItem.isPending}
+              className="p-1.5 text-text-light hover:text-danger hover:bg-danger/10 rounded-md transition-colors cursor-pointer disabled:opacity-50 outline-none focus-visible:ring-2 focus-visible:ring-danger/30"
+              title="Delete item"
+              aria-label="Delete item"
+            >
+              <Trash2 size={16} />
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Hero image strip */}
+      {images.length > 0 && (
+        <div className="flex flex-wrap gap-3 pl-0 sm:pl-9">
+          {images.map(img => (
+            <div key={img.id} className="relative group/img overflow-hidden rounded-lg border border-border shadow-xs bg-surface-hover">
+              <img
+                src={`${UPLOADS_BASE}${img.url}`}
+                alt={img.originalFilename ?? 'evidence'}
+                className="w-20 h-20 object-cover transition-transform duration-300 group-hover/img:scale-110"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover/img:opacity-100 transition-opacity" />
+
+              <span className={`absolute top-1 left-1 text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded shadow-xs text-white backdrop-blur-md ${
+                img.captureMethod === 'LIVE' ? 'bg-blue-600/90' : 'bg-black/70'
+              }`}>
+                {img.captureMethod === 'LIVE' ? 'Live' : 'Gallery'}
+              </span>
+
+              {canWork && (
+                <button
+                  type="button"
+                  onClick={() => deleteImage.mutate(img.id)}
+                  disabled={deleteImage.isPending}
+                  aria-label="Remove image"
+                  className="absolute top-1 right-1 flex items-center justify-center w-6 h-6 rounded-full bg-danger/90 text-white opacity-0 group-hover/img:opacity-100 transition-all hover:bg-danger hover:scale-105 cursor-pointer shadow-xs outline-none focus:opacity-100 focus-visible:ring-2 focus-visible:ring-danger/50 disabled:opacity-50"
+                >
+                  {deleteImage.isPending ? <Loader2 size={12} className="animate-spin" /> : <X size={14} strokeWidth={2.5} />}
+                </button>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Body & Actions */}
+      <div className="pl-0 sm:pl-9 flex flex-col gap-4">
+        {(!canWork || item.isDone) && item.remarks && (
+          <div className="px-4 py-3 bg-surface-hover/50 rounded-lg border border-border/60 text-sm text-text-secondary italic">
+            "{item.remarks}"
+          </div>
+        )}
+
+        {canWork && !item.isDone && (
+          <div className="flex flex-col gap-3">
+            <textarea
+              value={remarks}
+              onChange={e => setRemarks(e.target.value)}
+              placeholder="Add remarks or notes..."
+              rows={2}
+              className="w-full px-3 py-2 text-sm text-text bg-surface rounded-lg border border-border focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 placeholder:text-text-light resize-none transition-all outline-none"
+            />
+
+            {(uploadImages.isError || completeItem.isError) && (
+              <div className="flex items-start gap-2 px-3 py-2 bg-danger/10 rounded-lg border border-danger/20">
+                 <AlertCircle size={14} className="mt-0.5 shrink-0 text-danger" />
+                 <p className="text-xs text-danger font-medium">
+                  {uploadImages.error?.message || completeItem.error?.message || 'An error occurred while saving.'}
+                </p>
+              </div>
+            )}
+
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-2 flex-wrap">
+              <div className="flex items-center gap-2 flex-wrap">
+                <label className="flex items-center gap-2 text-sm font-semibold px-4 py-2 rounded-lg border border-info/30 text-info bg-info/10 hover:bg-info/20 cursor-pointer transition-colors shadow-xs focus-within:ring-2 focus-within:ring-info/30">
+                  <Camera size={16} />
+                  Take Photo
+                  <input
+                    type="file" accept="image/*" capture="environment" multiple
+                    className="sr-only" onChange={e => { handleFiles(e.target.files, 'LIVE'); e.target.value = ''; }}
+                  />
+                </label>
+
+                <label className="flex items-center gap-2 text-sm font-semibold px-4 py-2 rounded-lg border border-border text-text-secondary bg-surface hover:bg-surface-hover cursor-pointer transition-colors shadow-xs focus-within:ring-2 focus-within:ring-border-hover">
+                  <ImageIcon size={16} />
+                  Gallery
+                  <input
+                    type="file" accept="image/*" multiple
+                    className="sr-only" onChange={e => { handleFiles(e.target.files, 'GALLERY'); e.target.value = ''; }}
+                  />
+                </label>
+
+                {uploadImages.isPending && <Loader2 size={18} className="animate-spin text-info ml-2" />}
+              </div>
+
+              <div className="flex items-center gap-2 flex-wrap sm:ml-auto">
+                <button
+                  type="button"
+                  onClick={() => updateRemarks.mutate({ id: item.id, remarks })}
+                  disabled={updateRemarks.isPending || !remarks.trim()}
+                  className="flex items-center gap-1.5 text-sm font-semibold px-4 py-2 rounded-lg text-text-secondary hover:text-text hover:bg-surface-hover cursor-pointer transition-colors disabled:opacity-50 disabled:cursor-not-allowed outline-none focus-visible:ring-2 focus-visible:ring-border-hover"
+                >
+                  {updateRemarks.isPending && <Loader2 size={16} className="animate-spin" />}
+                  Save Notes
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => completeItem.mutate(item.id)}
+                  disabled={completeItem.isPending}
+                  className="flex items-center justify-center gap-2 text-sm font-semibold px-5 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 cursor-pointer transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 active:scale-95"
+                >
+                  {completeItem.isPending ? <Loader2 size={16} className="animate-spin" /> : <CheckSquare size={16} />}
+                  Complete Item
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};

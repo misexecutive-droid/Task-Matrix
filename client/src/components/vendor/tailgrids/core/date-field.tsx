@@ -14,7 +14,7 @@ export function DateInput({ className, ...props }: DateInputProps) {
   return (
     <AriaDateInput
       className={cn(
-        "flex w-full items-center rounded-lg border border-border bg-surface px-3 py-2.5 text-sm text-text transition-all",
+        "flex w-full items-center rounded border border-border bg-surface px-3 py-2.5 text-sm text-text transition-all",
         "focus-within:border-primary-500 focus-within:ring-4 focus-within:ring-primary-500/20",
         "data-[invalid]:border-danger data-[invalid]:focus-within:ring-danger/20",
         "data-[disabled]:cursor-not-allowed data-[disabled]:opacity-50",

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Plus } from 'lucide-react';
+import { Plus, CheckSquare, Library, AlertCircle } from 'lucide-react';
 import { Button, Input } from '../../components';
 import {
   useAddTaskChecklistMutation,
@@ -32,6 +32,10 @@ export const NewChecklistForm = ({ taskId, onDone }: NewChecklistFormProps) => {
   const updateDraft = (i: number, patch: Partial<ItemDraft>) =>
     setItemDrafts(drafts => drafts.map((d, idx) => (idx === i ? { ...d, ...patch } : d)));
 
+  const handleRemoveDraft = (i: number) => {
+    setItemDrafts(drafts => drafts.filter((_, idx) => idx !== i));
+  };
+
   const handleAdd = () => {
     if (!title.trim()) return;
     const items = itemDrafts
@@ -51,82 +55,132 @@ export const NewChecklistForm = ({ taskId, onDone }: NewChecklistFormProps) => {
   };
 
   return (
-    <div className="flex flex-col gap-4 p-5 border border-border rounded-xl bg-surface shadow-md">
+    <div className="flex flex-col gap-6 p-5 sm:p-8 border border-border rounded-2xl bg-surface shadow-lg w-full max-w-4xl mx-auto">
+
+      {/* Header Section */}
+      <div className="flex items-center gap-3 pb-4 border-b border-border/60">
+        <div className="flex items-center justify-center w-10 h-10 bg-blue-50 text-blue-600 rounded-lg shrink-0">
+          <CheckSquare size={20} />
+        </div>
+        <div className="min-w-0">
+          <h2 className="text-xl font-semibold text-text tracking-tight">Create Checklist</h2>
+          <p className="text-sm text-text-secondary mt-0.5">Define tasks, assignees, and requirements</p>
+        </div>
+      </div>
+
+      {/* Template Selection */}
       {!!templates?.length && (
-        <div className="flex items-center justify-between gap-2 pb-4 border-b border-border/50">
-          <span className="text-sm font-mono font-medium text-text-secondary">Or apply a template</span>
-          <div className="flex items-center gap-2 bg-surface-hover p-1 rounded-lg border border-border">
-            <select
-              value={templateId}
-              onChange={e => setTemplateId(e.target.value)}
-              className="px-2 py-1 text-sm bg-transparent text-text cursor-pointer focus:outline-none"
-            >
-              <option value="">Apply template…</option>
-              {templates.map(t => (
-                <option key={t.id} value={t.id}>{t.name}</option>
-              ))}
-            </select>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 bg-surface-hover/40 rounded-xl border border-border/60">
+          <div className="flex items-center gap-2 text-sm font-medium text-text-secondary">
+            <Library size={16} className="text-text-muted" />
+            Start from a template
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="relative flex-1 sm:w-64">
+              <select
+                value={templateId}
+                onChange={e => setTemplateId(e.target.value)}
+                className="w-full px-3 py-2 text-sm text-text-secondary bg-surface rounded-lg border border-border shadow-xs focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all appearance-none cursor-pointer"
+              >
+                <option value="">Select a template...</option>
+                {templates.map(t => (
+                  <option key={t.id} value={t.id}>{t.name}</option>
+                ))}
+              </select>
+            </div>
             <Button
               size="sm"
-              variant="primary"
+              variant="secondary"
               onClick={handleApplyTemplate}
-              disabled={!templateId}
+              disabled={!templateId || applyTemplate.isPending}
               isLoading={applyTemplate.isPending}
+              className="whitespace-nowrap"
             >
-              Apply
+              {applyTemplate.isPending ? 'Applying...' : 'Apply'}
             </Button>
           </div>
         </div>
       )}
 
+      {/* Error States */}
       {applyTemplate.isError && (
-        <div className="p-3 bg-danger/10 text-danger rounded-lg text-sm border border-danger/20">
-          {applyTemplate.error instanceof Error ? applyTemplate.error.message : 'Failed to apply template.'}
+        <div className="flex items-start gap-3 p-4 bg-danger/10 text-danger rounded-xl border border-danger/20">
+          <AlertCircle size={18} className="mt-0.5 shrink-0" />
+          <div className="text-sm font-medium">
+            {applyTemplate.error instanceof Error ? applyTemplate.error.message : 'Failed to apply template. Please try again.'}
+          </div>
         </div>
       )}
 
-      <Input
-        id="checklist-title"
-        label="Checklist Title"
-        autoFocus
-        value={title}
-        onChange={e => setTitle(e.target.value)}
-        placeholder="e.g., Pre-flight Inspection"
-      />
-
-      <div className="flex flex-col gap-3 mt-2">
-        <h4 className="text-sm font-mono font-medium text-text-secondary">Tasks ({itemDrafts.length})</h4>
-        {itemDrafts.map((draft, i) => (
-          <ItemDraftRow
-            key={i}
-            index={i}
-            draft={draft}
-            assignableUsers={assignableUsers}
-            onChange={updateDraft}
-          />
-        ))}
-      </div>
-
-      <button
-        onClick={() => setItemDrafts(d => [...d, emptyItemDraft()])}
-        className="flex items-center justify-center gap-2 py-2.5 text-sm font-medium text-primary-600 bg-primary-500/5 hover:bg-primary-500/10 border border-primary-500/20 rounded-lg border-dashed transition-colors w-full"
-      >
-        <Plus size={16} />
-        Add Another Task
-      </button>
-
       {addChecklist.isError && (
-        <p className="p-3 bg-danger/10 text-danger rounded-lg text-sm border border-danger/20">
-          {addChecklist.error instanceof Error ? addChecklist.error.message : 'Failed to create checklist.'}
-        </p>
+        <div className="flex items-start gap-3 p-4 bg-danger/10 text-danger rounded-xl border border-danger/20">
+          <AlertCircle size={18} className="mt-0.5 shrink-0" />
+          <div className="text-sm font-medium">
+            {addChecklist.error instanceof Error ? addChecklist.error.message : 'Failed to create checklist. Please verify your inputs.'}
+          </div>
+        </div>
       )}
 
-      <div className="flex gap-3 justify-end pt-4 border-t border-border mt-2">
+      {/* Main Form Area */}
+      <div className="flex flex-col gap-6">
+        <div className="w-full">
+          <Input
+            id="checklist-title"
+            label="Checklist Title"
+            autoFocus
+            value={title}
+            onChange={e => setTitle(e.target.value)}
+            placeholder="e.g., Q3 Security Audit Pre-flight"
+            className="text-lg font-medium"
+          />
+        </div>
+
+        {/* Task List Section */}
+        <div className="flex flex-col gap-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-semibold text-text uppercase tracking-wider">
+              Tasks <span className="text-text-muted font-normal ml-1">({itemDrafts.length})</span>
+            </h3>
+          </div>
+
+          <div className="flex flex-col gap-4">
+            {itemDrafts.map((draft, i) => (
+              <ItemDraftRow
+                key={i}
+                index={i}
+                draft={draft}
+                assignableUsers={assignableUsers}
+                onChange={updateDraft}
+                onRemove={itemDrafts.length > 1 ? handleRemoveDraft : undefined}
+              />
+            ))}
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setItemDrafts(d => [...d, emptyItemDraft()])}
+            className="group flex items-center justify-center gap-2 py-4 mt-2 text-sm font-semibold text-blue-600 bg-blue-500/5 hover:bg-blue-500/10 border-2 border-blue-200 hover:border-blue-300 rounded-xl border-dashed transition-all w-full cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+          >
+            <div className="flex items-center justify-center w-6 h-6 rounded-full bg-blue-100 text-blue-600 group-hover:scale-110 transition-transform">
+              <Plus size={14} strokeWidth={2.5} />
+            </div>
+            Add Another Task
+          </button>
+        </div>
+      </div>
+
+      {/* Footer Actions */}
+      <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-3 pt-6 mt-4 border-t border-border/60">
         <Button variant="outline" onClick={onDone}>
           Cancel
         </Button>
-        <Button variant="primary" onClick={handleAdd} isLoading={addChecklist.isPending}>
-          Create Checklist
+        <Button
+          variant="primary"
+          onClick={handleAdd}
+          disabled={!title.trim() || addChecklist.isPending}
+          isLoading={addChecklist.isPending}
+        >
+          {addChecklist.isPending ? 'Creating...' : 'Create Checklist'}
         </Button>
       </div>
     </div>

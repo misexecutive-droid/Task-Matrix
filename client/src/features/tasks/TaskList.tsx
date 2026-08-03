@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus, CheckCheck, AlertCircle, LayoutList, Kanban } from "lucide-react";
+import { Plus, CheckCheck, AlertCircle, LayoutList, Kanban, Inbox } from "lucide-react";
 import { Button, Skeleton } from "../../components";
 import { useTasksQuery, useAssignableUsersQuery } from "./hook";
 import { useDepartmentsQuery } from "../tickets/hook";
@@ -47,7 +47,7 @@ export const TaskList = ({ userId, hideHeader = false, dateRange }: TaskListProp
     const [showForm, setShowForm] = useState(false);
     const [selected, setSelected] = useState<Task | null>(null);
     const { data: tasks, isPending, isError } = useTasksQuery(userId);
-    const { data: assignableUsers } = useAssignableUsersQuery(); // NEW
+    const { data: assignableUsers } = useAssignableUsersQuery();
     const { data: departments } = useDepartmentsQuery();
     const [filter, setFilter] = useState<Task['status'] | 'all'>('all');
     const [view, setView] = useState<'list' | 'board'>('board');
@@ -89,45 +89,50 @@ export const TaskList = ({ userId, hideHeader = false, dateRange }: TaskListProp
     const isEmpty = view === 'board' ? dateFiltered.length === 0 : filtered.length === 0;
 
     return (
-        <div className={['flex flex-col gap-6', view === 'board' ? 'max-w-6xl' : 'max-w-3xl'].join(' ')}>
-            <div className="flex items-center justify-between gap-3 flex-wrap">
+        <div className="flex flex-col gap-6 mx-auto w-full max-w-[1400px] transition-all duration-300">
+            
+            {/* Header & Controls Section */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 flex-wrap">
                 {!hideHeader && (
-                    <div className="flex items-center gap-3">
-                        <div className="size-10 rounded-xl bg-gradient-to-br from-primary-600 to-primary-500 flex items-center justify-center shrink-0 shadow-sm shadow-primary-600/20">
-                            <CheckCheck size={18} className="text-white" />
+                    <div className="flex items-center gap-4">
+                        <div className="flex items-center justify-center w-12 h-12 rounded bg-gradient-to-br from-blue-600 to-blue-500 text-white shadow-lg shadow-blue-500/20 shrink-0">
+                            <CheckCheck size={24} strokeWidth={2.5} />
                         </div>
                         <div>
-                            <h1 className="text-xl font-mono font-semibold text-text">Tasks</h1>
-                            <p className="text-sm text-text-muted mt-0.5">
-                                {tasks?.length ?? 0} task{tasks?.length !== 1 ? 's' : ''}
+                            <h1 className="text-2xl font-bold text-text tracking-tight">Tasks</h1>
+                            <p className="text-sm font-medium text-text-muted mt-0.5">
+                                {tasks?.length ?? 0} total task{tasks?.length !== 1 ? 's' : ''}
                             </p>
                         </div>
                     </div>
                 )}
 
-                <div className={['flex items-center gap-2', hideHeader ? 'ml-auto' : ''].join(' ')}>
-                    <div className="flex gap-1 p-1 bg-surface-hover rounded-lg">
+                <div className={`flex items-center gap-3 ${hideHeader ? 'ml-auto' : ''}`}>
+                    {/* View Toggle (Segmented Control) */}
+                    <div className="flex gap-1 p-1 bg-surface-hover/80 border border-border rounded">
                         <button
                             onClick={() => setView('list')}
                             title="List view"
                             aria-label="List view"
-                            className={[
-                                'flex items-center justify-center size-7 rounded-md transition-colors cursor-pointer',
-                                view === 'list' ? 'bg-surface text-text shadow-sm' : 'text-text-muted hover:text-text-secondary',
-                            ].join(' ')}
+                            className={`flex items-center justify-center w-8 h-8 rounded transition-all duration-200 outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 ${
+                                view === 'list'
+                                    ? 'bg-surface text-text ring-1 ring-border/50'
+                                    : 'text-text-muted hover:text-text-secondary hover:bg-surface-active/50'
+                            }`}
                         >
-                            <LayoutList size={14} />
+                            <LayoutList size={16} />
                         </button>
                         <button
                             onClick={() => setView('board')}
                             title="Board view"
                             aria-label="Board view"
-                            className={[
-                                'flex items-center justify-center size-7 rounded-md transition-colors cursor-pointer',
-                                view === 'board' ? 'bg-surface text-text shadow-sm' : 'text-text-muted hover:text-text-secondary',
-                            ].join(' ')}
+                            className={`flex items-center justify-center w-8 h-8 rounded transition-all duration-200 outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 ${
+                                view === 'board'
+                                    ? 'bg-surface text-text ring-1 ring-border/50'
+                                    : 'text-text-muted hover:text-text-secondary hover:bg-surface-active/50'
+                            }`}
                         >
-                            <Kanban size={14} />
+                            <Kanban size={16} />
                         </button>
                     </div>
 
@@ -135,56 +140,71 @@ export const TaskList = ({ userId, hideHeader = false, dateRange }: TaskListProp
                         <Button
                             size="sm"
                             variant="primary"
-                            className="gap-1.5"
+                            className="gap-2 font-semibold shadow-sm"
                             onClick={() => setShowForm(true)}
                         >
-                            <Plus size={14} />
-                            New task
+                            <Plus size={16} strokeWidth={2.5} />
+                            New Task
                         </Button>
                     )}
                 </div>
             </div>
 
+            {/* List View Filters */}
             {view === 'list' && (
-                <div className="flex gap-1 p-1 bg-surface-hover rounded-lg w-fit overflow-x-auto max-w-full">
-                    {FILTERS.map(f => (
-                        <button
-                            key={f.key}
-                            onClick={() => setFilter(f.key)}
-                            className={[
-                                'px-3 py-1.5 text-xs font-mono font-medium rounded-md transition-colors cursor-pointer whitespace-nowrap',
-                                filter === f.key
-                                    ? 'bg-surface text-text shadow-sm'
-                                    : 'text-text-muted hover:text-text-secondary',
-                            ].join(' ')}
-                        >
-                            {f.label}
-                        </button>
-                    ))}
+                <div className="flex gap-1 p-1 bg-surface-hover/80 border border-border rounded w-fit overflow-x-auto max-w-full scrollbar-hide">
+                    {FILTERS.map(f => {
+                        const count = f.key === 'all' ? dateFiltered.length : dateFiltered.filter(t => t.status === f.key).length;
+                        const active = filter === f.key;
+                        return (
+                            <button
+                                key={f.key}
+                                onClick={() => setFilter(f.key)}
+                                className={`flex items-center gap-2 px-3.5 py-1.5 text-sm font-semibold rounded transition-all duration-200 cursor-pointer whitespace-nowrap outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 ${
+                                    active
+                                        ? 'bg-surface text-text ring-1 ring-border/50'
+                                        : 'text-text-muted hover:text-text-secondary hover:bg-surface-active/50'
+                                }`}
+                            >
+                                {f.label}
+                                <span className={`flex items-center justify-center min-w-[1.25rem] h-5 px-1 text-[11px] font-bold rounded-full ${
+                                    active ? 'bg-blue-50 text-blue-700' : 'bg-surface-active text-text-light'
+                                }`}>
+                                    {count}
+                                </span>
+                            </button>
+                        );
+                    })}
                 </div>
             )}
 
+            {/* Loading States */}
             {isPending && view === 'list' && (
-                <div className="flex flex-col gap-2">
+                <div className="flex flex-col gap-3">
                     {Array.from({ length: 5 }).map((_, i) => (
-                        <div key={i} className="flex items-center gap-3 px-4 py-3 rounded-lg border border-border bg-surface">
-                            <Skeleton className="size-4 rounded-full shrink-0" />
-                            <Skeleton className="h-4 flex-1 max-w-64" />
-                            <Skeleton className="h-5 w-14 rounded-full shrink-0" />
+                        <div key={i} className="flex items-center gap-4 px-5 py-4 rounded border border-border bg-surface">
+                            <Skeleton className="w-5 h-5 rounded-md shrink-0" />
+                            <Skeleton className="h-5 flex-1 max-w-md" />
+                            <Skeleton className="h-6 w-20 rounded-md shrink-0" />
+                            <Skeleton className="w-8 h-8 rounded-full shrink-0" />
                         </div>
                     ))}
                 </div>
             )}
 
             {isPending && view === 'board' && (
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-start">
-                    {Array.from({ length: 3 }).map((_, col) => (
-                        <div key={col} className="flex flex-col gap-3">
-                            <Skeleton className="h-5 w-24" />
-                            {Array.from({ length: 2 }).map((_, i) => (
-                                <div key={i} className="flex flex-col gap-2 p-3 rounded-lg border border-border bg-surface">
-                                    <Skeleton className="h-4 w-3/4" />
-                                    <Skeleton className="h-4 w-1/3 rounded-full" />
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 items-start">
+                    {Array.from({ length: 4 }).map((_, col) => (
+                        <div key={col} className="flex flex-col gap-4 p-3 bg-surface-hover/50 border border-border rounded">
+                            <Skeleton className="h-6 w-32 rounded-md mx-2 mt-2" />
+                            {Array.from({ length: 3 }).map((_, i) => (
+                                <div key={i} className="flex flex-col gap-3 p-4 rounded border border-border bg-surface">
+                                    <Skeleton className="h-5 w-3/4 rounded-md" />
+                                    <Skeleton className="h-4 w-1/2 rounded-md" />
+                                    <div className="flex justify-between items-center mt-2">
+                                        <Skeleton className="h-5 w-16 rounded-md" />
+                                        <Skeleton className="w-7 h-7 rounded-full" />
+                                    </div>
                                 </div>
                             ))}
                         </div>
@@ -192,58 +212,84 @@ export const TaskList = ({ userId, hideHeader = false, dateRange }: TaskListProp
                 </div>
             )}
 
+            {/* Error State */}
             {isError && (
-                <div className="flex items-center gap-2 px-4 py-3 rounded-lg bg-danger/10 text-danger text-sm font-mono">
-                    <AlertCircle size={15} />
-                    Failed to load tasks. Please refresh.
+                <div className="flex items-start gap-3 p-4 bg-danger/10 rounded border border-danger/20 text-danger">
+                    <AlertCircle size={18} className="mt-0.5 shrink-0" />
+                    <div>
+                        <h4 className="text-sm font-semibold">Error Loading Tasks</h4>
+                        <p className="text-sm mt-1">Failed to connect to the server. Please refresh the page.</p>
+                    </div>
                 </div>
             )}
 
+            {/* Empty State */}
             {!isPending && !isError && isEmpty && (
-                <div className="flex flex-col items-center justify-center py-16 text-text-muted gap-2">
-                    <CheckCheck size={28} className="text-text-light" />
-                    <p className="text-sm font-mono">No tasks here.</p>
+                <div className="flex flex-col items-center justify-center py-20 px-4 text-center bg-surface-hover/40 rounded border-2 border-dashed border-border">
+                    <div className="flex items-center justify-center w-12 h-12 bg-surface rounded border border-border mb-4">
+                        <Inbox size={24} className="text-text-light" />
+                    </div>
+                    <h3 className="text-lg font-semibold text-text tracking-tight">No tasks found</h3>
+                    <p className="text-sm text-text-muted mt-1 max-w-sm">
+                        {filter !== 'all' 
+                            ? `There are no tasks currently marked as "${FILTERS.find(f => f.key === filter)?.label}".` 
+                            : "You're all caught up! There are no tasks assigned to this view."}
+                    </p>
                 </div>
             )}
 
+            {/* List View Render */}
             {!isPending && !isError && !isEmpty && view === 'list' && (() => {
                 let rowIndex = 0;
                 return (
-                    <div className="flex flex-col gap-5">
+                    <div className="flex flex-col gap-6 pb-10">
                         {departmentGroups.map(group => (
-                            <div key={group.departmentId ?? '__none__'} className="flex flex-col gap-2">
-                                <div className="flex items-center gap-2">
-                                    <h3 className="text-xs font-mono font-semibold text-text-muted uppercase tracking-wide">
+                            <div key={group.departmentId ?? '__none__'} className="flex flex-col gap-3">
+                                {/* Department Header */}
+                                <div className="flex items-center gap-3 mt-2 mb-1">
+                                    <h3 className="text-xs font-bold text-text-muted uppercase tracking-wider">
                                         {group.departmentName}
                                     </h3>
-                                    <span className="text-xs text-text-light font-mono">{group.tasks.length}</span>
+                                    <span className="flex items-center justify-center min-w-[1.5rem] h-5 px-1.5 text-[10px] font-bold text-text-muted bg-surface-hover rounded-full border border-border shadow-xs">
+                                        {group.tasks.length}
+                                    </span>
+                                    <div className="flex-1 h-px bg-border/60" /> {/* Clean divider line */}
                                 </div>
-                                {group.tasks.map(task => (
-                                    <TaskRow
-                                        key={task.id}
-                                        task={task}
-                                        isAdmin={isAdmin}
-                                        onOpen={setSelected}
-                                        index={rowIndex++}
-                                        assigneeName={task.assigneeId ? assigneeNames.get(task.assigneeId) : undefined}
-                                    />
-                                ))}
+                                
+                                {/* Tasks Stack */}
+                                <div className="flex flex-col gap-2.5">
+                                    {group.tasks.map(task => (
+                                        <TaskRow
+                                            key={task.id}
+                                            task={task}
+                                            isAdmin={isAdmin}
+                                            onOpen={setSelected}
+                                            index={rowIndex++}
+                                            assigneeName={task.assigneeId ? assigneeNames.get(task.assigneeId) : undefined}
+                                        />
+                                    ))}
+                                </div>
                             </div>
                         ))}
                     </div>
                 );
             })()}
 
+            {/* Board View Render */}
             {!isPending && !isError && !isEmpty && view === 'board' && (
-                <TaskBoard
-                    tasks={dateFiltered}
-                    assigneeNames={assigneeNames}
-                    isAdmin={isAdmin}
-                    isVerifier={isVerifier}
-                    onOpen={setSelected}
-                />
+                <div className="pb-10">
+                    <TaskBoard
+                        tasks={dateFiltered}
+                        assigneeNames={assigneeNames}
+                        departmentNames={departmentNames}
+                        isAdmin={isAdmin}
+                        isVerifier={isVerifier}
+                        onOpen={setSelected}
+                    />
+                </div>
             )}
 
+            {/* Modals */}
             {showForm && <TaskForm onClose={() => setShowForm(false)} />}
             {selected && <TaskDetail task={selected} onClose={() => setSelected(null)} />}
         </div>

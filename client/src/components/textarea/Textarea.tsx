@@ -15,6 +15,7 @@ export interface TextareaProps extends React.TextareaHTMLAttributes<HTMLTextArea
   icon?: LucideIcon;
   iconClassName?: string;
   containerClassName?: string;
+  labelClassName?: string;
 }
 
 export const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
@@ -29,6 +30,7 @@ export const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
       icon: Icon,
       iconClassName,
       containerClassName,
+      labelClassName,
       ...props
     },
     ref
@@ -39,11 +41,11 @@ export const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
     const isSuccess = !error && !!success;
 
     return (
-      <div className={cn("flex flex-col gap-1.5 w-full", containerClassName)}>
+      <div className={cn("group/field flex flex-col gap-1.5 w-full", containerClassName)}>
         {/* Label */}
         <label
           htmlFor={id}
-          className="flex items-center gap-1.5 text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider transition-colors"
+          className={cn("flex items-center gap-1.5 text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider transition-colors", labelClassName)}
         >
           {Icon && (
             <Icon
@@ -63,8 +65,8 @@ export const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
           aria-describedby={messageId}
           className={cn(
             "w-full px-4 py-3 min-h-[100px] text-sm font-medium transition-all duration-200 ease-in-out resize-y",
-            "bg-white dark:bg-slate-950 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500",
-            "border rounded-xl outline-none appearance-none shadow-sm",
+            "bg-white dark:bg-slate-950 text-slate-900 dark:text-white placeholder:text-text-light",
+            "border rounded outline-none appearance-none",
             "disabled:bg-slate-50 dark:disabled:bg-slate-900/50 disabled:text-slate-400 dark:disabled:text-slate-600 disabled:cursor-not-allowed disabled:resize-none",
             isError
               ? "border-rose-300 dark:border-rose-700/80 focus:border-rose-500 focus:ring-4 focus:ring-rose-500/20"

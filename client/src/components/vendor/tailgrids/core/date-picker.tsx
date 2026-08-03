@@ -92,7 +92,7 @@ export function DatePickerPopover({
     <AriaPopover
       placement="bottom start"
       className={cn(
-        "z-50 rounded-xl border border-border bg-surface p-3 shadow-lg outline-none",
+        "z-50 rounded border border-border bg-surface p-3 shadow-lg outline-none",
         "data-[entering]:animate-in data-[entering]:fade-in-0 data-[entering]:zoom-in-95",
         "data-[exiting]:animate-out data-[exiting]:fade-out-0 data-[exiting]:zoom-out-95",
         className

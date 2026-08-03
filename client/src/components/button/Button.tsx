@@ -15,21 +15,21 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
 
 const variantMap: Record<NonNullable<ButtonProps['variant']>, string> = {
   primary:
-    'bg-primary-600 text-white hover:bg-primary-500 active:bg-primary-700 shadow-xs shadow-primary-600/20',
+    'bg-blue-600 text-white border border-transparent hover:bg-blue-700 active:bg-blue-800 shadow-sm focus-visible:ring-blue-500',
   secondary:
-    'bg-surface-hover text-text hover:bg-border/60 active:bg-border/80 border border-border/40',
+    'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50 hover:text-gray-900 active:bg-gray-100 shadow-sm focus-visible:ring-gray-500',
   outline:
-    'border border-border/60 bg-transparent text-text-secondary hover:border-primary-500 hover:bg-primary-500/10 hover:text-text active:bg-primary-500/20',
+    'bg-transparent text-gray-700 border border-gray-300 hover:border-gray-400 hover:bg-gray-50 active:bg-gray-100 focus-visible:ring-gray-500',
   ghost:
-    'bg-transparent text-text-secondary hover:bg-surface-hover hover:text-text active:bg-border/50',
+    'bg-transparent text-gray-600 border border-transparent hover:bg-gray-100 hover:text-gray-900 active:bg-gray-200 focus-visible:ring-gray-500',
   danger:
-    'bg-danger text-white hover:bg-danger/90 active:bg-danger/80 shadow-xs shadow-danger/20',
+    'bg-red-600 text-white border border-transparent hover:bg-red-700 active:bg-red-800 shadow-sm focus-visible:ring-red-500',
 };
 
 const sizeMap: Record<NonNullable<ButtonProps['size']>, string> = {
-  sm: 'h-8 px-3 text-xs gap-1.5 rounded-md',
-  md: 'h-9 px-4 text-sm gap-2 rounded-lg',
-  lg: 'h-11 px-6 text-base gap-2.5 rounded-lg',
+  sm: 'h-8 px-3 text-xs gap-1.5 rounded',
+  md: 'h-9 px-4 text-sm gap-2 rounded',
+  lg: 'h-11 px-6 text-base gap-2 rounded',
 };
 
 export const Button: React.FC<ButtonProps> = ({
@@ -51,11 +51,15 @@ export const Button: React.FC<ButtonProps> = ({
       aria-disabled={isDisabled}
       aria-busy={isLoading}
       className={cn(
-        'inline-flex items-center justify-center font-display font-medium tracking-tight whitespace-nowrap',
-        'transition-all duration-150 ease-out cursor-pointer select-none',
+        // Base styles: Flexbox layout & typography
+        'inline-flex items-center justify-center font-semibold whitespace-nowrap',
+        // Smooth transitions and micro-interactions
+        'transition-all duration-200 ease-in-out cursor-pointer select-none',
         'active:scale-[0.98]',
-        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50 focus-visible:ring-offset-1',
-        'disabled:opacity-50 disabled:cursor-not-allowed disabled:pointer-events-none disabled:active:scale-100',
+        // Universal accessibility focus rings (color is overridden by variantMap)
+        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2',
+        // Rock-solid disabled states
+        'disabled:opacity-50 disabled:cursor-not-allowed disabled:pointer-events-none disabled:active:scale-100 disabled:shadow-none',
         variantMap[variant],
         sizeMap[size],
         className
@@ -65,7 +69,8 @@ export const Button: React.FC<ButtonProps> = ({
       {isLoading && (
         <Loader
           size={size === 'lg' ? 'md' : 'sm'}
-          color={variant === 'primary' || variant === 'danger' ? 'white' : 'primary'}
+          // Passed standard default colors to your loader based on the button background
+          color={variant === 'primary' || variant === 'danger' ? 'white' : 'blue'}
         />
       )}
       <span className={cn('inline-flex items-center gap-inherit', isLoading && 'opacity-90')}>

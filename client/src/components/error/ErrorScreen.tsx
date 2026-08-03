@@ -9,8 +9,6 @@ interface ErrorScreenProps {
   onRetry?: () => void;
 }
 
-// Shared visual shell for the 404 page and the route error boundary —
-// same glass-card language as LoginForm/AuthBackground.
 export const ErrorScreen = ({ code, title, message, onRetry }: ErrorScreenProps) => {
   const navigate = useNavigate();
 

@@ -1,6 +1,17 @@
 import { apiFetch } from './http';
 import type { TaskChecklist } from './taskChecklist';
 
+export type TaskAttachment = {
+    id:               string;
+    url:              string;
+    originalFilename: string | null;
+    mimeType:         string;
+    sizeBytes:        number;
+    taskId:           string;
+    uploadedBy:       { id: string; email: string; firstName: string; role: string } | null;
+    createdAt:        string;
+};
+
 export type Task = {
     id:           string;
     title:        string;
@@ -17,7 +28,8 @@ export type Task = {
     verifiedAt:       string | null;
     verificationNote: string | null;
     // Only populated by GET /tasks/:id (task detail), not the list endpoint.
-    checklists?: TaskChecklist[];
+    checklists?:  TaskChecklist[];
+    attachments?: TaskAttachment[];
 };
 
 export type CreateTaskPayload = {
@@ -79,4 +91,16 @@ export const taskApi = {
         if (to) params.set('to', to);
         return apiFetch<ApiResponse<ComplianceReportRow[]>>(`/tasks/reports/compliance?${params.toString()}`);
     },
+
+    uploadAttachments: (taskId: string, files: File[]) => {
+        const formData = new FormData();
+        files.forEach(f => formData.append('files', f));
+        return apiFetch<ApiResponse<TaskAttachment[]>>(`/tasks/${taskId}/attachments`, {
+            method: 'POST',
+            body:   formData,
+        });
+    },
+
+    deleteAttachment: (id: string) =>
+        apiFetch<ApiResponse<{ deleted: boolean }>>(`/task-attachments/${id}`, { method: 'DELETE' }),
 };

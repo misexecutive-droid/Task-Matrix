@@ -64,6 +64,24 @@ export const useCreateTaskMutation = () =>
         errorFallback: 'Failed to create task',
     });
 
+// General files (pdf/csv/image/video) attached directly to a task — separate from checklist
+// items' own required-photo evidence flow, so these only ever touch this one task's detail query.
+export const useUploadTaskAttachmentsMutation = (taskId: string) =>
+    useEntityMutation({
+        mutationFn: (files: File[]) => taskApi.uploadAttachments(taskId, files).then(r => r.data),
+        invalidateKeys: [TASK_KEYS.detail(taskId)],
+        successMessage: 'Files attached',
+        errorFallback: 'Failed to upload files',
+    });
+
+export const useDeleteTaskAttachmentMutation = (taskId: string) =>
+    useEntityMutation({
+        mutationFn: (id: string) => taskApi.deleteAttachment(id),
+        invalidateKeys: [TASK_KEYS.detail(taskId)],
+        successMessage: 'Attachment removed',
+        errorFallback: 'Failed to remove attachment',
+    });
+
 export const useUpdateTaskMutation = () =>
     useEntityMutation({
         mutationFn: ({ id, payload }: { id: string; payload: UpdateTaskPayload }) =>

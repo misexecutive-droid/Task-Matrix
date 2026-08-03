@@ -1,32 +1,14 @@
-import {
-  Clock,
-  ChevronRight,
-  Loader2,
-  Calendar,
-  CheckCircle2,
-  AlertCircle,
-  User,
-  Building2,
-  FileText,
-  Layers,
-  Tag,
-  ShieldQuestion,
-  ShieldCheck,
-  ShieldX,
-} from 'lucide-react';
 import { useTaskQuery, useUpdateTaskMutation } from './hook';
-import { TaskChecklistPanel } from './TaskChecklistPanel';
 import { TaskVerifyActions } from './TaskVerifyActions';
-import { Button, Skeleton } from '../../components';
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetFooter,
-} from '@/components/ui/sheet';
+import { TaskDetailHeader } from './TaskDetailHeader';
+import { TaskDetailInfoGrid } from './TaskDetailInfoGrid';
+import { TaskDescriptionSection } from './TaskDescriptionSection';
+import { TaskVerificationBanner } from './TaskVerificationBanner';
+import { TaskAttachmentsSection } from './TaskAttachmentsSection';
+import { TaskDetailFooter } from './TaskDetailFooter';
+import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { useAuth } from '../../context/AuthContext';
-import { PRIORITY_MAP, STATUS_LABEL, NEXT_STATUS } from './taskDisplay';
+import { NEXT_STATUS } from './taskDisplay';
 import type { Task } from '../../api/task';
 
 interface TaskDetailProps {
@@ -34,249 +16,80 @@ interface TaskDetailProps {
   onClose: () => void;
 }
 
+// Checklists/subtasks panel is temporarily hidden here (not removed — TaskChecklistPanel
+// and friends are untouched) while that feature is being reworked. Re-add the panel back
+// into the scrollable body below once it's ready.
+
+/** Bottom sheet showing a task's full details: header, info grid, description,
+ *  attachments, verification banner, PC verify actions, and status/close footer. */
 export const TaskDetail = ({ task: initialTask, onClose }: TaskDetailProps) => {
-  const { data: fresh, isPending } = useTaskQuery(initialTask.id);
+  const { data: fresh } = useTaskQuery(initialTask.id);
   const task = fresh ?? initialTask;
   const { user } = useAuth();
-  const isAdmin = user?.role === 'ADMIN';
   const isVerifier = user?.role === 'PC' || user?.role === 'ADMIN';
+  const canManageAttachments = Boolean(
+    user && (user.role === 'ADMIN' || task.userId === user.id || task.assigneeId === user.id)
+  );
 
   const updateMutation = useUpdateTaskMutation();
-  const priority = PRIORITY_MAP[task.priority];
-  const next = NEXT_STATUS[task.status];
+  const nextStatus = NEXT_STATUS[task.status];
 
-  const isOverdue =
+  const isOverdue = Boolean(
     task.dueDate &&
     new Date(task.dueDate) < new Date() &&
-    task.status !== 'done';
+    task.status !== 'done'
+  );
 
   return (
     <Sheet open onOpenChange={(open) => { if (!open) onClose(); }}>
-      <SheetContent className="flex flex-col h-full sm:max-w-lg p-0 overflow-hidden border-l border-border/50 bg-surface/90 backdrop-blur-xl shadow-2xl font-mono text-text transition-all">
+      <SheetContent
+        side="bottom"
+        className="flex flex-col h-[92vh] sm:h-[88vh] w-full p-0 overflow-hidden rounded-t-2xl sm:rounded-t-3xl border-t border-gray-200 bg-white shadow-2xl text-gray-900 transition-all outline-none"
+      >
+        <div className={`h-1.5 shrink-0 transition-all duration-300 ${task.status === 'done'
+            ? 'bg-emerald-500' :
+            task.status === 'in_progress'
+              ? 'bg-amber-500' :
+              task.status === 'pending_verification'
+                ? 'bg-indigo-500' :
+                'bg-gray-400'
+          }`} />
 
-        {/* Ambient Top Status Accent Bar */}
-        <div className={`h-1.5 shrink-0 transition-all duration-300 ${
-          task.status === 'done'
-            ? 'bg-gradient-to-r from-emerald-500 via-teal-400 to-emerald-500' :
-          task.status === 'in_progress'
-            ? 'bg-gradient-to-r from-amber-500 via-orange-400 to-amber-500' :
-          task.status === 'pending_verification'
-            ? 'bg-gradient-to-r from-indigo-500 via-blue-400 to-indigo-500' :
-            'bg-gradient-to-r from-primary-500 via-indigo-500 to-purple-500'
-        }`} />
+        <TaskDetailHeader task={task} isOverdue={isOverdue} />
 
-        {/* Header Section */}
-        <SheetHeader className="p-6 pb-4 border-b border-border/40 bg-surface/40 space-y-3">
-          
-          {/* Metadata Badges Row */}
-          <div className="flex items-center gap-2 flex-wrap">
-            {priority && (
-              <span
-                className={`flex items-center gap-1.5 text-[10px] uppercase tracking-wider font-semibold px-2.5 py-0.5 rounded-full border shadow-2xs backdrop-blur-md ${priority.className}`}
-              >
-                <span className="size-1.5 rounded-full bg-current shrink-0 animate-pulse" />
-                {priority.label}
-              </span>
-            )}
-            
-            <span className="text-[10px] uppercase tracking-wider font-semibold px-2.5 py-0.5 rounded-full bg-surface/80 border border-border/70 text-text-secondary flex items-center gap-1">
-              <Tag size={10} className="text-text-muted" />
-              {STATUS_LABEL[task.status]}
-            </span>
+        <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-6 scrollbar-thin scrollbar-thumb-gray-200 hover:scrollbar-thumb-gray-300">
+          <div className="max-w-3xl mx-auto w-full space-y-8">
+            <TaskDetailInfoGrid task={task} isOverdue={isOverdue} />
 
-            {isOverdue && (
-              <span className="text-[10px] uppercase tracking-wider font-semibold px-2.5 py-0.5 rounded-full bg-rose-500/10 border border-rose-500/30 text-rose-400 flex items-center gap-1 animate-pulse">
-                <AlertCircle size={10} /> Overdue
-              </span>
-            )}
+            <TaskDescriptionSection description={task.description} />
+
+            <TaskAttachmentsSection
+              taskId={task.id}
+              attachments={task.attachments ?? []}
+              canManage={canManageAttachments}
+            />
+
+            <TaskVerificationBanner task={task} />
           </div>
-
-          {/* Task Title */}
-          <SheetTitle className="text-lg font-bold tracking-tight text-text leading-snug">
-            {task.title}
-          </SheetTitle>
-        </SheetHeader>
-
-        {/* Scrollable Content Body */}
-        <div className="flex-1 overflow-y-auto px-6 py-5 space-y-6 scrollbar-thin scrollbar-thumb-border/40 hover:scrollbar-thumb-border/80">
-          {isPending ? (
-            <div className="space-y-4">
-              <Skeleton className="h-20 w-full rounded-xl bg-surface-hover/50" />
-              <Skeleton className="h-4 w-3/4 rounded-md bg-surface-hover/50" />
-              <Skeleton className="h-4 w-1/2 rounded-md bg-surface-hover/50" />
-              <Skeleton className="h-32 w-full rounded-xl bg-surface-hover/50 mt-4" />
-            </div>
-          ) : (
-            <>
-              {/* Primary Grid Information Card */}
-              <div className="grid grid-cols-2 gap-3 p-4 bg-surface/50 border border-border/50 rounded-xl text-xs backdrop-blur-sm shadow-inner">
-                
-                {/* Creation Date */}
-                <div className="flex flex-col gap-1">
-                  <span className="text-text-muted text-[11px] font-medium flex items-center gap-1.5 select-none">
-                    <Calendar size={12} className="text-primary-400" /> Created
-                  </span>
-                  <span className="text-text font-medium">
-                    {new Date(task.createdAt).toLocaleDateString(undefined, {
-                      month: 'short',
-                      day: 'numeric',
-                      year: 'numeric',
-                    })}
-                  </span>
-                </div>
-
-                {/* Due Date */}
-                <div className="flex flex-col gap-1">
-                  <span className="text-text-muted text-[11px] font-medium flex items-center gap-1.5 select-none">
-                    <Clock size={12} className={isOverdue ? 'text-rose-400' : 'text-indigo-400'} /> Due Date
-                  </span>
-                  <span
-                    className={`font-semibold flex items-center gap-1.5 ${
-                      isOverdue ? 'text-rose-400' : task.dueDate ? 'text-text' : 'text-text-muted italic font-normal'
-                    }`}
-                  >
-                    {task.dueDate ? (
-                      <>
-                        {new Date(task.dueDate).toLocaleDateString(undefined, {
-                          month: 'short',
-                          day: 'numeric',
-                        })}
-                        {isOverdue && <AlertCircle size={12} className="text-rose-400 shrink-0" />}
-                      </>
-                    ) : (
-                      'No deadline'
-                    )}
-                  </span>
-                </div>
-
-                {/* Assignee (if available) */}
-                {(task as any).assignee && (
-                  <div className="flex flex-col gap-1 pt-2 border-t border-border/30 col-span-1">
-                    <span className="text-text-muted text-[11px] font-medium flex items-center gap-1.5 select-none">
-                      <User size={12} className="text-sky-400" /> Assignee
-                    </span>
-                    <span className="text-text font-medium truncate">
-                      {(task as any).assignee.firstName} {(task as any).assignee.lastName ?? ''}
-                    </span>
-                  </div>
-                )}
-
-                {/* Department (if available) */}
-                {(task as any).department && (
-                  <div className="flex flex-col gap-1 pt-2 border-t border-border/30 col-span-1">
-                    <span className="text-text-muted text-[11px] font-medium flex items-center gap-1.5 select-none">
-                      <Building2 size={12} className="text-emerald-400" /> Department
-                    </span>
-                    <span className="text-text font-medium truncate">
-                      {(task as any).department.name}
-                    </span>
-                  </div>
-                )}
-              </div>
-
-              {/* Description Section */}
-              <div className="space-y-2">
-                <h3 className="text-[11px] font-semibold text-text-muted uppercase tracking-wider flex items-center gap-1.5 select-none">
-                  <FileText size={13} className="text-text-secondary" /> Description
-                </h3>
-                {task.description ? (
-                  <div className="p-4 bg-surface/60 rounded-xl border border-border/60 text-xs text-text-secondary leading-relaxed whitespace-pre-wrap shadow-2xs">
-                    {task.description}
-                  </div>
-                ) : (
-                  <div className="p-4 rounded-xl border border-dashed border-border/50 text-xs text-text-muted italic text-center">
-                    No description provided for this task.
-                  </div>
-                )}
-              </div>
-
-              {/* Verification outcome banner — shows the PC's note from the last approve/reject */}
-              {task.verificationNote && (
-                <div className={`flex items-start gap-2 p-3 rounded-xl border text-xs ${
-                  task.status === 'done'
-                    ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-400'
-                    : 'bg-amber-500/10 border-amber-500/20 text-amber-600 dark:text-amber-400'
-                }`}>
-                  {task.status === 'done' ? <ShieldCheck size={14} className="shrink-0 mt-0.5" /> : <ShieldX size={14} className="shrink-0 mt-0.5" />}
-                  <div>
-                    <p className="font-semibold">
-                      {task.status === 'done' && task.verifiedBy ? 'Verified' : 'Sent back for changes'}
-                    </p>
-                    <p className="mt-0.5 text-text-secondary">{task.verificationNote}</p>
-                  </div>
-                </div>
-              )}
-
-              {/* Checklists Panel */}
-              <div className="space-y-2 pt-2 border-t border-border/30">
-                <div className="flex items-center gap-1.5 text-[11px] font-semibold text-text-muted uppercase tracking-wider select-none mb-1">
-                  <Layers size={13} className="text-primary-400" /> Subtasks & Action Items
-                </div>
-                <TaskChecklistPanel
-                  taskId={task.id}
-                  checklists={task.checklists ?? []}
-                  isAdmin={isAdmin}
-                  currentUserId={user?.id}
-                />
-              </div>
-            </>
-          )}
         </div>
 
         {/* PC/Admin verification actions — only shown while the task is awaiting review */}
         {isVerifier && task.status === 'pending_verification' && (
-          <div className="px-4 pt-3 pb-1 border-t border-border/40 bg-surface/80 backdrop-blur-md">
-            <TaskVerifyActions task={task} />
+          <div className="border-t border-gray-200 bg-gray-50/80">
+            <div className="max-w-3xl mx-auto w-full px-4 sm:px-6 pt-3 pb-2">
+              <TaskVerifyActions task={task} />
+            </div>
           </div>
         )}
 
-        {/* Footer Actions */}
-        <SheetFooter className="p-4 border-t border-border/40 bg-surface/80 backdrop-blur-md flex-row items-center justify-between gap-3">
-          <div>
-            {task.status === 'done' && (
-              <div className="flex items-center gap-1.5 text-xs font-semibold text-emerald-400 px-3 py-1.5 bg-emerald-500/10 border border-emerald-500/25 rounded-lg shadow-2xs">
-                <CheckCircle2 size={14} className="text-emerald-400 shrink-0" />
-                <span>Task Completed</span>
-              </div>
-            )}
-            {task.status === 'pending_verification' && !isVerifier && (
-              <div className="flex items-center gap-1.5 text-xs font-semibold text-indigo-400 px-3 py-1.5 bg-indigo-500/10 border border-indigo-500/25 rounded-lg shadow-2xs">
-                <ShieldQuestion size={14} className="text-indigo-400 shrink-0" />
-                <span>Awaiting verification</span>
-              </div>
-            )}
-          </div>
-
-          <div className="flex items-center gap-2">
-            {next && (
-              <Button
-                variant="outline"
-                size="sm"
-                className="gap-1.5 text-xs h-9 font-mono border-border/70 hover:bg-surface-hover transition-all group"
-                disabled={updateMutation.isPending}
-                onClick={() =>
-                  updateMutation.mutate({ id: task.id, payload: { status: next } })
-                }
-              >
-                {updateMutation.isPending ? (
-                  <Loader2 size={13} className="animate-spin text-primary-400" />
-                ) : (
-                  <ChevronRight size={13} className="group-hover:translate-x-0.5 transition-transform" />
-                )}
-                <span>Advance to {STATUS_LABEL[next]}</span>
-              </Button>
-            )}
-
-            <Button
-              variant="primary"
-              size="sm"
-              onClick={onClose}
-              className="h-9 px-4 text-xs font-mono bg-gradient-to-r from-primary-500 to-indigo-600 hover:from-primary-600 hover:to-indigo-700 text-white shadow-md shadow-primary-500/20 rounded-lg active:scale-[0.98] transition-all"
-            >
-              Done
-            </Button>
-          </div>
-        </SheetFooter>
+        <TaskDetailFooter
+          task={task}
+          isVerifier={isVerifier}
+          nextStatus={nextStatus}
+          isAdvancing={updateMutation.isPending}
+          onAdvance={() => nextStatus && updateMutation.mutate({ id: task.id, payload: { status: nextStatus } })}
+          onClose={onClose}
+        />
       </SheetContent>
     </Sheet>
   );
