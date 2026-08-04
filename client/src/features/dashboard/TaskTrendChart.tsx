@@ -28,7 +28,7 @@ interface TaskTrendChartProps {
 // Single series (combined tickets + tasks per month) — a single series never needs
 // a legend box; the card header already names what's plotted.
 export const TaskTrendChart = ({ data }: TaskTrendChartProps) => (
-  <div className="w-full h-[260px]">
+  <div className="w-full max-w-lg mx-auto h-[200px]">
     <ResponsiveContainer width="100%" height="100%">
       <AreaChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
         <defs>

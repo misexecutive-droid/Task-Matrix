@@ -1,15 +1,15 @@
 import { useState } from 'react';
-import { PieChart as PieChartIcon, Radar as RadarIcon, TrendingUp } from 'lucide-react';
+import { PieChart as PieChartIcon, Activity as ActivityIcon, TrendingUp } from 'lucide-react';
 import { TaskStatusPieChart } from './TaskStatusPieChart';
-import { TaskActivityRadarChart } from './TaskActivityRadarChart';
+import { TaskActivityChart } from './TaskActivityChart';
 import { TaskTrendChart } from './TaskTrendChart';
 import type { Task } from '../../api/task';
 
-type TabKey = 'status' | 'radar' | 'trend';
+type TabKey = 'status' | 'activity' | 'trend';
 
 const TABS: { key: TabKey; label: string; icon: typeof PieChartIcon; description: string }[] = [
   { key: 'status', label: 'Status', icon: PieChartIcon, description: 'Task breakdown by current status' },
-  { key: 'radar', label: 'Radar', icon: RadarIcon, description: 'Pending vs. completed by lookback window' },
+  { key: 'activity', label: 'Activity', icon: ActivityIcon, description: 'Pending vs. completed by lookback window' },
   { key: 'trend', label: 'Trend', icon: TrendingUp, description: 'Combined ticket + task volume over time' },
 ];
 
@@ -23,7 +23,7 @@ export const TaskAnalyticsCard = ({ tasks, monthlyData }: TaskAnalyticsCardProps
   const activeTab = TABS.find(t => t.key === active)!;
 
   return (
-    <div className="relative group h-full rounded-2xl border border-border/60 bg-surface p-6 flex flex-col gap-5 shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden">
+    <div className="relative group rounded-2xl border border-border/60 bg-surface p-6 flex flex-col gap-5 shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden">
 
       {/* Decorative Background Glow */}
       <div className="absolute -top-20 -left-20 w-40 h-40 bg-primary/10 rounded-full blur-3xl pointer-events-none transition-opacity group-hover:opacity-100 opacity-50" />
@@ -61,9 +61,9 @@ export const TaskAnalyticsCard = ({ tasks, monthlyData }: TaskAnalyticsCardProps
       </div>
 
       {/* Active Chart */}
-      <div className="relative z-10 flex-1 flex items-center">
+      <div className="relative z-10 flex items-center">
         {active === 'status' && <TaskStatusPieChart tasks={tasks} />}
-        {active === 'radar' && <TaskActivityRadarChart tasks={tasks} />}
+        {active === 'activity' && <TaskActivityChart tasks={tasks} />}
         {active === 'trend' && <TaskTrendChart data={monthlyData} />}
       </div>
     </div>

@@ -55,7 +55,7 @@ export const DashboardOverview = ({
     <div className="flex flex-col gap-5">
       <KpiStrip tickets={tickets} tasks={tasks} isPending={isPending} />
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 items-start">
         <div className="lg:col-span-2">
           <TaskAnalyticsCard tasks={tasks} monthlyData={monthlyData} />
         </div>

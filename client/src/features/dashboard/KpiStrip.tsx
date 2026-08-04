@@ -1,8 +1,8 @@
 import { useMemo, useState } from 'react';
-import { Ticket as TicketIcon, CheckSquare, Clock, CheckCircle2, AlertTriangle, ArrowDown, ArrowUp } from 'lucide-react';
 import { Modal } from '../../components';
+import { StatCard } from './StatCard';
 import { STATUS_CONFIG, PRIORITY_MAP } from '../tasks/taskDisplay';
-import { lastMonths, countInMonth, trendFrom } from './dashboardDisplay';
+import { lastMonths, countInMonth, seriesInMonths, trendFrom } from './dashboardDisplay';
 import type { Task } from '../../api/task';
 import type { Ticket } from '../../api/ticket';
 
@@ -24,10 +24,9 @@ interface Tile {
   key: string;
   label: string;
   value: number;
-  icon: typeof TicketIcon;
-  tint: string;
-  trendLabel?: string;
-  trendDirection?: 'up' | 'down';
+  sparkline: number[];
+  trend: { direction: 'up' | 'down'; label: string };
+  caption: string;
   onClick?: () => void;
 }
 
@@ -35,45 +34,59 @@ export const KpiStrip = ({ tickets, tasks, isPending }: KpiStripProps) => {
   const [active, setActive] = useState<FilterKey | null>(null);
   // eslint-disable-next-line react-hooks/purity
   const now = useMemo(() => Date.now(), []);
+  const months = useMemo(() => lastMonths(6), []);
 
   if (isPending) {
-    return <div className="h-[84px] rounded-2xl border border-border bg-surface animate-pulse" />;
+    return (
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+        {Array.from({ length: 5 }).map((_, i) => (
+          <div key={i} className="h-[172px] rounded-2xl border border-border bg-surface animate-pulse" />
+        ))}
+      </div>
+    );
   }
 
-  const [prevMonth, curMonth] = lastMonths(2);
-  const ticketTrend = trendFrom(
-    countInMonth(tickets.map(t => t.createdAt), curMonth.year, curMonth.month),
-    countInMonth(tickets.map(t => t.createdAt), prevMonth.year, prevMonth.month),
-  );
-  const taskTrend = trendFrom(
-    countInMonth(tasks.map(t => t.createdAt), curMonth.year, curMonth.month),
-    countInMonth(tasks.map(t => t.createdAt), prevMonth.year, prevMonth.month),
-  );
+  const [prevMonth, curMonth] = months.slice(-2);
+  const trendForDates = (dates: string[]) => {
+    const previous = countInMonth(dates, prevMonth.year, prevMonth.month);
+    const current = countInMonth(dates, curMonth.year, curMonth.month);
+    const trend = trendFrom(current, previous);
+    return { trend, caption: `${trend.direction} from ${previous}` };
+  };
+
+  const openTickets = tickets.filter(t => t.status !== 'CLOSED');
+  const openTasks = tasks.filter(t => t.status !== 'done');
+  const pendingTasks = tasks.filter(t => FILTERS.pending.match(t, now));
+  const completedTasks = tasks.filter(t => FILTERS.completed.match(t, now));
+  const dueTasks = tasks.filter(t => FILTERS.due.match(t, now));
 
   const tiles: Tile[] = [
     {
-      key: 'openTickets', label: 'Open Tickets', value: tickets.filter(t => t.status !== 'CLOSED').length,
-      icon: TicketIcon, tint: 'bg-primary-500/10 text-primary-600 dark:text-primary-300',
-      trendLabel: ticketTrend.label, trendDirection: ticketTrend.direction,
+      key: 'openTickets', label: 'Open Tickets', value: openTickets.length,
+      sparkline: seriesInMonths(openTickets.map(t => t.createdAt), months),
+      ...trendForDates(openTickets.map(t => t.createdAt)),
     },
     {
-      key: 'openTasks', label: 'Open Tasks', value: tasks.filter(t => t.status !== 'done').length,
-      icon: CheckSquare, tint: 'bg-amber-500/10 text-amber-600 dark:text-amber-400',
-      trendLabel: taskTrend.label, trendDirection: taskTrend.direction,
+      key: 'openTasks', label: 'Open Tasks', value: openTasks.length,
+      sparkline: seriesInMonths(openTasks.map(t => t.createdAt), months),
+      ...trendForDates(openTasks.map(t => t.createdAt)),
     },
     {
-      key: 'pending', label: 'Pending', value: tasks.filter(t => FILTERS.pending.match(t, now)).length,
-      icon: Clock, tint: 'bg-amber-500/10 text-amber-600 dark:text-amber-400',
+      key: 'pending', label: 'Pending', value: pendingTasks.length,
+      sparkline: seriesInMonths(pendingTasks.map(t => t.createdAt), months),
+      ...trendForDates(pendingTasks.map(t => t.createdAt)),
       onClick: () => setActive('pending'),
     },
     {
-      key: 'completed', label: 'Completed', value: tasks.filter(t => FILTERS.completed.match(t, now)).length,
-      icon: CheckCircle2, tint: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400',
+      key: 'completed', label: 'Completed', value: completedTasks.length,
+      sparkline: seriesInMonths(completedTasks.map(t => t.createdAt), months),
+      ...trendForDates(completedTasks.map(t => t.createdAt)),
       onClick: () => setActive('completed'),
     },
     {
-      key: 'due', label: 'Due', value: tasks.filter(t => FILTERS.due.match(t, now)).length,
-      icon: AlertTriangle, tint: 'bg-danger/10 text-danger',
+      key: 'due', label: 'Due', value: dueTasks.length,
+      sparkline: seriesInMonths(dueTasks.map(t => t.createdAt), months),
+      ...trendForDates(dueTasks.map(t => t.createdAt)),
       onClick: () => setActive('due'),
     },
   ];
@@ -82,36 +95,18 @@ export const KpiStrip = ({ tickets, tasks, isPending }: KpiStripProps) => {
 
   return (
     <>
-      <div className="grid grid-cols-2 sm:grid-cols-5 rounded-2xl border border-border/60 bg-surface shadow-sm divide-x divide-y sm:divide-y-0 divide-border/50 overflow-hidden">
-        {tiles.map(tile => {
-          const TrendIcon = tile.trendDirection === 'down' ? ArrowDown : ArrowUp;
-          return (
-            <div
-              key={tile.key}
-              onClick={tile.onClick}
-              role={tile.onClick ? 'button' : undefined}
-              tabIndex={tile.onClick ? 0 : undefined}
-              onKeyDown={tile.onClick ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); tile.onClick!(); } } : undefined}
-              className={`flex items-center gap-3 px-4 py-3.5 transition-colors duration-200 ${tile.onClick ? 'cursor-pointer hover:bg-surface-hover outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50' : ''}`}
-            >
-              <div className={`p-2 rounded-lg shrink-0 ${tile.tint}`}>
-                <tile.icon size={15} />
-              </div>
-              <div className="flex flex-col min-w-0">
-                <span className="text-[11px] font-display font-medium text-text-muted truncate">{tile.label}</span>
-                <div className="flex items-center gap-1.5">
-                  <span className="text-lg font-display font-bold text-text tabular-nums">{tile.value}</span>
-                  {tile.trendLabel && (
-                    <span className={`inline-flex items-center gap-0.5 text-[10px] font-display font-semibold ${tile.trendDirection === 'down' ? 'text-danger' : 'text-success'}`}>
-                      <TrendIcon size={9} strokeWidth={3} />
-                      {tile.trendLabel}
-                    </span>
-                  )}
-                </div>
-              </div>
-            </div>
-          );
-        })}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+        {tiles.map(tile => (
+          <StatCard
+            key={tile.key}
+            label={tile.label}
+            value={tile.value}
+            trend={tile.trend}
+            caption={tile.caption}
+            sparkline={tile.sparkline}
+            onClick={tile.onClick}
+          />
+        ))}
       </div>
 
       <Modal

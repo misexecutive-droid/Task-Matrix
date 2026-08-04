@@ -48,6 +48,10 @@ const isSameMonth = (isoDate: string, year: number, month: number) => {
 export const countInMonth = (dates: string[], year: number, month: number) =>
   dates.filter(d => isSameMonth(d, year, month)).length;
 
+// Per-month counts across a set of month buckets, e.g. for a stat card sparkline.
+export const seriesInMonths = (dates: string[], months: { year: number; month: number }[]) =>
+  months.map(m => countInMonth(dates, m.year, m.month));
+
 export type Trend = { direction: 'up' | 'down'; label: string };
 
 // Percent change from `previous` to `current`, expressed as a stat-card trend badge.
