@@ -10,7 +10,7 @@ import { DepartmentBreakdown, type DepartmentRow } from './DepartmentBreakdown';
 import { UserBreakdown, type UserRow } from './UserBreakdown';
 import { RecentActivity } from './RecentActivity';
 import { UpcomingEvents } from './UpcomingEvents';
-import { type FeedItem, lastMonths, countInMonth, trendFrom, pointDelta } from './dashboardDisplay';
+import { type FeedItem, lastMonths, countInMonth, pointDelta } from './dashboardDisplay';
 
 export const HomePage = () => {
   const { user } = useAuth();
@@ -56,25 +56,12 @@ export const HomePage = () => {
     }))
     .filter(row => row.openTickets + row.openTasks > 0);
 
-  // Overview widgets — counts/trends computed client-side from the tickets/tasks already fetched
-  // above (each is already scoped server-side to what this role is allowed to see, so a non-admin
-  // sees only their own numbers here without any extra filtering).
-  const openTickets = tickets.filter(t => t.status !== 'CLOSED').length;
-  const openTasks = (tasks ?? []).filter(t => t.status !== 'done').length;
-
   const ticketDates = tickets.map(t => t.createdAt);
   const taskDates = (tasks ?? []).map(t => t.createdAt);
   const [prevMonth, curMonth] = lastMonths(2);
-  const ticketTrend = trendFrom(
-    countInMonth(ticketDates, curMonth.year, curMonth.month),
-    countInMonth(ticketDates, prevMonth.year, prevMonth.month),
-  );
-  const taskTrend = trendFrom(
-    countInMonth(taskDates, curMonth.year, curMonth.month),
-    countInMonth(taskDates, prevMonth.year, prevMonth.month),
-  );
 
-  const monthlyData = lastMonths(6).map(({ year, month, label }) => ({
+  const recentMonths = lastMonths(6);
+  const monthlyData = recentMonths.map(({ year, month, label }) => ({
     month: label,
     value: countInMonth(ticketDates, year, month) + countInMonth(taskDates, year, month),
   }));
@@ -103,15 +90,13 @@ export const HomePage = () => {
       }`;
 
   return (
-    <div className="flex flex-col gap-6 max-w-[1600px]">
+    <div className="flex flex-col gap-5 w-full animate-in fade-in duration-500 ease-out">
       <DashboardHeader userName={user?.name} />
 
       <DashboardOverview
         isPending={isPending}
-        openTickets={openTickets}
-        openTasks={openTasks}
-        ticketTrend={ticketTrend}
-        taskTrend={taskTrend}
+        tickets={tickets}
+        tasks={tasks ?? []}
         monthlyData={monthlyData}
         targetPercent={targetPercent}
         targetChange={targetChange}
@@ -124,13 +109,13 @@ export const HomePage = () => {
       />
 
       {isAdmin && !isPending && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <DepartmentBreakdown rows={departmentRows} />
           <UserBreakdown rows={userRows} />
         </div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 pb-8">
         <RecentActivity feed={feed} isPending={isPending} />
         <UpcomingEvents events={upcomingEvents ?? []} isPending={eventsPending} />
       </div>

@@ -1,6 +1,7 @@
 import type { LucideIcon } from 'lucide-react';
 import { AlertCircle, Loader2 } from 'lucide-react';
 import { StatCard, type Trend } from '../../dashboard';
+import { ActiveRangeBadge } from '../../../components';
 
 interface KpiCardConfig {
   icon: LucideIcon;
@@ -19,21 +20,27 @@ interface KpiSectionShellProps {
   errorMessage: string;
   cards: KpiCardConfig[];
   chart: React.ReactNode;
+  from?: string;
+  to?: string;
 }
 
 // Shared layout for every KPI group on the analytics page (header, stat cards, chart card, plus
 // loading/error states) — each report just supplies its own data + chart. Adding another chart to
 // the dashboard means writing one thin section component, not repeating this scaffolding.
-export const KpiSectionShell = ({ icon: Icon, title, description, isPending, isError, errorMessage, cards, chart }: KpiSectionShellProps) => (
+export const KpiSectionShell = ({ icon: Icon, title, description, isPending, isError, errorMessage, cards, chart, from, to }: KpiSectionShellProps) => (
   <section className="flex flex-col gap-6">
-    <header className="flex items-center gap-4">
-      <div className="flex items-center justify-center size-12 rounded-2xl bg-primary-500/10 text-primary-600 dark:text-primary-400 ring-1 ring-primary-500/20 shrink-0">
-        <Icon className="w-6 h-6" />
+    <header className="flex items-start justify-between gap-4 flex-wrap">
+      <div className="flex items-center gap-4">
+        <div className="flex items-center justify-center size-12 rounded-2xl bg-primary-500/10 text-primary-600 dark:text-primary-400 ring-1 ring-primary-500/20 shrink-0">
+          <Icon className="w-6 h-6" />
+        </div>
+        <div>
+          <h2 className="text-xl font-display font-bold text-text">{title}</h2>
+          <p className="text-sm font-display text-text-muted leading-relaxed">{description}</p>
+        </div>
       </div>
-      <div>
-        <h2 className="text-xl font-display font-bold text-text">{title}</h2>
-        <p className="text-sm font-display text-text-muted leading-relaxed">{description}</p>
-      </div>
+
+      <ActiveRangeBadge from={from} to={to} />
     </header>
 
     {isError ? (

@@ -24,6 +24,8 @@ export const ChecklistInstanceKpiSection = ({ groupBy, from, to }: ChecklistInst
       isPending={isPending}
       isError={isError}
       errorMessage="Failed to load recurring checklist data."
+      from={from}
+      to={to}
       cards={[
         {
           icon: Repeat,

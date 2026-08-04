@@ -1,19 +1,21 @@
 import type { TicketStatus } from '../../api/ticket';
 import type { Task } from '../../api/task';
 
+// Updated to match the new premium badge style (requires a generic 'border' class on the consumer)
 export const TICKET_STATUS_COLORS: Record<TicketStatus, string> = {
-  OPEN: 'bg-surface-hover text-text-secondary',
-  IN_PROGRESS: 'bg-amber-500/10 text-amber-600 dark:text-amber-400',
-  IN_REVIEW: 'bg-primary-500/10 text-primary-700 dark:text-primary-300',
-  CLOSED: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400',
-  ON_HOLD: 'bg-surface-hover text-text-secondary',
+  OPEN: 'bg-surface-hover text-text border-border/50',
+  IN_PROGRESS: 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/20',
+  IN_REVIEW: 'bg-primary-500/15 text-primary-600 dark:text-primary-400 border-primary-500/20',
+  CLOSED: 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/20',
+  ON_HOLD: 'bg-surface text-text-muted border-border/50 opacity-80',
 };
 
+// Updated to match the new premium badge style
 export const TASK_STATUS_COLORS: Record<Task['status'], string> = {
-  todo: 'bg-surface-hover text-text-secondary',
-  in_progress: 'bg-amber-500/10 text-amber-600 dark:text-amber-400',
-  pending_verification: 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400',
-  done: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400',
+  todo: 'bg-surface-hover text-text border-border/50',
+  in_progress: 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/20',
+  pending_verification: 'bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 border-indigo-500/20',
+  done: 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/20',
 };
 
 export const greeting = () => {
@@ -51,14 +53,24 @@ export type Trend = { direction: 'up' | 'down'; label: string };
 // Percent change from `previous` to `current`, expressed as a stat-card trend badge.
 // No history to compare against yet (previous === 0) reads as flat, not a fabricated spike.
 export const trendFrom = (current: number, previous: number): Trend => {
-  if (previous === 0) return { direction: current > 0 ? 'up' : 'down', label: current > 0 ? 'New' : '0%' };
+  if (previous === 0) return { 
+    direction: current > 0 ? 'up' : 'down', 
+    label: current > 0 ? 'New' : '0%' 
+  };
+  
   const pct = ((current - previous) / previous) * 100;
-  return { direction: pct >= 0 ? 'up' : 'down', label: `${pct >= 0 ? '+' : ''}${pct.toFixed(1)}%` };
+  return { 
+    direction: pct >= 0 ? 'up' : 'down', 
+    label: `${pct >= 0 ? '+' : ''}${pct.toFixed(1)}%` 
+  };
 };
 
 // Difference between two already-percentage values (e.g. two months' completion rates) —
 // a plain point delta, not a percent-of-a-percent, so "76% vs 72%" reads as "+4%" not "+5.6%".
 export const pointDelta = (current: number, previous: number): Trend => {
   const diff = current - previous;
-  return { direction: diff >= 0 ? 'up' : 'down', label: `${diff >= 0 ? '+' : ''}${diff.toFixed(1)}%` };
+  return { 
+    direction: diff >= 0 ? 'up' : 'down', 
+    label: `${diff >= 0 ? '+' : ''}${diff.toFixed(1)}%` 
+  };
 };

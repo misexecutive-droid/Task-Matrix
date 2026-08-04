@@ -1,9 +1,10 @@
-import { Ticket as TicketIcon, CheckSquare } from 'lucide-react';
 import { Skeleton } from '../../components';
-import { StatCard } from './StatCard';
+import { KpiStrip } from './KpiStrip';
+import { TaskAnalyticsCard } from './TaskAnalyticsCard';
 import { MonthlyTargetCard } from './MonthlyTargetCard';
-import { MonthlySalesChart } from './MonthlySalesChart';
 import type { Trend } from './dashboardDisplay';
+import type { Task } from '../../api/task';
+import type { Ticket } from '../../api/ticket';
 
 interface TargetStat {
   label: string;
@@ -13,10 +14,8 @@ interface TargetStat {
 
 interface DashboardOverviewProps {
   isPending: boolean;
-  openTickets: number;
-  openTasks: number;
-  ticketTrend: Trend;
-  taskTrend: Trend;
+  tickets: Ticket[];
+  tasks: Task[];
   monthlyData: { month: string; value: number }[];
   targetPercent: number;
   targetChange: Trend;
@@ -26,10 +25,8 @@ interface DashboardOverviewProps {
 
 export const DashboardOverview = ({
   isPending,
-  openTickets,
-  openTasks,
-  ticketTrend,
-  taskTrend,
+  tickets,
+  tasks,
   monthlyData,
   targetPercent,
   targetChange,
@@ -38,57 +35,38 @@ export const DashboardOverview = ({
 }: DashboardOverviewProps) => {
   if (isPending) {
     return (
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-        <div className="lg:col-span-2 flex flex-col gap-5">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-            {Array.from({ length: 2 }).map((_, i) => (
-              <div key={i} className="rounded-2xl border border-border bg-surface p-6 flex flex-col gap-5">
-                <Skeleton className="size-12 rounded-xl" />
-                <Skeleton className="h-4 w-24" />
-                <Skeleton className="h-8 w-20" />
-              </div>
-            ))}
-          </div>
-          <div className="rounded-2xl border border-border bg-surface p-6">
+      <div className="flex flex-col gap-5">
+        <div className="h-[84px] rounded-2xl border border-border bg-surface">
+          <Skeleton className="h-full w-full" />
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+          <div className="lg:col-span-2 rounded-2xl border border-border bg-surface p-6">
             <Skeleton className="h-64 w-full" />
           </div>
-        </div>
-        <div className="rounded-2xl border border-border bg-surface p-6">
-          <Skeleton className="h-full w-full min-h-[420px]" />
+          <div className="rounded-2xl border border-border bg-surface p-6">
+            <Skeleton className="h-full w-full min-h-[320px]" />
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-      <div className="lg:col-span-2 flex flex-col gap-5">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-          <StatCard
-            icon={TicketIcon}
-            iconTint="bg-primary-500/10 text-primary-600 dark:text-primary-300"
-            label="Open Tickets"
-            value={openTickets}
-            trend={ticketTrend}
-          />
-          <StatCard
-            icon={CheckSquare}
-            iconTint="bg-amber-500/10 text-amber-600 dark:text-amber-400"
-            label="Open Tasks"
-            value={openTasks}
-            trend={taskTrend}
-          />
+    <div className="flex flex-col gap-5">
+      <KpiStrip tickets={tickets} tasks={tasks} isPending={isPending} />
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+        <div className="lg:col-span-2">
+          <TaskAnalyticsCard tasks={tasks} monthlyData={monthlyData} />
         </div>
 
-        <MonthlySalesChart data={monthlyData} />
+        <MonthlyTargetCard
+          percent={targetPercent}
+          change={targetChange}
+          description={targetDescription}
+          stats={targetStats}
+        />
       </div>
-
-      <MonthlyTargetCard
-        percent={targetPercent}
-        change={targetChange}
-        description={targetDescription}
-        stats={targetStats}
-      />
     </div>
   );
 };

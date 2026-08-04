@@ -9,7 +9,7 @@ import { twMerge } from 'tailwind-merge';
 import { useUsersQuery } from "./hook";
 import { TaskList } from "../tasks";
 import { ExportDialog } from "../reports";
-import { DateRangePicker, type DateRangeValue } from "../../components";
+import { ActiveRangeBadge, DateRangePicker, type DateRangeValue } from "../../components";
 import {
   Select,
   SelectTrigger,
@@ -75,12 +75,14 @@ export const AdminTaskList = () => {
             </Select>
 
             {/* Date Range Filter */}
-            <DateRangePicker
+            {/* <DateRangePicker
               value={dateRange}
               onChange={setDateRange}
               placeholder="Filter by date"
               className="flex-1 sm:w-64"
-            />
+            /> */}
+
+            <ActiveRangeBadge from={dateRange.from?.toISOString()} to={dateRange.to?.toISOString()} />
 
             {/* Export Button */}
             <button

@@ -15,7 +15,7 @@ export const TaskDetailHeader = ({ task, isOverdue }: { task: Task; isOverdue: b
             <span
               className={`flex items-center gap-1.5 text-[10px] uppercase tracking-wider font-bold px-2 py-0.5 rounded-md border shadow-sm ${priority.className}`}
             >
-              <span className="size-1.5 rounded-full bg-current shrink-0 animate-pulse" />
+              <span className="size-1.5 rounded-full bg-current shrink-0" />
               {priority.label}
             </span>
           )}

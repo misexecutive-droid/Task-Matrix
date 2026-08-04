@@ -24,6 +24,8 @@ export const TaskChecklistKpiSection = ({ groupBy, from, to }: TaskChecklistKpiS
       isPending={isPending}
       isError={isError}
       errorMessage="Failed to load task checklist data."
+      from={from}
+      to={to}
       cards={[
         {
           icon: ClipboardCheck,

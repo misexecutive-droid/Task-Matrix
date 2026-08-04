@@ -8,7 +8,6 @@ import {
   Clock,
   ShieldQuestion,
   AlertCircle,
-  ImageOff,
 } from "lucide-react";
 import { useUpdateTaskMutation, useDeleteTaskMutation } from "./hook";
 import { TaskVerifyActions } from "./TaskVerifyActions";
@@ -48,28 +47,23 @@ export const TaskCard = ({ task, assigneeName, departmentName, isAdmin, isVerifi
   return (
     <div
       onClick={() => onOpen(task)}
-      // Standardized to "rounded" (4px radius) instead of xl
-      className="group relative flex flex-col justify-between p-4 rounded border border-gray-200 bg-white shadow-sm hover:border-gray-300 hover:shadow-md transition-all duration-200 cursor-pointer transform hover:-translate-y-0.5 animate-in fade-in slide-in-from-bottom-2 select-none"
+      // Media-card pattern: image bleeds edge-to-edge, content sits in padded sections below
+      className="group relative flex flex-col justify-between rounded overflow-hidden border border-gray-200 bg-white shadow-sm hover:border-gray-300 hover:shadow-md transition-all duration-200 cursor-pointer transform hover:-translate-y-0.5 animate-in fade-in slide-in-from-bottom-2 select-none"
     >
       <div>
-        {/* Cover Photo */}
-        {coverPhoto ? (
+        {/* Cover Photo — full-bleed, only rendered when one exists so photo-less cards stay compact */}
+        {coverPhoto && (
           <img
             src={`${UPLOADS_BASE}${coverPhoto.url}`}
             alt=""
-            className="w-full h-24 object-cover rounded mb-3 border border-gray-200"
+            className="w-full h-32 object-cover"
           />
-        ) : (
-          <div className="flex items-center justify-center gap-1.5 w-full h-24 rounded mb-3 border border-dashed border-gray-200 bg-gray-50 text-gray-400">
-            <ImageOff size={14} />
-            <span className="text-[11px] font-medium">No photo</span>
-          </div>
         )}
 
-        <div className="flex items-center justify-between gap-2 mb-3">
+        <div className="px-4 pt-4 flex items-center justify-between gap-2 mb-3">
           {priority ? (
-            <span className={`inline-flex items-center gap-1.5 text-[10px] uppercase tracking-wider font-bold px-2 py-0.5 rounded border ${priority.className}`}>
-              <span className="size-1.5 rounded-full bg-current shrink-0 animate-pulse" />
+            <span className={`inline-flex items-center gap-1.5 text-[10px] uppercase tracking-wider font-bold px-3 py-1 rounded-full border ${priority.className}`}>
+              <span className="size-1.5 rounded-full bg-current shrink-0" />
               {priority.label}
             </span>
           ) : (
@@ -98,18 +92,18 @@ export const TaskCard = ({ task, assigneeName, departmentName, isAdmin, isVerifi
         </div>
 
         {/* Task Title */}
-        <h4 className="text-[15px] font-semibold text-gray-900 group-hover:text-blue-600 transition-colors line-clamp-2 leading-snug mb-3">
+        <h4 className="px-4 text-[15px] font-semibold text-gray-900 group-hover:text-blue-600 transition-colors line-clamp-2 leading-snug mb-3">
           {task.title}
         </h4>
 
         {departmentName && (
-          <span className={`inline-flex items-center text-[11px] font-semibold px-2 py-0.5 rounded border mb-1 ${departmentTagClass(departmentName)}`}>
+          <span className={`mx-4 inline-flex items-center text-[11px] font-semibold px-3 py-1 rounded-full border mb-1 ${departmentTagClass(departmentName)}`}>
             {departmentName}
           </span>
         )}
       </div>
 
-      <div>
+      <div className="px-4 pb-4">
         {/* Meta Row: Due Date & Assignee Avatar */}
         <div className="flex items-center justify-between gap-2 mt-auto">
           {task.dueDate ? (

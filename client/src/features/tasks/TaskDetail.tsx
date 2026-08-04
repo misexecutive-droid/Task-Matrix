@@ -13,16 +13,12 @@ import type { Task } from '../../api/task';
 
 interface TaskDetailProps {
   task: Task;
+  assigneeName?: string;
+  departmentName?: string;
   onClose: () => void;
 }
 
-// Checklists/subtasks panel is temporarily hidden here (not removed — TaskChecklistPanel
-// and friends are untouched) while that feature is being reworked. Re-add the panel back
-// into the scrollable body below once it's ready.
-
-/** Bottom sheet showing a task's full details: header, info grid, description,
- *  attachments, verification banner, PC verify actions, and status/close footer. */
-export const TaskDetail = ({ task: initialTask, onClose }: TaskDetailProps) => {
+export const TaskDetail = ({ task: initialTask, assigneeName, departmentName, onClose }: TaskDetailProps) => {
   const { data: fresh } = useTaskQuery(initialTask.id);
   const task = fresh ?? initialTask;
   const { user } = useAuth();
@@ -44,7 +40,7 @@ export const TaskDetail = ({ task: initialTask, onClose }: TaskDetailProps) => {
     <Sheet open onOpenChange={(open) => { if (!open) onClose(); }}>
       <SheetContent
         side="bottom"
-        className="flex flex-col h-[92vh] sm:h-[88vh] w-full p-0 overflow-hidden rounded-t-2xl sm:rounded-t-3xl border-t border-gray-200 bg-white shadow-2xl text-gray-900 transition-all outline-none"
+        className="flex flex-col h-[92vh] sm:h-[88vh] w-full p-0 overflow-hidden rounded-t border-t border-gray-200 bg-white shadow-2xl text-gray-900 transition-all outline-none"
       >
         <div className={`h-1.5 shrink-0 transition-all duration-300 ${task.status === 'done'
             ? 'bg-emerald-500' :
@@ -59,7 +55,12 @@ export const TaskDetail = ({ task: initialTask, onClose }: TaskDetailProps) => {
 
         <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-6 scrollbar-thin scrollbar-thumb-gray-200 hover:scrollbar-thumb-gray-300">
           <div className="max-w-3xl mx-auto w-full space-y-8">
-            <TaskDetailInfoGrid task={task} isOverdue={isOverdue} />
+            <TaskDetailInfoGrid
+              task={task}
+              isOverdue={isOverdue}
+              assigneeName={assigneeName}
+              departmentName={departmentName}
+            />
 
             <TaskDescriptionSection description={task.description} />
 
@@ -73,7 +74,6 @@ export const TaskDetail = ({ task: initialTask, onClose }: TaskDetailProps) => {
           </div>
         </div>
 
-        {/* PC/Admin verification actions — only shown while the task is awaiting review */}
         {isVerifier && task.status === 'pending_verification' && (
           <div className="border-t border-gray-200 bg-gray-50/80">
             <div className="max-w-3xl mx-auto w-full px-4 sm:px-6 pt-3 pb-2">

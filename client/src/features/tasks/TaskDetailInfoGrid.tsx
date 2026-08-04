@@ -18,14 +18,18 @@ const Cell = ({
   </div>
 );
 
+interface TaskDetailInfoGridProps {
+  task: Task;
+  isOverdue: boolean | null | undefined;
+  assigneeName?: string;
+  departmentName?: string;
+}
+
 /** Responsive strip of created date, due date, assignee, and department —
  *  a single row on wide screens, wrapping to 2 columns on mobile. */
-export const TaskDetailInfoGrid = ({ task, isOverdue }: { task: Task; isOverdue: boolean | null | undefined }) => {
-  const assignee = (task as any).assignee;
-  const department = (task as any).department;
-
+export const TaskDetailInfoGrid = ({ task, isOverdue, assigneeName, departmentName }: TaskDetailInfoGridProps) => {
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-4 divide-y divide-x-0 sm:divide-y-0 sm:divide-x divide-gray-200 bg-gray-50/50 border border-gray-200 rounded-xl text-xs shadow-sm overflow-hidden">
+    <div className="grid grid-cols-2 sm:grid-cols-4 divide-y divide-x-0 sm:divide-y-0 sm:divide-x divide-gray-200 bg-gray-50/50 border border-gray-200 rounded text-xs shadow-sm overflow-hidden">
       <Cell icon={Calendar} iconClassName="text-blue-500" label="Created">
         {new Date(task.createdAt).toLocaleDateString(undefined, {
           month: 'short',
@@ -49,21 +53,21 @@ export const TaskDetailInfoGrid = ({ task, isOverdue }: { task: Task; isOverdue:
         </span>
       </Cell>
 
-      {assignee ? (
-        <Cell icon={User} iconClassName="text-indigo-500" label="Assignee">
-          <span className="truncate block">{assignee.firstName} {assignee.lastName ?? ''}</span>
-        </Cell>
-      ) : (
-        <Cell icon={User} iconClassName="text-gray-400" label="Assignee">
+      <Cell icon={User} iconClassName={assigneeName ? 'text-indigo-500' : 'text-gray-400'} label="Assignee">
+        {assigneeName ? (
+          <span className="truncate block">{assigneeName}</span>
+        ) : (
           <span className="text-gray-500 font-medium">Unassigned</span>
-        </Cell>
-      )}
+        )}
+      </Cell>
 
-      {department && (
-        <Cell icon={Building2} iconClassName="text-blue-500" label="Department">
-          <span className="truncate block">{department.name}</span>
-        </Cell>
-      )}
+      <Cell icon={Building2} iconClassName="text-blue-500" label="Department">
+        {departmentName ? (
+          <span className="truncate block">{departmentName}</span>
+        ) : (
+          <span className="text-gray-500 font-medium">No department</span>
+        )}
+      </Cell>
     </div>
   );
 };

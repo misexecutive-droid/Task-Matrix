@@ -291,7 +291,14 @@ export const TaskList = ({ userId, hideHeader = false, dateRange }: TaskListProp
 
             {/* Modals */}
             {showForm && <TaskForm onClose={() => setShowForm(false)} />}
-            {selected && <TaskDetail task={selected} onClose={() => setSelected(null)} />}
+            {selected && (
+                <TaskDetail
+                    task={selected}
+                    assigneeName={selected.assigneeId ? assigneeNames.get(selected.assigneeId) : undefined}
+                    departmentName={selected.departmentId ? departmentNames.get(selected.departmentId) : undefined}
+                    onClose={() => setSelected(null)}
+                />
+            )}
         </div>
     );
 };

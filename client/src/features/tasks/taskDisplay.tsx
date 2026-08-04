@@ -3,23 +3,20 @@ import { CheckCircle2, Clock, CircleDashed, ShieldQuestion } from 'lucide-react'
 import type { Task } from '../../api/task';
 
 export const PRIORITY_MAP = {
-  low: { 
-    label: 'Low', 
-    // Removed borders, added smooth transitions
-    className: 'bg-primary text-white shadow-sm transition-all duration-200 ease-in-out dark:bg-gray-800 dark:text-gray-400', 
-    accent: 'bg-gray-400' 
+  low: {
+    label: 'Low',
+    className: 'bg-gray-100 text-gray-600 border-gray-200 shadow-sm transition-all duration-200 ease-in-out dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700',
+    accent: 'bg-gray-400',
   },
-  medium: {   
-    label: 'Medium', 
-    // Removed borders, added smooth transitions
-    className: 'bg-primary text-white shadow-sm transition-all duration-200 ease-in-out dark:bg-gray-800 dark:text-gray-300', 
-    accent: 'bg-amber-500' 
+  medium: {
+    label: 'Medium',
+    className: 'bg-amber-50 text-amber-700 border-amber-200 shadow-sm transition-all duration-200 ease-in-out dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-500/30',
+    accent: 'bg-amber-500',
   },
-  high: { 
-    label: 'High', 
-    // Removed borders, added smooth transitions
-    className: 'bg-primary text-white shadow-sm transition-all duration-200 ease-in-out dark:bg-gray-800 dark:text-gray-100', 
-    accent: 'bg-red-600' 
+  high: {
+    label: 'High',
+    className: 'bg-red-50 text-red-700 border-red-200 shadow-sm transition-all duration-200 ease-in-out dark:bg-red-900/30 dark:text-red-400 dark:border-red-500/30',
+    accent: 'bg-red-600',
   },
 } satisfies Record<Task['priority'], { label: string; className: string; accent: string }>;
 

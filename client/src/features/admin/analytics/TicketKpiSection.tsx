@@ -25,6 +25,8 @@ export const TicketKpiSection = ({ groupBy, from, to }: TicketKpiSectionProps) =
       isPending={isPending}
       isError={isError}
       errorMessage="Failed to load ticket data."
+      from={from}
+      to={to}
       cards={[
         {
           icon: TicketCheck,
