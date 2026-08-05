@@ -1,5 +1,6 @@
 import { z } from "zod" 
 import { TASK_PRIORITIES , TASK_STATUSES } from "../../models/Task.js" // pull in the allowed status/priority values from the Task model, so validation and the DB always agree on what's valid
+import { configDotenv } from "dotenv";
 
 const objectId = z.string().regex(/^[0-9a-fA-F]{24}$/, 'Invalid id');
 
@@ -14,6 +15,24 @@ export const createTaskSchema = z.object({
     departmentId : objectId.optional() // NEW — optional id of the department this task is tagged to, same idea as Ticket's departmentId
 });
 
+
+export const confirmSmartTaskSchema = z.object({
+    title : z.string().min(1),
+    context : z.string().optional(),
+    category : z.enum(["issue", "delegated_task"]),
+    priority : z.enum(TASK_PRIORITIES),
+    dueDate : z.string().datetime(),
+    assigneeId : objectId.optional(),
+    deparmentId : objectId.optional(),
+    assigneeRaw : z.string().optional(),
+    departmentRaw : z.string().optional(),
+    confidence : z.number().optional(),
+    rawInput : z.string(),
+    inputMode : z.enum(["voice", "text"]),
+    wonBy : z.string().optional()
+
+
+})
 
 export const complianceReportQuerySchema = z.object({
     groupBy : z.enum(["hour", "day", "week", "month", "year"]).default("day"),
@@ -44,3 +63,5 @@ export type CreateTaskInput = z.infer<typeof createTaskSchema>;
 export type UpdateTaskInput = z.infer<typeof updateTaskSchema>;
 export type ComplianceReportQuery = z.infer<typeof complianceReportQuerySchema>;
 export type VerifyTaskInput = z.infer<typeof verifyTaskSchema>;
+
+export type ConfirmSmartTaskInput = z.infer<typeof confirmSmartTaskSchema>;

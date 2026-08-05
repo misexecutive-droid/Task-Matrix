@@ -2,7 +2,7 @@ import { Task } from "../../models/Task.js"
 import { AppError } from "../../utils/AppError.js"
 import { assertChecklistsResolved } from "../../utils/checklistGate.js"
 import type { AccessTokenPayload } from "../../middleware/auth/auth.js"
-import type { CreateTaskInput, UpdateTaskInput, VerifyTaskInput } from "./task.validation.js"
+import type { ConfirmSmartTaskInput, CreateTaskInput, UpdateTaskInput, VerifyTaskInput , confirmSmartTaskSchema } from "./task.validation.js"
 import { Types } from "mongoose"
 import { TaskChecklistItem } from "../../models/TaskChecklistItem.js"
 import { notificationService } from "../notifications/notification.service.js"
@@ -11,8 +11,6 @@ const visiblityFilter = (user: AccessTokenPayload) => {
     if (user.role === "ADMIN") return {};
 
     const or: Record<string, unknown>[] = [{ userId: user.sub }, { assigneeId: user.sub }];
-    // PC additionally sees every task in their own department (read-only — see the forbidden
-    // check at the top of update() below, they can only act on a task through verify()).
     if (user.role === "PC" && user.departmentId) or.push({ departmentId: user.departmentId });
     return { $or: or };
 }
@@ -38,6 +36,27 @@ export const taskService = {
 
     },
 
+    async createFromSmartInput(input : ConfirmSmartTaskInput, user : AccessTokenPayload) {
+        return Task.create({
+            title : input.title,
+            description : input.context || null,
+            category : input.category === "delegated_task" ? "delegation" : "issue",
+            priority : input.priority,
+            dueDate : input.dueDate,
+            userId : user.sub,
+            assigneeId : input.assigneeId ?? null,
+            departmentId : input.deparmentId ?? null,
+            aiMeta : {
+                rawInput : input.rawInput,
+                inputMode : input.inputMode,
+                extractedAssigneeName : input.assigneeRaw || null,
+                confidence : input.confidence ?? null,
+                model : input.wonBy ?? null,
+
+            }
+        })
+
+    },
 
     async getById(id: string, user: AccessTokenPayload) {
         const task = await Task.findOne({ _id: id, ...visiblityFilter(user) })
@@ -46,7 +65,6 @@ export const taskService = {
         if (!task) throw AppError.notFound("Task not found")
         return task;
     },
-
 
     async create(input: CreateTaskInput, user: AccessTokenPayload) {
         return Task.create({ ...input, userId: user.sub })
@@ -95,8 +113,7 @@ export const taskService = {
         return task;
     },
 
-    // PC/Admin-only: approve (truly mark done) or reject (bounce back to in_progress) a task
-    // that's currently pending_verification.
+
     async verify(id: string, input: VerifyTaskInput, user: AccessTokenPayload) {
         const task = await Task.findById(id);
         if (!task) throw AppError.notFound("Task not found")

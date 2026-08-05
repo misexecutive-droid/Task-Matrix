@@ -18,6 +18,8 @@ export interface EnsembleResult extends RawExtraction {
     providerResults: Array<{ provider: string; ok: boolean; confidence?: number; error?: string }>;
 }
 
+type ProviderRun = { provider: (typeof PROVIDERS)[number]["name"]; result: RawExtraction };
+
 export async function extractTaskFromText(rawInput: string, referenceDate: Date): Promise<EnsembleResult> {
     const settled = await Promise.allSettled(
         PROVIDERS.map((p) => p.run(rawInput, referenceDate).then((result) => ({ provider: p.name, result })))
@@ -25,7 +27,7 @@ export async function extractTaskFromText(rawInput: string, referenceDate: Date)
 
     const succeeded = settled
         .map((s) => (s.status === "fulfilled" ? s.value : null))
-        .filter((v): v is { provider: string; result: RawExtraction } => v !== null);
+        .filter((v): v is ProviderRun => v !== null);
 
 
     if (succeeded.length === 0) {
@@ -33,10 +35,10 @@ export async function extractTaskFromText(rawInput: string, referenceDate: Date)
     }
 
     const winner = succeeded.reduce((best, candidate) => {
-        if (candidate?.result.confidence !== best?.result.confidence) {
-            return candidate?.result.confidence > best?.result.confidence ? candidate : best;
+        if (candidate.result.confidence !== best.result.confidence) {
+            return candidate.result.confidence > best.result.confidence ? candidate : best;
         }
-        return TIEBREAK_RANK[candidate?.provider] > TIEBREAK_RANK[best?.provider] ? candidate : best;
+        return TIEBREAK_RANK[candidate.provider] > TIEBREAK_RANK[best.provider] ? candidate : best;
     });
 
     const providerResults = settled.map((s, i) => {
@@ -45,7 +47,7 @@ export async function extractTaskFromText(rawInput: string, referenceDate: Date)
             : { provider: name, ok: false, error: (s.reason as Error).message }
     });
 
-    return { ...winner?.result, wonBy: winner?.provider, providerResults }
+    return { ...winner.result, wonBy: winner.provider, providerResults }
 
 }
 

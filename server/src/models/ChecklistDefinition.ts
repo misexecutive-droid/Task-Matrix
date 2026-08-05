@@ -1,6 +1,6 @@
 import { Schema, model } from "mongoose"
 
-T_RECURRENCES = ["DAILY", "WEEKLY", "MONTHLY", "QUARTERLY", "YEARLY", "ONE_TIME"] as const
+export const CHECKLIST_RECURRENCES = ["DAILY", "WEEKLY", "MONTHLY", "QUARTERLY", "YEARLY", "ONE_TIME"] as const
 export type ChecklistRecurrence = (typeof CHECKLIST_RECURRENCES)[number]
 
 const checklistDefinitionSchema = new Schema(

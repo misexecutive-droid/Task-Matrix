@@ -16,7 +16,6 @@ const taskSchema = new Schema(
         description: { type: String, default: null },
         status: { type: String, enum: TASK_STATUSES, default: "todo" },
         category : {type : String, enum: TASK_CATEGORIES, default : "delegation" },
-        Status : {type : String, enum: TASK_STATUSES, default : "todo"},
         priority: { type: String, enum: TASK_PRIORITIES, default: "medium" },
         dueDate: { type: Date, default: null },
         projectId: { type: Schema.Types.ObjectId, ref: "Project", default: null },

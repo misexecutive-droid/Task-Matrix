@@ -4,6 +4,7 @@ import { authenticate , requireRole } from "../../middleware/auth/auth.js" // mi
 import { taskChecklistController } from "../taskChecklists/taskChecklist.controller.js" // creating a checklist under a specific task
 import { taskAttachmentController } from "../taskAttachments/taskAttachment.controller.js" // attaching general files (pdf/csv/image/video) directly to a task
 import { taskAttachmentUpload } from "../../config/upload.js"
+import { taskAiController } from "./ai/task.ai.controller.js"
 
 export const taskRouter = Router()
 
@@ -26,3 +27,6 @@ taskRouter.post("/:taskId/checklists", requireRole("ADMIN"), taskChecklistContro
 taskRouter.post("/:taskId/checklists/from-template/:templateId", requireRole("ADMIN"), taskChecklistController.createFromTemplate)
 
 taskRouter.post("/:id/attachments", taskAttachmentUpload, taskAttachmentController.upload) // POST /tasks/:id/attachments -> attach general files (pdf/csv/image/video) to this task
+
+taskRouter.post("/ai/parse", taskAiController.parse)
+taskRouter.post("/ai/create", taskAiController.create)
