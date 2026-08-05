@@ -6,6 +6,15 @@ import bcrypt from "bcryptjs"; // library used to securely hash and compare pass
 // so TypeScript treats them as an exact set of values, not just "string".
 export const ROLES = ["ADMIN", "MANAGER", "AGENT", "USER", "PC"] as const;
 // A TypeScript type built from the ROLES array above (so Role can only ever be one of those 4 strings)
+
+export const DEFAULT_RANK_BY_ROLE : Record<Role, number> = {
+    ADMIN : 1,
+    MANAGER : 2,
+    PC : 3,
+    AGENT : 4,
+    USER : 5
+}
+
 export type Role = (typeof ROLES)[number];
 
 // Extra methods we attach to User documents (beyond the normal Mongoose fields).
@@ -32,7 +41,8 @@ const userSchema = new Schema(
         departmentId: { type: Schema.Types.ObjectId, ref: 'Department', default: null },
         // storeId: same idea, but references a Store document
         storeId: { type: Schema.Types.ObjectId, ref: 'Store', default: null },
-        isActive: { type: Boolean, default: true } // lets you "soft disable" a user without deleting them
+        isActive: { type: Boolean, default: true }, // lets you "soft disable" a user without deleting them
+        rank : { type : Number, min : 1, max : 5 , default : null} // null drive from role at save time 
     },
     // timestamps: true -> Mongoose automatically adds/maintains createdAt and updatedAt fields
     // toJSON/toObject virtuals: true -> without this, "virtual" fields (like the auto-generated `id`
@@ -78,6 +88,14 @@ userSchema.methods.comparePassword = function (this: UserMethodsContext, plain: 
     return bcrypt.compare(plain, this.passwordHash);
 };
 
+// new pre('validate') hook, alongside the password-hashing one
+
+userSchema.pre('validate', function (this : any, next){
+    if(this.rank == null){
+        this.rank = DEFAULT_RANK_BY_ROLE[this.role as Role] ?? DEFAULT_RANK_BY_ROLE.USER
+    }
+    next()
+})
 // TypeScript type helpers:
 // - InferSchemaType<typeof userSchema> automatically figures out the TS type of a plain User object
 //   from the schema definition above (so we don't have to write it twice).

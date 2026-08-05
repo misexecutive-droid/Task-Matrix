@@ -22,7 +22,6 @@ export const checklistInstanceItemSubmissionController = {
         res.json({ success: true, data: submission })
     }),
 
-    // PATCH /checklist-instance-item-submissions/:id/remarks
     updateRemarks: asyncHandler(async (req: Request, res: Response) => {
         const input = updateChecklistInstanceItemSubmissionRemarksSchema.parse(req.body)
         const submission = await checklistInstanceItemSubmissionService.updateRemarks(req.params.id, input.remarks, req.user!)

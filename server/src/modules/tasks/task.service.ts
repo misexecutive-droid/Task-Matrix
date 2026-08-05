@@ -19,22 +19,31 @@ const visiblityFilter = (user: AccessTokenPayload) => {
 
 export const taskService = {
     async list(user: AccessTokenPayload, filterUserId?: string, status?: string) {
+        // Only url/mimeType — enough for the board/list cards to show a cover photo
+        // thumbnail without pulling uploader details into every task in the list.
+        const ATTACHMENT_THUMBNAIL_SELECT = "url mimeType";
+
         if (user.role === "ADMIN" && filterUserId) {
             const filter: Record<string, unknown> = { $or: [{ userId: filterUserId }, { assigneeId: filterUserId }] };
             if (status) filter.status = status;
-            return Task.find(filter).sort({ createdAt: -1 });
+            return Task.find(filter)
+                .sort({ createdAt: -1 })
+                .populate({ path: "attachments", select: ATTACHMENT_THUMBNAIL_SELECT });
         }
         const filter: Record<string, unknown> = visiblityFilter(user);
         if (status) filter.status = status;
-        return Task.find(filter).sort({ createdAt: -1 });
+        return Task.find(filter)
+            .sort({ createdAt: -1 })
+            .populate({ path: "attachments", select: ATTACHMENT_THUMBNAIL_SELECT });
 
     },
 
 
     async getById(id: string, user: AccessTokenPayload) {
         const task = await Task.findOne({ _id: id, ...visiblityFilter(user) })
-            .populate({ path: "checklists", populate: { path: "items", populate: { path: "images" } } });
-        if (!task) throw AppError.notFound("Task not found") 
+            .populate({ path: "checklists", populate: { path: "items", populate: { path: "images" } } })
+            .populate({ path: "attachments", populate: { path: "uploadedBy", select: "email firstName role" } });
+        if (!task) throw AppError.notFound("Task not found")
         return task;
     },
 

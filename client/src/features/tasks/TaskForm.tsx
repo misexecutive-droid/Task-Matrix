@@ -1,10 +1,10 @@
 import { useState } from 'react';
-import { useForm, Controller } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { toast } from 'sonner';
 import { CheckSquare, FileText, Heading, Calendar } from 'lucide-react';
-import { Input, Textarea, Modal, DateField } from '../../components';
+import { Input, Textarea, Modal } from '../../components';
 import { useCreateTaskMutation, useAssignableUsersQuery } from './hook';
 import { useDepartmentsQuery } from '../tickets/hook';
 import { taskApi } from '../../api/task';
@@ -42,7 +42,6 @@ export const TaskForm = ({ onClose }: TaskFormProps) => {
     handleSubmit,
     watch,
     setValue,
-    control,
     formState: { errors, isSubmitting },
   } = useForm<TaskFields>({
     resolver: zodResolver(taskSchema),
@@ -135,21 +134,16 @@ export const TaskForm = ({ onClose }: TaskFormProps) => {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
           <div className="flex flex-col justify-end">
-            <Controller
-              name="dueDate"
-              control={control}
-              render={({ field }) => (
-                <DateField
-                  id="dueDate"
-                  label="Due Date"
-                  icon={Calendar}
-                  iconClassName={FIELD_LABEL_ICON_CLASS}
-                  value={field.value ?? ''}
-                  onChange={field.onChange}
-                  error={errors.dueDate?.message}
-                  labelClassName={FIELD_LABEL_CLASS}
-                />
-              )}
+            <Input
+              id="dueDate"
+              type="date"
+              label="Due Date"
+              icon={Calendar}
+              iconClassName={FIELD_LABEL_ICON_CLASS}
+              error={errors.dueDate?.message}
+              className="focus:border-blue-500 focus:ring-blue-500/20"
+              labelClassName={FIELD_LABEL_CLASS}
+              {...register('dueDate')}
             />
           </div>
 

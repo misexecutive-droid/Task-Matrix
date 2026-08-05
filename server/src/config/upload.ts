@@ -27,6 +27,11 @@ const CHECKLIST_INSTANCE_UPLOAD_DIR = path.resolve("uploads", "checklist-instanc
 // auditor's submission, not the item's own pool, so they get their own folder too.
 const CHECKLIST_INSTANCE_SUBMISSION_UPLOAD_DIR = path.resolve("uploads", "checklist-instance-submissions")
 
+// General task-level attachments (see taskAttachments module) — reference docs/photos/videos
+// attached directly to a Task, not to a checklist item. Kept separate from the tasks/ image
+// folder since these aren't gated by the same image-only rules.
+const TASK_ATTACHMENT_UPLOAD_DIR = path.resolve("uploads", "task-attachments")
+
 
 // A fresh clone of this repo won't have an uploads/ folder yet — we don't (and shouldn't) commit
 // an empty folder of user-uploaded content to git, so create it at startup if it's missing.
@@ -45,6 +50,9 @@ if (!fs.existsSync(CHECKLIST_INSTANCE_UPLOAD_DIR)) {
 }
 if (!fs.existsSync(CHECKLIST_INSTANCE_SUBMISSION_UPLOAD_DIR)) {
     fs.mkdirSync(CHECKLIST_INSTANCE_SUBMISSION_UPLOAD_DIR, { recursive: true })
+}
+if (!fs.existsSync(TASK_ATTACHMENT_UPLOAD_DIR)) {
+    fs.mkdirSync(TASK_ATTACHMENT_UPLOAD_DIR, { recursive: true })
 }
 
 const storage = multer.diskStorage({
@@ -92,6 +100,15 @@ const checklistInstanceSubmissionStorage = multer.diskStorage({
     },
 })
 
+const taskAttachmentStorage = multer.diskStorage({
+    destination: (_req, _file, cb) => cb(null, TASK_ATTACHMENT_UPLOAD_DIR),
+    filename: (_req, file, cb) => {
+        const randomName = crypto.randomBytes(16).toString("hex");
+        const ext = path.extname(file.originalname).toLowerCase();
+        cb(null, `${randomName}${ext}`)
+    },
+})
+
 // Builds a brand-new multer instance using whatever's currently in the settings cache. This is
 // cheap (no I/O — multer() just wires up config objects), so it's fine to call fresh on every
 // request instead of caching the instance: it means admin-edited upload limits/mime types take
@@ -130,3 +147,39 @@ export const checklistInstanceImageUpload = (req : Request , res : Response , ne
 
 export const checklistInstanceItemSubmissionImageUpload = (req : Request , res : Response , next : NextFunction) =>
     buildImageUpload(checklistInstanceSubmissionStorage).array("images", settingsService.getCached().maxUploadFiles)(req,res,next)
+
+// Task-level attachments accept documents/spreadsheets/video too, not just images — the
+// admin-editable `allowedImageTypes` setting (and buildImageUpload above) is scoped to the
+// evidence-photo features and stays image-only, so this gets its own fixed allowlist instead.
+const TASK_ATTACHMENT_MIME_TYPES = [
+    "application/pdf",
+    "text/csv",
+    "application/vnd.ms-excel", // some browsers/OSes report .csv as this instead of text/csv
+    "image/jpeg",
+    "image/png",
+    "image/webp",
+    "image/gif",
+    "video/mp4",
+    "video/quicktime",
+    "video/webm",
+]
+
+const TASK_ATTACHMENT_MAX_FILES = 8
+const TASK_ATTACHMENT_MAX_SIZE_MB = 25
+
+const taskAttachmentMulter = multer({
+    storage: taskAttachmentStorage,
+    limits: {
+        fileSize: TASK_ATTACHMENT_MAX_SIZE_MB * 1024 * 1024,
+        files: TASK_ATTACHMENT_MAX_FILES,
+    },
+    fileFilter: (_req, file, cb) => {
+        if (!TASK_ATTACHMENT_MIME_TYPES.includes(file.mimetype)) {
+            return cb(null, false)
+        }
+        cb(null, true)
+    },
+})
+
+export const taskAttachmentUpload = (req : Request , res : Response , next : NextFunction) =>
+    taskAttachmentMulter.array("files", TASK_ATTACHMENT_MAX_FILES)(req, res, next)

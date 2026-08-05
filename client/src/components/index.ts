@@ -11,8 +11,6 @@ export { PageNav }         from './pagination';
 export { Skeleton }        from './skeleton';
 export { Dropdown }        from './dropdown';
 export type { DropdownAction } from './dropdown';
-export { DateField }       from './dateTime';
-export type { DateFieldProps } from './dateTime';
 export { UserMultiSelect } from './userMultiSelect';
 export { AccessoriesListEditor } from './accessoriesListEditor';
 export { DateRangePicker } from './dateRangePicker';

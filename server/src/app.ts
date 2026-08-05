@@ -17,6 +17,7 @@ import { ticketRouter } from "./modules/tickets/ticket.routes.js"
 import { checklistRouter, checklistItemRouter } from "./modules/checklists/checklist.routes.js"
 import { taskChecklistRouter, taskChecklistItemRouter } from "./modules/taskChecklists/taskChecklist.routes.js"
 import { taskImageRouter } from "./modules/taskImages/taskImage.routes.js"
+import { taskAttachmentRouter } from "./modules/taskAttachments/taskAttachment.routes.js"
 import { checklistImageRouter } from "./modules/checklistImages/checklistImage.routes.js"
 import { ticketAttachmentRouter } from "./modules/ticketAttachments/ticketAttachment.routes.js"
 import { checklistTemplateRouter, checklistTemplateItemRouter } from "./modules/checklistTemplates/checklistTemplate.routes.js"
@@ -87,6 +88,7 @@ class App {
         this.app.use('/task-checklists', taskChecklistRouter);
         this.app.use('/task-checklist-items', taskChecklistItemRouter);
         this.app.use('/task-images', taskImageRouter);
+        this.app.use('/task-attachments', taskAttachmentRouter);
 
         this.app.use("/audit-logs", auditRouter)
 

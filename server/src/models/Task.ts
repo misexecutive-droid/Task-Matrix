@@ -6,11 +6,17 @@ export type TaskStatus = (typeof TASK_STATUSES)[number];
 export const TASK_PRIORITIES = ["low", "medium", "high"] as const;
 export type TaskPriority = (typeof TASK_PRIORITIES)[number];
 
+export const TASK_CATEGORIES = ["issue", "delegation"] as const;
+export type TaskCategory = (typeof TASK_CATEGORIES)[number];
+
+
 const taskSchema = new Schema(
     {
         title: { type: String, required: true, trim: true },
         description: { type: String, default: null },
         status: { type: String, enum: TASK_STATUSES, default: "todo" },
+        category : {type : String, enum: TASK_CATEGORIES, default : "delegation" },
+        Status : {type : String, enum: TASK_STATUSES, default : "todo"},
         priority: { type: String, enum: TASK_PRIORITIES, default: "medium" },
         dueDate: { type: Date, default: null },
         projectId: { type: Schema.Types.ObjectId, ref: "Project", default: null },
@@ -20,6 +26,28 @@ const taskSchema = new Schema(
         verifiedBy: { type: Schema.Types.ObjectId, ref: "User", default: null },
         verifiedAt: { type: Date, default: null },
         verificationNote: { type: String, default: null },
+
+        submittedAt : { type : Date, default : null},
+        submisssionNote : { type : String, default : null},
+
+        // ---new : raw AI Extractioni trace (MONOG's answer to a Postgres JSONB column )
+
+        aiMeta : {
+            type : new Schema(
+                {
+                    rawInput : {type : String, default : null},
+                    inputMode : { type : String, enum : ["voice", "text"], default : null },
+                    extractedAssigneeName : { type : String, default : null},
+                    extractedDepartment : { type : String, default : null},
+                    confidence : { type : Number, default : null},
+                    model : { type : String, default : null},
+
+                },
+                {_id : false}
+            ),
+            default : null,
+        },
+        
     },
     { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } }
 );
@@ -37,9 +65,16 @@ taskSchema.virtual("verifier", {
     justOne: true,
 });
 
+taskSchema.virtual("attachments", {
+    ref: "TaskAttachment",
+    localField: "_id",
+    foreignField: "taskId",
+});
+
 taskSchema.index({ userId: 1, createdAt: -1 });
 taskSchema.index({ assigneeId: 1, createdAt: -1 }); 
 taskSchema.index({ departmentId: 1, createdAt: -1 }); 
 taskSchema.index({ status: 1, createdAt: -1 });
+taskSchema.index({ category : 1, status : 1, createdAt : -1}) // board queue filtering (Issues vs Deleagated)
 
 export const Task = model("Task", taskSchema);

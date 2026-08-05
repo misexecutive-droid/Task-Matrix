@@ -2,6 +2,8 @@ import { Router } from "express" // Express's Router lets us group related endpo
 import { taskController } from "./task.controller.js" // the functions that actually handle each route
 import { authenticate , requireRole } from "../../middleware/auth/auth.js" // middleware that checks the JWT and attaches req.user, or rejects the request
 import { taskChecklistController } from "../taskChecklists/taskChecklist.controller.js" // creating a checklist under a specific task
+import { taskAttachmentController } from "../taskAttachments/taskAttachment.controller.js" // attaching general files (pdf/csv/image/video) directly to a task
+import { taskAttachmentUpload } from "../../config/upload.js"
 
 export const taskRouter = Router()
 
@@ -22,3 +24,5 @@ taskRouter.post("/", requireRole("ADMIN"), taskController.create)
 
 taskRouter.post("/:taskId/checklists", requireRole("ADMIN"), taskChecklistController.createForTask) // POST /tasks/:taskId/checklists -> create a checklist under this task
 taskRouter.post("/:taskId/checklists/from-template/:templateId", requireRole("ADMIN"), taskChecklistController.createFromTemplate)
+
+taskRouter.post("/:id/attachments", taskAttachmentUpload, taskAttachmentController.upload) // POST /tasks/:id/attachments -> attach general files (pdf/csv/image/video) to this task

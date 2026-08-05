@@ -1,11 +1,11 @@
 import type { ReactNode } from 'react';
+import { X } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
-  DialogHeader,
-  DialogFooter,
   DialogTitle,
   DialogDescription,
+  DialogClose,
 } from '../ui/dialog';
 
 const SIZE_CLASS = {
@@ -48,31 +48,40 @@ export const Modal = ({
 }: ModalProps) => (
   <Dialog open={open} onOpenChange={(next) => { if (!next) onClose(); }}>
     <DialogContent
-      showCloseButton={showCloseButton}
-      className={`w-[95vw] ${SIZE_CLASS[size]} p-0 flex flex-col overflow-hidden ${contentClassName}`}
+      showCloseButton={false}
+      className={`w-[95vw] ${SIZE_CLASS[size]} p-0 flex flex-col overflow-hidden rounded max-h-[90vh] ${contentClassName}`}
     >
-      <DialogHeader className={`shrink-0 px-5 pt-5 pb-4 border-b border-border/40 ${headerClassName}`}>
-        {icon ? (
-          <div className="flex items-center gap-3">
+      <div className={`flex items-center justify-between gap-3 shrink-0 px-5 py-3.5 border-b border-border/40 ${headerClassName}`}>
+        <div className="flex items-center gap-3 min-w-0">
+          {icon && (
             <div className="p-2 rounded-lg bg-primary-500/10 text-primary-500 border border-primary-500/20 shrink-0">
               {icon}
             </div>
-            <DialogTitle>{title}</DialogTitle>
+          )}
+          <div className="min-w-0">
+            <DialogTitle className="truncate">{title}</DialogTitle>
+            {description && <DialogDescription>{description}</DialogDescription>}
           </div>
-        ) : (
-          <DialogTitle>{title}</DialogTitle>
+        </div>
+
+        {showCloseButton && (
+          <DialogClose
+            className="shrink-0 p-1.5 rounded-full text-text-light hover:text-text hover:bg-surface-hover transition-colors outline-none focus-visible:ring-2 focus-visible:ring-primary-500/30 cursor-pointer"
+            aria-label="Close"
+          >
+            <X size={16} />
+          </DialogClose>
         )}
-        {description && <DialogDescription>{description}</DialogDescription>}
-      </DialogHeader>
+      </div>
 
       <div className={`flex flex-col gap-5 px-5 py-4 overflow-y-auto flex-1 min-h-0 ${bodyClassName}`}>
         {children}
       </div>
 
       {footer && (
-        <DialogFooter className={`shrink-0 px-5 py-4 border-t border-border/40 ${footerClassName}`}>
+        <div className={`shrink-0 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end px-5 py-3.5 bg-surface-hover/40 border-t border-border/40 ${footerClassName}`}>
           {footer}
-        </DialogFooter>
+        </div>
       )}
     </DialogContent>
   </Dialog>
