@@ -2,6 +2,7 @@ import { z } from "zod"
 import { TASK_PRIORITIES , TASK_STATUSES } from "../../models/Task.js" // pull in the allowed status/priority values from the Task model, so validation and the DB always agree on what's valid
 import { configDotenv } from "dotenv";
 
+
 const objectId = z.string().regex(/^[0-9a-fA-F]{24}$/, 'Invalid id');
 
 export const createTaskSchema = z.object({
@@ -23,7 +24,7 @@ export const confirmSmartTaskSchema = z.object({
     priority : z.enum(TASK_PRIORITIES),
     dueDate : z.string().datetime(),
     assigneeId : objectId.optional(),
-    deparmentId : objectId.optional(),
+    departmentId : objectId.optional(),
     assigneeRaw : z.string().optional(),
     departmentRaw : z.string().optional(),
     confidence : z.number().optional(),

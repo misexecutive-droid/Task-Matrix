@@ -33,6 +33,13 @@ const envSchema = z.object({
     SMTP_PASS : z.string().default(''),
     MAIL_FROM : z.string().default(''),
 
+
+    WHATSAPP_VERIFY_TOKEN : z.string().default(""),
+    WHATSAPP_ACCESS_TOKEN : z.string().default(""),
+    WHATSAPP_PHONE_NUMBER_ID : z.string().default(""),
+    WHATSAPP_APP_SECRET : z.string().default(""),
+
+
 });
 
 // Try to validate process.env against our schema. safeParse (instead of parse) returns a result object

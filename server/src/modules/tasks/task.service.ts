@@ -6,6 +6,7 @@ import type { ConfirmSmartTaskInput, CreateTaskInput, UpdateTaskInput, VerifyTas
 import { Types } from "mongoose"
 import { TaskChecklistItem } from "../../models/TaskChecklistItem.js"
 import { notificationService } from "../notifications/notification.service.js"
+import { emitTaskEvent } from "../../sockets/taskEvent.js"
 
 const visiblityFilter = (user: AccessTokenPayload) => {
     if (user.role === "ADMIN") return {};
@@ -36,8 +37,8 @@ export const taskService = {
 
     },
 
-    async createFromSmartInput(input : ConfirmSmartTaskInput, user : AccessTokenPayload) {
-        return Task.create({
+     async createFromSmartInput(input : ConfirmSmartTaskInput, user : AccessTokenPayload) {
+        const task = await Task.create({
             title : input.title,
             description : input.context || null,
             category : input.category === "delegated_task" ? "delegation" : "issue",
@@ -45,17 +46,24 @@ export const taskService = {
             dueDate : input.dueDate,
             userId : user.sub,
             assigneeId : input.assigneeId ?? null,
-            departmentId : input.deparmentId ?? null,
+            departmentId : input.departmentId ?? null,
             aiMeta : {
                 rawInput : input.rawInput,
                 inputMode : input.inputMode,
                 extractedAssigneeName : input.assigneeRaw || null,
+                extractedDepartment : input.departmentRaw || null,
                 confidence : input.confidence ?? null,
                 model : input.wonBy ?? null,
-
             }
         })
 
+        emitTaskEvent('task:created', {
+            userId: task.userId?.toString(),
+            assigneeId: task.assigneeId?.toString() ?? null,
+            departmentId: task.departmentId?.toString() ?? null,
+        }, task);
+
+        return task;
     },
 
     async getById(id: string, user: AccessTokenPayload) {

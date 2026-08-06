@@ -42,7 +42,9 @@ const userSchema = new Schema(
         // storeId: same idea, but references a Store document
         storeId: { type: Schema.Types.ObjectId, ref: 'Store', default: null },
         isActive: { type: Boolean, default: true }, // lets you "soft disable" a user without deleting them
-        rank : { type : Number, min : 1, max : 5 , default : null} // null drive from role at save time 
+        rank : { type : Number, min : 1, max : 5 , default : null}, // null drive from role at save time 
+
+        phone : { type : String, trim : true, default : null , unique : true, sparse : true}
     },
     // timestamps: true -> Mongoose automatically adds/maintains createdAt and updatedAt fields
     // toJSON/toObject virtuals: true -> without this, "virtual" fields (like the auto-generated `id`

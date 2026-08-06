@@ -31,6 +31,7 @@ import { settingsRouter } from "./modules/settings/settings.routes.js"
 import { reportRouter } from "./modules/reports/report.routes.js"
 import { eventRouter } from "./modules/events/event.routes.js"
 import { createApiLimiter, createAuthLimiter } from "./middleware/rateLimiter/rateLimiter.js"
+import { whatsappRouter } from "./modules/whatsapp/whatsapp.routes.js"
 import helmet from "helmet"
 import compression from "compression"
 import type { Store } from "express-rate-limit"
@@ -52,7 +53,10 @@ class App {
         }))
         this.app.use(compression())
         this.app.use(cors({ origin: env.CLIENT_URL, credentials: true }))
-        this.app.use(express.json())
+        this.app.use(express.json({
+            verify: (req, _res, buf) => { (req as any).rawBody = buf; },
+        }))
+
         this.app.use(cookieParser())
         this.app.set("etag", false)
         if (env.NODE_ENV != 'test') this.app.use(morgan('dev'))
@@ -93,6 +97,9 @@ class App {
         this.app.use("/audit-logs", auditRouter)
 
         this.app.use("/settings" , settingsRouter)
+
+        this.app.use('/whatsapp', whatsappRouter);
+
 
         this.app.use("/notifications", notificationRouter)
         this.app.use("/reports", reportRouter)
