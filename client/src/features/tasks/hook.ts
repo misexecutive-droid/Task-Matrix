@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery , useMutation } from "@tanstack/react-query";
 import { useAuth } from "../../context/AuthContext";
 import { taskApi } from "../../api/task";
 import { userApi } from "../../api/users"; // NEW — needed for the assignee picker
@@ -11,6 +11,7 @@ import type {
     CaptureMethod,
 } from "../../api/taskChecklist";
 import { handleQueryRetry, useEntityMutation } from "../../lib/queryHelpers";
+import type { SmartTaskParseResult , ConfirmSmartTaskPayload } from "../../api/task";
 
 const TASK_KEYS = {
     // The cache key includes which user's tasks we're looking at, so "my tasks" and "some other
@@ -224,3 +225,14 @@ export const useApplyChecklistTemplateMutation = (taskId: string) =>
         successMessage: 'Template applied',
         errorFallback: 'Failed to apply template',
     });
+
+export const useCreateSmartTaskMutation = () => 
+    useEntityMutation({
+        mutationFn : (payload : ConfirmSmartTaskPayload) => taskApi.createFromSmart(payload),
+        invalidateKeys : [["tasks"]], 
+        successMessage : "Task created from AI Input",
+        errorFallback : "Failed to create task"
+    })
+
+export const useParseSmartTaskMutation = () => 
+    useMutation({ mutationFn : (text : string) => taskApi.parseSmart(text)});

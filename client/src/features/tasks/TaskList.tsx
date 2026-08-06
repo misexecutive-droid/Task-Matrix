@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus, CheckCheck, AlertCircle, LayoutList, Kanban, Inbox } from "lucide-react";
+import { Plus,Sparkles , CheckCheck, AlertCircle, LayoutList, Kanban, Inbox } from "lucide-react";
 import { Button, Skeleton } from "../../components";
 import { useTasksQuery, useAssignableUsersQuery } from "./hook";
 import { useDepartmentsQuery } from "../tickets/hook";
@@ -8,6 +8,7 @@ import { TaskForm } from "./TaskForm";
 import { TaskDetail } from "./TaskDetail";
 import { TaskBoard } from "./TaskBoard";
 import { TaskRow } from "./TaskRow";
+import { SmartTaskModal } from "./SmartTaskModal";
 import { useAuth } from "../../context/AuthContext"
 
 // Groups tasks by departmentId, sorted alphabetically by department name with "No department"
@@ -44,6 +45,7 @@ export const TaskList = ({ userId, hideHeader = false, dateRange }: TaskListProp
     const { user } = useAuth();
     const isAdmin = user?.role === "ADMIN";
     const isVerifier = user?.role === "PC" || user?.role === "ADMIN";
+    const [ showSmartModal , setShowSmartModal ] = useState(false)
     const [showForm, setShowForm] = useState(false);
     const [selected, setSelected] = useState<Task | null>(null);
     const { data: tasks, isPending, isError } = useTasksQuery(userId);
@@ -139,12 +141,12 @@ export const TaskList = ({ userId, hideHeader = false, dateRange }: TaskListProp
                     {!userId && isAdmin && (
                         <Button
                             size="sm"
-                            variant="primary"
+                            variant="outline"
                             className="gap-2 font-semibold shadow-sm"
-                            onClick={() => setShowForm(true)}
+                            onClick={() => setShowSmartModal(true)}
                         >
-                            <Plus size={16} strokeWidth={2.5} />
-                            New Task
+                            <Sparkles size={16} strokeWidth={2.5} />
+                            Smart Task
                         </Button>
                     )}
                 </div>
@@ -212,7 +214,6 @@ export const TaskList = ({ userId, hideHeader = false, dateRange }: TaskListProp
                 </div>
             )}
 
-            {/* Error State */}
             {isError && (
                 <div className="flex items-start gap-3 p-4 bg-danger/10 rounded border border-danger/20 text-danger">
                     <AlertCircle size={18} className="mt-0.5 shrink-0" />
@@ -223,7 +224,6 @@ export const TaskList = ({ userId, hideHeader = false, dateRange }: TaskListProp
                 </div>
             )}
 
-            {/* Empty State */}
             {!isPending && !isError && isEmpty && (
                 <div className="flex flex-col items-center justify-center py-20 px-4 text-center bg-surface-hover/40 rounded border-2 border-dashed border-border">
                     <div className="flex items-center justify-center w-12 h-12 bg-surface rounded border border-border mb-4">
