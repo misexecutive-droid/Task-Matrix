@@ -4,6 +4,7 @@ import { extractWithClaude } from "./claude.provider.js";
 import { extractWithGemini } from "./gemini.provider.js";
 import { extractWithOpenAI } from "./openai.provider.js";
 import type { RawExtraction } from "../schema.js";
+import { extractWithRules } from "./ruleBased.provider.js";
 
 const PROVIDERS = [
     { name: "claude", run: extractWithClaude },
@@ -31,7 +32,24 @@ export async function extractTaskFromText(rawInput: string, referenceDate: Date)
 
 
     if (succeeded.length === 0) {
-        throw new Error("All AI providers failed to extract task parameters")
+        settled.forEach((s, i) => {
+            if (s.status === "rejected") console.error(`[AI extraction] ${PROVIDERS[i].name} failed:`, s.reason?.message ?? s.reason);
+        });
+
+        console.warn("[AI extraction] all AI providers unavailable - falling back to rule-based extraction");
+        const fallback = await extractWithRules(rawInput, referenceDate);
+
+        return {
+            ...fallback,
+            wonBy: "rules",
+            providerResults: settled.map((s, i) => ({
+                provider: PROVIDERS[i].name,
+                ok: false,
+                error: s.status === "rejected" ? (s.reason?.message ?? String(s.reason)) : undefined,
+            })),
+
+        }
+
     }
 
     const winner = succeeded.reduce((best, candidate) => {
@@ -67,18 +85,43 @@ const RELATIVE_DATE_RESOLVERS: Record<string, (ref: Date) => Date> = {
 
 };
 
+const WEEKDAYS = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"]
+
+function resolveWeekday(rawInput: string, referenceDate: Date): Date | null {
+    const match = rawInput.toLowerCase().match(new RegExp(`\\b(${WEEKDAYS.join("|")})\\b`));
+    if (!match) return null;
+    const targetDay = WEEKDAYS.indexOf(match[1]);
+    const result = new Date(referenceDate);
+    const diff = (targetDay + 7 - result.getDay()) % 7 || 7;
+    result.setDate(result.getDate() + diff);
+    return result;
+}
+
+function resolveInDays(rawInput: string, referenceDate: Date): Date | null {
+    const match = rawInput.toLowerCase().match(/\bin\s+(\d+)\s+days?\b/);
+    if (!match) return null;
+    return new Date(referenceDate.getTime() + Number(match[1]) * 86_400_000);
+}
+
+
+
 export function resolveDueDate(dueDateISO: string, rawInput: string, referenceDate: Date): Date {
     const parsed = new Date(dueDateISO);
     if (!Number.isNaN(parsed.getTime())) {
-        parsed.setHours(23,59,59,999)
+        parsed.setHours(23, 59, 59, 999)
         return parsed;
     }
 
-    const keyword = Object.keys(RELATIVE_DATE_RESOLVERS).find((k) => rawInput.toLocaleLowerCase().includes(k))
-    const resolved = keyword ? RELATIVE_DATE_RESOLVERS[keyword](referenceDate) : referenceDate;
+    const resolved = resolveInDays(rawInput, referenceDate) ??
+        resolveWeekday(rawInput, referenceDate) ?? (() => {
+            const keyword = Object.keys(RELATIVE_DATE_RESOLVERS).find((k) => rawInput.toLowerCase().includes(k));
+            return keyword ? RELATIVE_DATE_RESOLVERS[keyword](referenceDate) : referenceDate;
+        })()
+
     resolved.setHours(23, 59, 59, 999);
     return resolved;
 }
+
 
 export async function resolveAssignee(name: string, departmentHint?: string) {
     if (!name) return null;

@@ -4,6 +4,7 @@ import { User } from "../../models/User.js"
 import { extractTaskFromText, resolveAssignee, resolveDueDate, priorityForCreatorRank } from "../tasks/ai/providers/task.ai.service.js"
 import { taskService } from "../tasks/task.service.js";
 import { sendWhatsAppMessage, verifySignature } from "./whatsapp.service.js";
+import { transcribeWhatsAppVoiceNote } from "./transcription.service.js";
 import { asyncHandler } from "../../utils/asyncHandler.js";
 
 declare global {
@@ -38,8 +39,24 @@ export const whatsappController = {
         if(!message) return;
 
         const from = message.from as string;
-        if(message.type !== "text"){
-            await sendWhatsAppMessage(from, "Sorry, I can only understand text messages right now.")
+
+        let text: string;
+        let inputMode: "voice" | "text";
+
+        if (message.type === "text") {
+            text = message.text.body as string;
+            inputMode = "text";
+        } else if (message.type === "audio") {
+            try {
+                text = await transcribeWhatsAppVoiceNote(message.audio.id as string);
+                inputMode = "voice";
+            } catch (err) {
+                console.error("WhatsApp voice transcription failed:", err);
+                await sendWhatsAppMessage(from, "Sorry, I couldn't understand that voice note. Please try again or type it instead.");
+                return;
+            }
+        } else {
+            await sendWhatsAppMessage(from, "Sorry, I can only understand text messages or voice notes right now.");
             return;
         }
 
@@ -49,7 +66,6 @@ export const whatsappController = {
             return;
         }
 
-        const text = message.text.body as string;
         try {
 
             const refereceDate = new Date();
@@ -70,7 +86,8 @@ export const whatsappController = {
                     departmentRaw : extraction.department || undefined,
                     confidence : extraction.confidence,
                     rawInput : text,
-                    inputMode : "text",
+                    inputMode,
+                    channel : "whatsapp",
                     wonBy : extraction.wonBy,
 
                 },

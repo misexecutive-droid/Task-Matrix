@@ -36,6 +36,7 @@ const taskSchema = new Schema(
                 {
                     rawInput : {type : String, default : null},
                     inputMode : { type : String, enum : ["voice", "text"], default : null },
+                    channel : { type : String, enum : ["whatsapp", "web"], default : null},
                     extractedAssigneeName : { type : String, default : null},
                     extractedDepartment : { type : String, default : null},
                     confidence : { type : Number, default : null},

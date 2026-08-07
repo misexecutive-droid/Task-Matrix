@@ -30,7 +30,8 @@ export const confirmSmartTaskSchema = z.object({
     confidence : z.number().optional(),
     rawInput : z.string(),
     inputMode : z.enum(["voice", "text"]),
-    wonBy : z.string().optional()
+    wonBy : z.string().optional(),
+    channel : z.enum(["whatsapp" , "web"])
 
 
 })
@@ -46,12 +47,10 @@ export const complianceReportQuerySchema = z.object({
 
 export const updateTaskSchema = createTaskSchema.partial().extend({
     assigneeId : objectId.nullable().optional(),
-    departmentId : objectId.nullable().optional() // NEW — allow clearing it back to "no department" via null
+    departmentId : objectId.nullable().optional() 
 });
 
-// PC/Admin verification action on a task that's pending_verification: APPROVE marks it truly
-// done, REJECT bounces it back to in_progress. A note is required when rejecting so the
-// assignee knows what to fix; optional when approving.
+
 export const verifyTaskSchema = z.object({
     action : z.enum(["APPROVE", "REJECT"]),
     note : z.string().optional(),

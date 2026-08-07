@@ -50,6 +50,7 @@ export const taskService = {
             aiMeta : {
                 rawInput : input.rawInput,
                 inputMode : input.inputMode,
+                channel : input.channel,
                 extractedAssigneeName : input.assigneeRaw || null,
                 extractedDepartment : input.departmentRaw || null,
                 confidence : input.confidence ?? null,

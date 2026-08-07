@@ -1,7 +1,13 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { EXTRACTION_JSON_SCHEMA, buildExtractionPrompt, type RawExtraction } from "../schema.js";
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
+// Lazy — see openai.provider.ts for why.
+let ai: GoogleGenAI | null = null;
+function getClient(): GoogleGenAI {
+    if (!process.env.GEMINI_API_KEY) throw new Error("GEMINI_API_KEY is not set");
+    if (!ai) ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+    return ai;
+}
 
 // @google/genai wants its own Type enum rather than plain JSON Schema strings.
 const GEMINI_SCHEMA = {
@@ -19,8 +25,8 @@ const GEMINI_SCHEMA = {
 };
 
 export async function extractWithGemini(rawInput: string, referenceDate: Date): Promise<RawExtraction> {
-    const response = await ai.models.generateContent({
-        model: "gemini-2.5-flash",
+    const response = await getClient().models.generateContent({
+        model: "gemini-flash-latest",
         contents: [{ role: "user", parts: [{ text: buildExtractionPrompt(rawInput, referenceDate) }] }],
         config: { responseMimeType: "application/json", responseSchema: GEMINI_SCHEMA },
     });
