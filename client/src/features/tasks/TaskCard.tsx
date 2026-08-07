@@ -2,6 +2,7 @@ import {
   Loader2,
   Trash2,
   User,
+  ArrowLeft,
   ArrowRight,
   CheckCircle2,
   Clock,
@@ -10,8 +11,9 @@ import {
 } from "lucide-react";
 import { useUpdateTaskMutation, useDeleteTaskMutation } from "./hook";
 import { TaskVerifyActions } from "./TaskVerifyActions";
-import { PRIORITY_MAP, STATUS_LABEL, NEXT_STATUS } from "./taskDisplay";
+import { PRIORITY_MAP, STATUS_LABEL, NEXT_STATUS, PREV_STATUS } from "./taskDisplay";
 import { departmentTagClass } from "./departmentTagColors";
+import { TaskSourceBadge } from "./TaskSourceBadge";
 import { getInitials } from "../../lib/getInitials";
 import type { Task } from "../../api/task";
 interface TaskCardProps {
@@ -29,6 +31,7 @@ export const TaskCard = ({ task, assigneeName, departmentName, isAdmin, isVerifi
   const deleteMutation = useDeleteTaskMutation();
   const priority = PRIORITY_MAP[task.priority];
   const next = NEXT_STATUS[task.status];
+  const prev = PREV_STATUS[task.status];
 
   const isOverdue = task.dueDate && new Date(task.dueDate) < new Date() && task.status !== 'done';
 
@@ -39,15 +42,20 @@ export const TaskCard = ({ task, assigneeName, departmentName, isAdmin, isVerifi
     }
   };
 
+  const goBack = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (prev) {
+      updateMutation.mutate({ id: task.id, payload: { status: prev } });
+    }
+  };
+
   return (
     <div
       onClick={() => onOpen(task)}
       className="group relative flex flex-col p-2.5 rounded-lg border border-gray-200 bg-white shadow-xs hover:border-gray-300 hover:shadow-sm transition-all duration-150 cursor-pointer select-none"
     >
-      {/* Top Header: Title & Logo/Delete */}
       <div className="flex items-start justify-between gap-2 mb-2">
         <div className="flex items-center gap-1.5 min-w-0">
-          {/* Optional Icon/Avatar Box to mirror company logo style */}
           <div className="flex items-center justify-center size-5 rounded bg-gray-100 text-gray-600 font-bold text-[10px] shrink-0 border border-gray-200">
             {task.title.charAt(0).toUpperCase()}
           </div>
@@ -55,6 +63,7 @@ export const TaskCard = ({ task, assigneeName, departmentName, isAdmin, isVerifi
             {task.title}
           </h4>
         </div>
+        <TaskSourceBadge aiMeta={task.aiMeta} />
 
         {isAdmin && (
           <button
@@ -76,7 +85,6 @@ export const TaskCard = ({ task, assigneeName, departmentName, isAdmin, isVerifi
         )}
       </div>
 
-      {/* Metadata Key-Value Stack (matching screenshot spacing) */}
       <div className="space-y-1 my-1 text-[11px] text-gray-500">
         {departmentName && (
           <div className="flex items-center justify-between">
@@ -107,7 +115,6 @@ export const TaskCard = ({ task, assigneeName, departmentName, isAdmin, isVerifi
         )}
       </div>
 
-      {/* Card Footer: Assignee & Action */}
       <div className="flex items-center justify-between pt-2 mt-1 border-t border-gray-100">
         <div className="flex items-center gap-1.5 min-w-0">
           {assigneeName ? (
@@ -127,17 +134,32 @@ export const TaskCard = ({ task, assigneeName, departmentName, isAdmin, isVerifi
           </span>
         </div>
 
-        {/* Quick Advance Button */}
         {next ? (
-          <button
-            type="button"
-            onClick={advance}
-            disabled={updateMutation.isPending}
-            className="p-1 rounded text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"
-            title={`Move to ${STATUS_LABEL[next]}`}
-          >
-            {updateMutation.isPending ? <Loader2 size={12} className="animate-spin text-blue-600" /> : <ArrowRight size={12} />}
-          </button>
+          <div className="flex items-center">
+            {/* Revealed on card hover with a slide-in, instead of always sitting next to the
+                forward arrow — it's the less-common action, so it stays out of the way until
+                the user is already interacting with this card. */}
+            {prev && (
+              <button
+                type="button"
+                onClick={goBack}
+                disabled={updateMutation.isPending}
+                className="p-1 rounded text-gray-400 hover:text-blue-600 hover:bg-blue-50 opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-200 ease-out"
+                title={`Move back to ${STATUS_LABEL[prev]}`}
+              >
+                <ArrowLeft size={12} />
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={advance}
+              disabled={updateMutation.isPending}
+              className="p-1 rounded text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"
+              title={`Move to ${STATUS_LABEL[next]}`}
+            >
+              {updateMutation.isPending ? <Loader2 size={12} className="animate-spin text-blue-600" /> : <ArrowRight size={12} />}
+            </button>
+          </div>
         ) : task.status === 'pending_verification' ? (
           isVerifier ? (
             <TaskVerifyActions task={task} />
@@ -153,7 +175,6 @@ export const TaskCard = ({ task, assigneeName, departmentName, isAdmin, isVerifi
         )}
       </div>
 
-      {/* Mutation Error Feedback */}
       {updateMutation.isError && (
         <div className="flex items-center gap-1 mt-1.5 p-1 bg-red-50 rounded text-[10px] text-red-600 font-medium border border-red-100">
           <AlertCircle size={10} className="shrink-0 text-red-600" />

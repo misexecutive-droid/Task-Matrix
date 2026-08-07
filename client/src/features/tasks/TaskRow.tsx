@@ -3,6 +3,7 @@ import { useUpdateTaskMutation, useDeleteTaskMutation } from "./hook";
 import { PRIORITY_MAP, STATUS_ICON, NEXT_STATUS } from "./taskDisplay";
 import { coverPhotoFor } from "./taskAttachmentDisplay";
 import { UPLOADS_BASE } from "../../lib/uploadsBase";
+import { TaskSourceBadge } from "./TaskSourceBadge";
 import type { Task } from '../../api/task';
 
 interface TaskRowProps {
@@ -34,7 +35,6 @@ export const TaskRow = ({ task, assigneeName, isAdmin, onOpen, index = 0 }: Task
             style={{ animationDelay: `${Math.min(index, 10) * 35}ms`, animationFillMode: 'both' }}
         >
             <div className="flex items-center gap-2.5 flex-1 min-w-0">
-                {/* Cover Photo Thumbnail — first image attachment, or a "no photo" placeholder */}
                 {coverPhoto ? (
                     <img
                         src={`${UPLOADS_BASE}${coverPhoto.url}`}
@@ -47,7 +47,6 @@ export const TaskRow = ({ task, assigneeName, isAdmin, onOpen, index = 0 }: Task
                     </div>
                 )}
 
-                {/* Status Cycle Button */}
                 <button
                     onClick={cycleStatus}
                     disabled={updateMutation.isPending || !next}
@@ -62,7 +61,6 @@ export const TaskRow = ({ task, assigneeName, isAdmin, onOpen, index = 0 }: Task
                         : STATUS_ICON[task.status]}
                 </button>
 
-                {/* Main Content Area */}
                 <div className="flex-1 min-w-0 flex flex-col gap-0.5">
                     <button
                         onClick={() => onOpen(task)}
@@ -74,8 +72,8 @@ export const TaskRow = ({ task, assigneeName, isAdmin, onOpen, index = 0 }: Task
                     >
                         {task.title}
                     </button>
+                    <TaskSourceBadge aiMeta={task.aiMeta}/>
 
-                    {/* Meta Info Below Title */}
                     <div className="flex items-center gap-2 flex-wrap mt-1">
                         {task.dueDate && (
                             <span className="flex items-center gap-1.5 text-xs font-medium text-gray-500">

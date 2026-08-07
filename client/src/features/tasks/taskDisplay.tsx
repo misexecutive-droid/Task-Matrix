@@ -74,3 +74,13 @@ export const NEXT_STATUS: Record<Task['status'], Task['status'] | null> = {
   pending_verification: null,
   done: null,
 };
+
+// Self-service "undo" — deliberately only in_progress -> todo. Reverting out of
+// pending_verification or done has to go through TaskVerifyActions (REJECT), not a raw status
+// edit, since that path also records a verification note and notifies the assignee.
+export const PREV_STATUS: Record<Task['status'], Task['status'] | null> = {
+  todo: null,
+  in_progress: 'todo',
+  pending_verification: null,
+  done: null,
+};

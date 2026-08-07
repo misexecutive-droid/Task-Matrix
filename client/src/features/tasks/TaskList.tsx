@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus,Sparkles , CheckCheck, AlertCircle, LayoutList, Kanban, Inbox } from "lucide-react";
+import { Sparkles, CheckCheck, AlertCircle, LayoutList, Kanban, Inbox } from "lucide-react";
 import { Button, Skeleton } from "../../components";
 import { useTasksQuery, useAssignableUsersQuery } from "./hook";
 import { useDepartmentsQuery } from "../tickets/hook";
@@ -41,6 +41,20 @@ interface TaskListProps {
     dateRange?: { from: Date | null; to: Date | null };
 }
 
+// "Issue" and "Delegation" are the two real category values on Task, but a plain task typed
+// into the "New Task" form also lands in category "delegation" with no aiMeta at all — so from
+// the user's point of view that's really a third bucket ("Tasks") distinct from AI/WhatsApp
+// delegations. These are UI-only filter keys, not stored values, split out via a lookup map
+// (rather than if/else) so adding another bucket later is just one more entry here.
+type CategoryFilterKey = 'all' | 'issue' | 'delegation' | 'task';
+
+const CATEGORY_PREDICATES: Record<CategoryFilterKey, (t: Task) => boolean> = {
+    all: () => true,
+    issue: (t) => t.category === 'issue',
+    delegation: (t) => t.category === 'delegation' && !!t.aiMeta,
+    task: (t) => t.category === 'delegation' && !t.aiMeta,
+};
+
 export const TaskList = ({ userId, hideHeader = false, dateRange }: TaskListProps = {}) => {
     const { user } = useAuth();
     const isAdmin = user?.role === "ADMIN";
@@ -52,6 +66,7 @@ export const TaskList = ({ userId, hideHeader = false, dateRange }: TaskListProp
     const { data: assignableUsers } = useAssignableUsersQuery();
     const { data: departments } = useDepartmentsQuery();
     const [filter, setFilter] = useState<Task['status'] | 'all'>('all');
+    const [categoryFilter, setCategoryFilter] = useState<CategoryFilterKey>('all');
     const [view, setView] = useState<'list' | 'board'>('board');
 
     const assigneeNames = new Map(
@@ -74,9 +89,11 @@ export const TaskList = ({ userId, hideHeader = false, dateRange }: TaskListProp
             return true;
         });
 
+    const categoryFiltered = dateFiltered.filter(CATEGORY_PREDICATES[categoryFilter]);
+
     const filtered = filter === 'all'
-        ? dateFiltered
-        : dateFiltered.filter(t => t.status === filter);
+        ? categoryFiltered
+        : categoryFiltered.filter(t => t.status === filter);
 
     const departmentGroups = groupByDepartment(filtered, departmentNames);
 
@@ -88,7 +105,14 @@ export const TaskList = ({ userId, hideHeader = false, dateRange }: TaskListProp
         { key: 'done', label: 'Done' },
     ];
 
-    const isEmpty = view === 'board' ? dateFiltered.length === 0 : filtered.length === 0;
+    const CATEGORY_FILTERS: { key: CategoryFilterKey; label: string }[] = [
+        { key: 'all', label: 'All' },
+        { key: 'issue', label: 'Issues' },
+        { key: 'delegation', label: 'Delegations' },
+        { key: 'task', label: 'Tasks' },
+    ];
+
+    const isEmpty = view === 'board' ? categoryFiltered.length === 0 : filtered.length === 0;
 
     return (
         <div className="flex flex-col gap-6 mx-auto w-full max-w-[1400px] transition-all duration-300">
@@ -152,11 +176,37 @@ export const TaskList = ({ userId, hideHeader = false, dateRange }: TaskListProp
                 </div>
             </div>
 
+            {/* Category Filter (Issues vs Delegations) — always visible, in both list and board views */}
+            <div className="flex gap-1 p-1 bg-surface-hover/80 border border-border rounded w-fit overflow-x-auto max-w-full scrollbar-hide">
+                {CATEGORY_FILTERS.map(f => {
+                    const count = dateFiltered.filter(CATEGORY_PREDICATES[f.key]).length;
+                    const active = categoryFilter === f.key;
+                    return (
+                        <button
+                            key={f.key}
+                            onClick={() => setCategoryFilter(f.key)}
+                            className={`flex items-center gap-2 px-3.5 py-1.5 text-sm font-semibold rounded transition-all duration-200 cursor-pointer whitespace-nowrap outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 ${
+                                active
+                                    ? 'bg-surface text-text ring-1 ring-border/50'
+                                    : 'text-text-muted hover:text-text-secondary hover:bg-surface-active/50'
+                            }`}
+                        >
+                            {f.label}
+                            <span className={`flex items-center justify-center min-w-[1.25rem] h-5 px-1 text-[11px] font-bold rounded-full ${
+                                active ? 'bg-blue-50 text-blue-700' : 'bg-surface-active text-text-light'
+                            }`}>
+                                {count}
+                            </span>
+                        </button>
+                    );
+                })}
+            </div>
+
             {/* List View Filters */}
             {view === 'list' && (
                 <div className="flex gap-1 p-1 bg-surface-hover/80 border border-border rounded w-fit overflow-x-auto max-w-full scrollbar-hide">
                     {FILTERS.map(f => {
-                        const count = f.key === 'all' ? dateFiltered.length : dateFiltered.filter(t => t.status === f.key).length;
+                        const count = f.key === 'all' ? categoryFiltered.length : categoryFiltered.filter(t => t.status === f.key).length;
                         const active = filter === f.key;
                         return (
                             <button
@@ -279,7 +329,7 @@ export const TaskList = ({ userId, hideHeader = false, dateRange }: TaskListProp
             {!isPending && !isError && !isEmpty && view === 'board' && (
                 <div className="pb-10">
                     <TaskBoard
-                        tasks={dateFiltered}
+                        tasks={categoryFiltered}
                         assigneeNames={assigneeNames}
                         departmentNames={departmentNames}
                         isAdmin={isAdmin}
@@ -291,6 +341,7 @@ export const TaskList = ({ userId, hideHeader = false, dateRange }: TaskListProp
 
             {/* Modals */}
             {showForm && <TaskForm onClose={() => setShowForm(false)} />}
+            {showSmartModal && <SmartTaskModal onClose={() => setShowSmartModal(false)} />}
             {selected && (
                 <TaskDetail
                     task={selected}

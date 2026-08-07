@@ -17,6 +17,7 @@ export type Task = {
     title:        string;
     description:  string | null;
     status:       'todo' | 'in_progress' | 'pending_verification' | 'done';
+    category :    'issue' | 'delegation';
     priority:     'low' | 'medium' | 'high';
     dueDate:      string | null;
     projectId:    string | null;
@@ -27,7 +28,15 @@ export type Task = {
     verifiedBy:       string | null;
     verifiedAt:       string | null;
     verificationNote: string | null;
-    // Only populated by GET /tasks/:id (task detail), not the list endpoint.
+    aiMeta?: {
+        rawInput : string;
+        inputMode : "voice" | "text";
+        channel : "whatsapp" | "web";
+        extractedAssigneeName : string | null;
+        extractedDepartment : string | null;
+        confidence : number | null;
+        model : string | null;
+    } | null;
     checklists?:  TaskChecklist[];
     attachments?: TaskAttachment[];
 };
@@ -72,6 +81,7 @@ export type ConfirmSmartTaskPayload = {
     rawInput:string;
     inputMode : "voice" | "text";
     wonBy? : string;
+    channel: "whatsapp" | "web";
 }
 
 export type UpdateTaskPayload = Partial<Omit<CreateTaskPayload, 'assigneeId' | 'departmentId'>> & {

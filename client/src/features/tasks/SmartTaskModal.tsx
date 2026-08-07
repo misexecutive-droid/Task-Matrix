@@ -76,6 +76,7 @@ export const SmartTaskModal = ({ onClose }: SmartTaskModalProps) => {
                 rawInput: parsed.rawInput,
                 inputMode: "text",
                 wonBy: parsed.wonBy,
+                channel : "web",
             },
 
             { onSuccess: onClose },
