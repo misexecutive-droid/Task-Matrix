@@ -5,9 +5,7 @@ import type { AccessTokenPayload } from "../../middleware/auth/auth.js"
 import type { CreateCommentInput } from "./ticketComment.validation.js"
 
 export const ticketCommentService = {
-    // Anyone who can already view this ticket can comment on it — reuse ticketService.getById's
-    // visibility check (raiser/assignee/dept-or-store scope/admin) instead of duplicating it here;
-    // it throws notFound/forbidden the same way a direct ticket fetch would.
+
     async create(ticketId: string, input: CreateCommentInput, user: AccessTokenPayload) {
         const ticket = await ticketService.getById(ticketId, user)
 

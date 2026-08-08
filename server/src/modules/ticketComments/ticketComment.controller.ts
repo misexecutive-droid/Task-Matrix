@@ -4,7 +4,6 @@ import { createCommentSchema } from "./ticketComment.validation.js"
 import { asyncHandler } from "../../utils/asyncHandler.js"
 
 export const ticketCommentController = {
-    // POST /tickets/:ticketId/comments
     create: asyncHandler(async (req: Request, res: Response) => {
         const input = createCommentSchema.parse(req.body)
         const comment = await ticketCommentService.create(req.params.ticketId, input, req.user!)

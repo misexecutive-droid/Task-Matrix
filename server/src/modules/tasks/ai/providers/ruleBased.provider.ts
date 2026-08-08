@@ -4,7 +4,7 @@ import type { RawExtraction } from "../schema.js"
 
 const ISSUE_KEYWORDS = ["issue", "problem", "broken", "not working", "bug", "error", "fault", "complaint"]
 
-const DATE_HINT_PATTERN = /\btoday\b|\btomorrow\b|\bin\s+\d+\s+days?\b|\bmonday\b|\btuesday\b|\bwednesday\b|\bthursday\b|\bfriday\b|\bsaturday\b|\bsunday\b/i;
+const DATE_HINT_PATTERN = /\btoday\b|\btomorrow\b|\bin\s+\d+\s+days?\b|\bmonday\b|\btuesday\b|\bwednesday\b|\bthursday\b|\bfriday\b|\bsaturday\b|\bsunday\b|\baaj\b|\bkal\b/i;
 
 
 export async function extractWithRules(rawInput: string, _referenceDate: Date): Promise<RawExtraction> {

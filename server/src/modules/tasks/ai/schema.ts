@@ -29,6 +29,7 @@ export function buildExtractionPrompt(rawInput: string, referenceDate: Date): st
     return [
         `Reference date/time (server, for resolving relative dates like "today"/"tomorrow"): ${referenceDate.toISOString()}`,
         `If no explicit time is mentioned, resolve the due date to 23:59:59 on the resolved day.`,
+        `The instruction may be written in English, Hindi, or Hinglish (mixed Hindi-English, usually typed in Latin script) - understand it regardless of language mix, and always return field values in English.`,
         `Extract structured task parameters from this instruction:`,
         `"""${rawInput}"""`,
 

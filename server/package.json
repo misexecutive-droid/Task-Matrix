@@ -11,7 +11,9 @@
     "dev": "tsx watch server.ts",
     "build": "tsc -p tsconfig.json",
     "test watch": "vitest",
-    "seed:admin": "tsx src/scripts/seedAdmin.ts"
+    "seed:admin": "tsx src/scripts/seedAdmin.ts",
+    "test:whatsapp" : "tsx src/scripts/testWhatsAppWebhook.ts",
+    "test:rules" : "tsx src/scripts/testRuleBasedExtraction.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.115.0",

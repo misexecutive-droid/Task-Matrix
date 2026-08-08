@@ -18,8 +18,6 @@ const visiblityFilter = (user: AccessTokenPayload) => {
 
 export const taskService = {
     async list(user: AccessTokenPayload, filterUserId?: string, status?: string) {
-        // Only url/mimeType — enough for the board/list cards to show a cover photo
-        // thumbnail without pulling uploader details into every task in the list.
         const ATTACHMENT_THUMBNAIL_SELECT = "url mimeType";
 
         if (user.role === "ADMIN" && filterUserId) {
@@ -80,7 +78,6 @@ export const taskService = {
     },
 
     async update(id: string, input: UpdateTaskInput, user: AccessTokenPayload) {
-        // PC only ever acts through taskService.verify() — never the generic update path.
         if (user.role === "PC") {
             throw AppError.forbidden("PC can only act on a task through the verification queue.")
         }
@@ -92,17 +89,10 @@ export const taskService = {
         const beforeStatus = existing.status;
 
         if (input.status === "done" && beforeStatus !== "done") {
-            // Marking a task truly done is now a PC/Admin-only action, done through
-            // taskService.verify() — everyone else (PC is already blocked above) can only
-            // hand it off to pending_verification (see the gate right below) and wait for
-            // that step.
             if (user.role !== "ADMIN") {
                 throw AppError.forbidden("Only a verifier can mark a task done — send it for review instead.")
             }
         } else if (input.status === "pending_verification" && beforeStatus !== "pending_verification") {
-            // Sending a task for review is blocked until every not-done checklist item has
-            // remarks explaining why — same rule as before, just retargeted from "done" to
-            // this hand-off point.
             assertChecklistsResolved((existing as any).checklists, "sending this task for review")
         }
 
@@ -114,7 +104,6 @@ export const taskService = {
         );
         if (!task) throw AppError.notFound("Task not found")
 
-        // Just handed off to review — let the department's PCs know there's something to check.
         if (input.status === "pending_verification" && beforeStatus !== "pending_verification") {
             await notificationService.notifyPendingVerification(task as any, 'TASK');
         }

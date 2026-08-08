@@ -5,9 +5,6 @@ import { TicketAttachment } from "../../models/TicketAttachment.js";
 import { AppError } from "../../utils/AppError.js";
 import type { AccessTokenPayload } from "../../middleware/auth/auth.js";
 
-// Who can attach/remove evidence directly on a ticket — the raiser, the assignee, or an
-// Admin/Manager. Looser than ChecklistImage's assignee-only rule since this is general,
-// collaborative evidence on the ticket itself, not a specific person's checklist work item.
 const assertCanAttach = (user: AccessTokenPayload, ticket: any) => {
     if (user.role === "ADMIN" || user.role === "MANAGER") return;
     if (String(ticket.userId) === user.sub) return;
