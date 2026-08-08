@@ -1,5 +1,3 @@
-// Shared by any card/list that shows a checklist completion summary (e.g. TicketCard) — works
-// for both ticket checklists and task checklists since both shapes are `{ items: { isDone }[] }[]`.
 type ChecklistLike = { items: { isDone: boolean }[] };
 
 export const getChecklistProgress = (checklists: ChecklistLike[]) => {

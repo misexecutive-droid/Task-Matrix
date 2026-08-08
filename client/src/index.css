@@ -3,7 +3,6 @@
 @variant dark ([data-theme="dark"] &);
 
 @theme {
-  
   --color-primary-50: #eef3fb;
   --color-primary-100: #dde8f6;
   --color-primary-200: #b9d0ec;
@@ -14,7 +13,6 @@
   --color-primary-700: #1c3c69;
   --color-primary-800: #152c4d;
   --color-primary-900: #0f1f38;
-
   --color-cobalt-50: #eef3fb;
   --color-cobalt-100: #dde8f6;
   --color-cobalt-200: #b9d0ec;
@@ -24,7 +22,6 @@
   --color-cobalt-700: #1c3c69;
   --color-cobalt-800: #152c4d;
   --color-cobalt-900: #0f1f38;
-
   --color-coral-50: #fdf3f0;
   --color-coral-100: #fbe4dc;
   --color-coral-200: #f5c3b3;
@@ -33,45 +30,28 @@
   --color-coral-500: #d9694f;
   --color-coral-600: #b8523b;
   --color-coral-700: #96402e;
-
-
   --color-success: #2f7d5b;
   --color-warning: #c08a1e;
   --color-danger: #b23b3b;
   --color-info: #3d77a0;
-
   --color-status-todo: #9ca3af;
   --color-status-progress: #f59e0b;
   --color-status-verify: #6366f1;
   --color-status-done: #10b981;
-
-
   --color-background: #eef1f3;
   --color-surface: #ffffff;
   --color-surface-hover: #e4e8eb;
   --color-surface-active: #d9dfe3;
-
   --color-border: #d7dee2;
   --color-border-hover: #b9c4ca;
-
   --color-text: #2c353c;        
   --color-text-secondary: #4a555c;
   --color-text-muted: #657178;   
   --color-text-light: #93a0a7;    
-
   --color-white: #ffffff;
-
-  --font-sans: "Calibri", "Candara", "Segoe UI", "Optima", "Helvetica Neue", Arial, sans-serif;
-
-  
-
-  
-
-  --container-width: min(90rem, 100% - 2rem);
+  --font-sans: "Calibri", "Candara", "Segoe UI", "Optima", "Helvetica Neue", Arial, sans-serif;  --container-width: min(90rem, 100% - 2rem);
   --sidebar-width: 18rem;
   --header-height: 4.5rem;
- 
-
   --transition-fast: 150ms ease;
   --transition-normal: 220ms ease;
   --transition-slow: 350ms ease;
