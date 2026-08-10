@@ -48,7 +48,7 @@ export const CHECKLIST_COLUMNS: CsvColumn[] = [
     { key: "id", label: "Instance ID" },
     { key: "title", label: "Checklist" },
     { key: "recurrence", label: "Recurrence" },
-    { key: "department", label: "Department" },
+    { key: "store", label: "Store" },
     { key: "assignees", label: "Assignees" },
     { key: "periodStart", label: "Period Start" },
     { key: "periodEnd", label: "Period End" },
@@ -117,7 +117,7 @@ export const reportService = {
 
     async *checklistRows(from?: string, to?: string) {
         const cursor = ChecklistInstance.find(dateFilter("periodStart", from, to))
-            .populate({ path: "departmentId", select: "name" })
+            .populate({ path: "storeId", select: "name" })
             .populate({ path: "assigneeIds", select: "firstName lastName" })
             .populate({ path: "items" })
             .sort({ periodStart: -1 })
@@ -133,7 +133,7 @@ export const reportService = {
                 id: inst._id.toString(),
                 title: inst.title,
                 recurrence: inst.recurrence,
-                department: inst.departmentId?.name ?? "",
+                store: inst.storeId?.name ?? "",
                 assignees: (inst.assigneeIds ?? []).map(fullName).join(", "),
                 periodStart: isoOrEmpty(inst.periodStart),
                 periodEnd: isoOrEmpty(inst.periodEnd),

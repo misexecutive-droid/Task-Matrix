@@ -96,7 +96,7 @@ export const userService = {
     // is reachable by any authenticated user
     //  (see user.routes.ts - it's placed before the
     // `requireRole('ADMIN')` gate).
-    async listAssignable( user : AccessTokenPayload, departmentId?: string ) {
+    async listAssignable( user : AccessTokenPayload, departmentId?: string, storeId?: string ) {
         // Start with the baseline rule: 
         //  show users who are currently active - there's no
         // point offering a deactivated 
@@ -109,7 +109,14 @@ export const userService = {
             // department filter in the UI), just scope the results to that department directly,
             // regardless of who is asking. This takes priority over any role-based scoping below.
             filter.departmentId = departmentId;
-        } else if(user.role === "MANAGER"){
+        }
+        if(storeId){
+            // Same idea as departmentId above, but for a specific store (e.g. the checklist
+            // builder's assignee picker, scoped to whichever store the checklist is being
+            // authored for). Combines with departmentId above if both are given.
+            filter.storeId = storeId;
+        }
+        if(!departmentId && !storeId && user.role === "MANAGER"){
             // If no specific department was requested AND the caller is a MANAGER (not an admin),
             // we scope the results down instead of returning literally everyone. Managers should
             // typically only be assigning tickets to people in their own department/store, plus

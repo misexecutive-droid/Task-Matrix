@@ -173,6 +173,23 @@ export const notificationService = {
     });
   },
 
+  // Fired by checklistInstance.service.ts when a Builder-authored conditional rule's
+  // NOTIFY_AREA_MANAGER action triggers (e.g. "if answer is No, notify Area Manager"). The app has
+  // no separate "Area Manager" role yet, so every ADMIN — the closest existing escalation contact —
+  // gets notified instead of a store-specific area manager.
+  async notifyAreaManagersOfChecklistFlag(instance: VerifiableChecklistInstance, item: { label: string }) {
+    const admins = await User.find({ role: 'ADMIN' }).select('_id');
+    const recipientIds = admins.map((a) => a._id.toString());
+    if (!recipientIds.length) return [];
+
+    return notificationService.notifyMany(recipientIds, {
+      type: 'CHECKLIST_CONDITIONAL_FLAG',
+      title: 'Checklist flagged for review',
+      message: `"${item.label}" on "${instance.title}" needs attention.`,
+      checklistInstanceId: instance._id.toString(),
+    });
+  },
+
   // Returns the most recent 50 notifications for a given user, newest first - used to populate the notifications dropdown/list in the UI
   async listForUser(userId: string) {
     return Notification.find({ recipientId: userId }).sort({ createdAt: -1 }).limit(50);

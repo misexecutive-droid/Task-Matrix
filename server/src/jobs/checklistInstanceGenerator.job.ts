@@ -11,16 +11,12 @@ import { ChecklistInstanceItemSubmission } from "../models/ChecklistInstanceItem
 import { getCurrentPeriod } from "../utils/period.js"
 import { env } from "../config/env.js"
 
-// Stamps out the currently-due ChecklistInstance for one definition, or does nothing if its period
-// was already generated or its startDate hasn't arrived yet. Shared by the sweep below and by
-// checklistDefinition.service.ts's create() — a freshly-created, already-due definition gets its
-// first instance immediately instead of waiting for the next hourly tick.
-export const generateInstanceForDefinition = async (definition: HydratedDocument<any>, now: Date) => {
-    const period = getCurrentPeriod(definition.recurrence, definition.startDate, now, env.CHECKLIST_TIMEZONE_OFFSET_MINUTES)
-    if (!period) return null
-
+// Stamps out the currently-due ChecklistInstance for one (definition, store) pair, or does nothing
+// if that store's period was already generated or the definition's startDate hasn't arrived yet.
+const generateInstanceForStore = async (definition: HydratedDocument<any>, storeId: unknown, period: { periodKey: string; periodStart: Date; periodEnd: Date }, now: Date) => {
     const alreadyGenerated = await ChecklistInstance.exists({
         definitionId: definition._id,
+        storeId,
         periodKey: period.periodKey,
     })
     if (alreadyGenerated) return null
@@ -31,7 +27,9 @@ export const generateInstanceForDefinition = async (definition: HydratedDocument
             definitionId: definition._id,
             title: definition.name,
             recurrence: definition.recurrence,
-            departmentId: definition.departmentId,
+            storeId,
+            opensTime: definition.opensTime,
+            cutoffTime: definition.cutoffTime,
             assigneeIds: definition.assigneeIds,
             periodKey: period.periodKey,
             periodStart: period.periodStart,
@@ -40,7 +38,7 @@ export const generateInstanceForDefinition = async (definition: HydratedDocument
         })
     } catch (err: any) {
         // Duplicate-key race between this run and a concurrent tick for the same period —
-        // the unique (definitionId, periodKey) index already guarantees only one wins.
+        // the unique (definitionId, storeId, periodKey) index already guarantees only one wins.
         if (err?.code === 11000) return null
         throw err
     }
@@ -58,6 +56,19 @@ export const generateInstanceForDefinition = async (definition: HydratedDocument
                 requiresLivePhoto: item.requiresLivePhoto,
                 itemType: item.itemType,
                 accessories: item.accessories,
+                numberEntryUnit: item.numberEntryUnit,
+                numberEntryMin: item.numberEntryMin,
+                numberEntryMax: item.numberEntryMax,
+                ratingScale: item.ratingScale,
+                options: item.options,
+                gpsTargetLat: item.gpsTargetLat,
+                gpsTargetLng: item.gpsTargetLng,
+                gpsRadiusMeters: item.gpsRadiusMeters,
+                signatureLabels: item.signatureLabels,
+                qrExpectedValue: item.qrExpectedValue,
+                cashExpectedAmount: item.cashExpectedAmount,
+                conditionalTrigger: item.conditionalTrigger,
+                conditionalActions: item.conditionalActions,
                 instanceId: instance._id,
             })),
         )
@@ -79,14 +90,32 @@ export const generateInstanceForDefinition = async (definition: HydratedDocument
         }
     }
 
-    // A ONE_TIME definition has exactly one period, ever — deactivate it once generated
-    // so the sweep doesn't keep re-checking it forever.
-    if (definition.recurrence === "ONE_TIME") {
+    return instance
+}
+
+// Stamps out the currently-due ChecklistInstance for one definition, across every store it's live
+// in — one independent instance per store, or does nothing if its period hasn't arrived yet.
+// Shared by the sweep below and by checklistDefinition.service.ts's create() — a freshly-created,
+// already-due definition gets its first instance(s) immediately instead of waiting for the next
+// hourly tick. Returns the list of newly-created instances (empty if none were due/new).
+export const generateInstanceForDefinition = async (definition: HydratedDocument<any>, now: Date) => {
+    const period = getCurrentPeriod(definition.recurrence, definition.startDate, now, env.CHECKLIST_TIMEZONE_OFFSET_MINUTES)
+    if (!period) return []
+
+    const created = []
+    for (const storeId of definition.storeIds ?? []) {
+        const instance = await generateInstanceForStore(definition, storeId, period, now)
+        if (instance) created.push(instance)
+    }
+
+    // A ONE_TIME definition has exactly one period, ever — deactivate it once generated (in at
+    // least one store) so the sweep doesn't keep re-checking it forever.
+    if (definition.recurrence === "ONE_TIME" && created.length) {
         definition.isActive = false
         await definition.save()
     }
 
-    return instance
+    return created
 }
 
 const generateDueInstances = async () => {

@@ -1,15 +1,15 @@
 import type { Request, Response } from "express"
 import { checklistDefinitionService } from "./checklistDefinition.service.js"
-import { createChecklistDefinitionSchema, setChecklistDefinitionActiveSchema } from "./checklistDefinition.validation.js"
+import { createChecklistDefinitionSchema, updateChecklistDefinitionSchema, setChecklistDefinitionActiveSchema } from "./checklistDefinition.validation.js"
 import { asyncHandler } from "../../utils/asyncHandler.js"
 import type { ChecklistRecurrence } from "../../models/ChecklistDefinition.js"
 
 export const checklistDefinitionController = {
-    // GET /checklist-definitions?departmentId=&recurrence=&isActive=
+    // GET /checklist-definitions?storeId=&recurrence=&isActive=
     list: asyncHandler(async (req: Request, res: Response) => {
-        const { departmentId, recurrence, isActive } = req.query
+        const { storeId, recurrence, isActive } = req.query
         const definitions = await checklistDefinitionService.list({
-            departmentId: departmentId as string | undefined,
+            storeId: storeId as string | undefined,
             recurrence: recurrence as ChecklistRecurrence | undefined,
             isActive: isActive === undefined ? undefined : isActive === "true",
         })
@@ -25,6 +25,12 @@ export const checklistDefinitionController = {
         const input = createChecklistDefinitionSchema.parse(req.body)
         const definition = await checklistDefinitionService.create(input, req.user!)
         res.status(201).json({ success: true, data: definition })
+    }),
+
+    update: asyncHandler(async (req: Request, res: Response) => {
+        const input = updateChecklistDefinitionSchema.parse(req.body)
+        const definition = await checklistDefinitionService.update(req.params.id, input)
+        res.json({ success: true, data: definition })
     }),
 
     setActive: asyncHandler(async (req: Request, res: Response) => {

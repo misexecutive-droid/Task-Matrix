@@ -8,10 +8,10 @@ import { ChecklistInstanceItemSubmissionImage } from "../../models/ChecklistInst
 import { generateInstanceForDefinition } from "../../jobs/checklistInstanceGenerator.job.js"
 import { AppError } from "../../utils/AppError.js"
 import type { AccessTokenPayload } from "../../middleware/auth/auth.js"
-import type { CreateChecklistDefinitionInput, SetChecklistDefinitionActiveInput } from "./checklistDefinition.validation.js"
+import type { CreateChecklistDefinitionInput, UpdateChecklistDefinitionInput, SetChecklistDefinitionActiveInput } from "./checklistDefinition.validation.js"
 
 export type ListChecklistDefinitionsFilter = {
-    departmentId?: string
+    storeId?: string
     recurrence?: ChecklistRecurrence
     isActive?: boolean
 }
@@ -22,7 +22,9 @@ const populateDefinition = (query: any) =>
 export const checklistDefinitionService = {
     async list(filter: ListChecklistDefinitionsFilter) {
         const query: Record<string, unknown> = {}
-        if (filter.departmentId) query.departmentId = filter.departmentId
+        // Mongo/Mongoose matches an array field against a scalar as "array contains this value",
+        // so this correctly finds every definition live in the given store.
+        if (filter.storeId) query.storeIds = filter.storeId
         if (filter.recurrence) query.recurrence = filter.recurrence
         if (filter.isActive !== undefined) query.isActive = filter.isActive
         return populateDefinition(ChecklistDefinition.find(query).sort({ name: 1 }))
@@ -38,10 +40,15 @@ export const checklistDefinitionService = {
         const definition = await ChecklistDefinition.create({
             name: input.name,
             description: input.description ?? null,
-            departmentId: input.departmentId,
+            storeIds: input.storeIds,
             recurrence: input.recurrence,
             startDate: new Date(input.startDate),
+            opensTime: input.opensTime ?? null,
+            cutoffTime: input.cutoffTime ?? null,
             assigneeIds: input.assigneeIds,
+            assigneeRoles: input.assigneeRoles ?? [],
+            proofRequired: input.proofRequired ?? [],
+            icon: input.icon,
             createdBy: user.sub,
         })
 
@@ -51,6 +58,41 @@ export const checklistDefinitionService = {
 
         // Stamp out this definition's first instance right away if it's already due, instead of
         // making the admin wait for the generator job's next hourly tick.
+        await generateInstanceForDefinition(definition, new Date())
+
+        return populateDefinition(ChecklistDefinition.findById(definition._id))
+    },
+
+    // Builder's "edit" mode — replaces name/schedule/items wholesale (simplest correct approach:
+    // delete the old ChecklistDefinitionItem rows, insert the new set) rather than diffing item by
+    // item. Already-generated ChecklistInstances are untouched — editing a template only changes
+    // what future periods stamp out, it doesn't rewrite history. Bumps `version` so the Templates
+    // grid's "v3" badge reflects the edit.
+    async update(id: string, input: UpdateChecklistDefinitionInput) {
+        const definition = await ChecklistDefinition.findById(id)
+        if (!definition) throw AppError.notFound("Checklist not found")
+
+        definition.set({
+            name: input.name,
+            description: input.description ?? null,
+            storeIds: input.storeIds,
+            recurrence: input.recurrence,
+            startDate: new Date(input.startDate),
+            opensTime: input.opensTime ?? null,
+            cutoffTime: input.cutoffTime ?? null,
+            assigneeIds: input.assigneeIds,
+            assigneeRoles: input.assigneeRoles ?? [],
+            proofRequired: input.proofRequired ?? [],
+            icon: input.icon,
+            version: (definition.get("version") ?? 1) + 1,
+        })
+        await definition.save()
+
+        await ChecklistDefinitionItem.deleteMany({ definitionId: definition._id })
+        await ChecklistDefinitionItem.insertMany(
+            input.items.map((item, index) => ({ ...item, order: item.order ?? index, definitionId: definition._id })),
+        )
+
         await generateInstanceForDefinition(definition, new Date())
 
         return populateDefinition(ChecklistDefinition.findById(definition._id))

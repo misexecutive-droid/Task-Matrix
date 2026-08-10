@@ -109,11 +109,20 @@ const taskAttachmentStorage = multer.diskStorage({
     },
 })
 
+// Recurring-checklist VIDEO_UPLOAD items reuse the exact same evidence-photo pipeline (same
+// ChecklistInstanceImage model/route, same "images" field) rather than a separate upload path —
+// the only difference is the file itself can be a video. Fixed allowlist, not admin-editable like
+// allowedImageTypes, since it's a narrow feature-specific exception rather than a general setting.
+const CHECKLIST_VIDEO_MIME_TYPES = ["video/mp4", "video/quicktime", "video/webm"]
+
 // Builds a brand-new multer instance using whatever's currently in the settings cache. This is
 // cheap (no I/O — multer() just wires up config objects), so it's fine to call fresh on every
 // request instead of caching the instance: it means admin-edited upload limits/mime types take
-// effect immediately, with no server restart needed.
-const buildImageUpload = ( storageEngine : multer.StorageEngine) => {
+// effect immediately, with no server restart needed. `extraMimeTypes` widens the allowlist beyond
+// the admin-configured allowedImageTypes for callers with their own fixed exception (see
+// CHECKLIST_VIDEO_MIME_TYPES above) — empty by default, so every other caller's behavior is
+// unchanged.
+const buildImageUpload = ( storageEngine : multer.StorageEngine, extraMimeTypes: string[] = []) => {
     const settings = settingsService.getCached();
     return multer({
         storage : storageEngine,
@@ -123,7 +132,7 @@ const buildImageUpload = ( storageEngine : multer.StorageEngine) => {
         },
 
         fileFilter:(_req, file, cb) => {
-            if(!settings.allowedImageTypes.includes(file.mimetype)){
+            if(!settings.allowedImageTypes.includes(file.mimetype) && !extraMimeTypes.includes(file.mimetype)){
                 return cb(null, false)
             }
 
@@ -133,7 +142,7 @@ const buildImageUpload = ( storageEngine : multer.StorageEngine) => {
     })
 }
 
-export const taskImageUpload = (req : Request , res : Response , next : NextFunction) => 
+export const taskImageUpload = (req : Request , res : Response , next : NextFunction) =>
     buildImageUpload(storage).array("images" , settingsService.getCached().maxUploadFiles)(req,res,next)
 
 export const checklistImageUpload = (req : Request , res : Response , next : NextFunction) =>
@@ -143,10 +152,10 @@ export const ticketAttachmentUpload = (req : Request , res : Response , next : N
     buildImageUpload(ticketAttachmentStorage).array("images", settingsService.getCached().maxUploadFiles)(req,res,next)
 
 export const checklistInstanceImageUpload = (req : Request , res : Response , next : NextFunction) =>
-    buildImageUpload(checklistInstanceStorage).array("images", settingsService.getCached().maxUploadFiles)(req,res,next)
+    buildImageUpload(checklistInstanceStorage, CHECKLIST_VIDEO_MIME_TYPES).array("images", settingsService.getCached().maxUploadFiles)(req,res,next)
 
 export const checklistInstanceItemSubmissionImageUpload = (req : Request , res : Response , next : NextFunction) =>
-    buildImageUpload(checklistInstanceSubmissionStorage).array("images", settingsService.getCached().maxUploadFiles)(req,res,next)
+    buildImageUpload(checklistInstanceSubmissionStorage, CHECKLIST_VIDEO_MIME_TYPES).array("images", settingsService.getCached().maxUploadFiles)(req,res,next)
 
 // Task-level attachments accept documents/spreadsheets/video too, not just images — the
 // admin-editable `allowedImageTypes` setting (and buildImageUpload above) is scoped to the

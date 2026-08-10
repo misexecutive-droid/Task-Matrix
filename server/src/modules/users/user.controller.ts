@@ -55,14 +55,15 @@ export const userController = {
     }),
 
     listAssignable : asyncHandler(async (req : Request , res : Response) => {
-        // Query params come from the URL like /users/assignable?departmentId=abc123.
-        // We only accept it if it's actually a string (query params can sometimes be arrays or
-        // undefined), otherwise we treat it as "not provided".
+        // Query params come from the URL like /users/assignable?departmentId=abc123&storeId=xyz789.
+        // We only accept them if they're actually strings (query params can sometimes be arrays or
+        // undefined), otherwise we treat them as "not provided".
         const departmentId = typeof req.query.departmentId === 'string' ? req.query.departmentId : undefined;
+        const storeId = typeof req.query.storeId === 'string' ? req.query.storeId : undefined;
         // `req.user!` here is the full decoded token payload (id, role, departmentId, storeId, etc)
         // for whoever is logged in - the service needs this to figure out scoping rules (see
         // user.service.ts `listAssignable` for the department/store scoping logic for MANAGERs).
-        const users = await userService.listAssignable(req.user!, departmentId);
+        const users = await userService.listAssignable(req.user!, departmentId, storeId);
         res.json({ success : true, data : users})
     })
 }

@@ -11,18 +11,18 @@ export const checklistInstanceController = {
         res.json({ success: true, data: instances })
     }),
 
-    // GET /checklist-instances?definitionId=&departmentId=&status=  (ADMIN only)
+    // GET /checklist-instances?definitionId=&storeId=&status=  (ADMIN only)
     list: asyncHandler(async (req: Request, res: Response) => {
-        const { definitionId, departmentId, status } = req.query
+        const { definitionId, storeId, status } = req.query
         const instances = await checklistInstanceService.listAll({
             definitionId: definitionId as string | undefined,
-            departmentId: departmentId as string | undefined,
+            storeId: storeId as string | undefined,
             status: status as InstanceStatusFilter | undefined,
         })
         res.json({ success: true, data: instances })
     }),
 
-    // GET /checklist-instances/pending-verification (PC own-department / ADMIN all)
+    // GET /checklist-instances/pending-verification (PC own-store / ADMIN all)
     listPendingVerification: asyncHandler(async (req: Request, res: Response) => {
         const instances = await checklistInstanceService.listPendingVerification(req.user!)
         res.json({ success: true, data: instances })
@@ -34,8 +34,8 @@ export const checklistInstanceController = {
     }),
 
     setItemDone: asyncHandler(async (req: Request, res: Response) => {
-        const input = setChecklistInstanceItemDoneSchema.parse(req.body)
-        const item = await checklistInstanceService.setItemDone(req.params.id, input.isDone, req.user!)
+        const { isDone, ...values } = setChecklistInstanceItemDoneSchema.parse(req.body)
+        const item = await checklistInstanceService.setItemDone(req.params.id, isDone, req.user!, values)
         res.json({ success: true, data: item })
     }),
 
@@ -46,10 +46,10 @@ export const checklistInstanceController = {
         res.json({ success: true, data: instance })
     }),
 
-    // GET /checklist-instances/reports/compliance?groupBy=&departmentId=&from=&to= (ADMIN only)
+    // GET /checklist-instances/reports/compliance?groupBy=&storeId=&from=&to= (ADMIN only)
     complianceReport: asyncHandler(async (req: Request, res: Response) => {
         const query = checklistInstanceComplianceReportQuerySchema.parse(req.query)
-        const data = await checklistInstanceService.complianceReport(query.groupBy, query.departmentId, query.from, query.to)
+        const data = await checklistInstanceService.complianceReport(query.groupBy, query.storeId, query.from, query.to)
         res.json({ success: true, data })
     }),
 }

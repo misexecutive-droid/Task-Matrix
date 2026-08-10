@@ -16,7 +16,12 @@ const checklistInstanceSchema = new Schema(
         definitionId: { type: Schema.Types.ObjectId, ref: "ChecklistDefinition", required: true, index: true },
         title: { type: String, required: true },
         recurrence: { type: String, enum: CHECKLIST_RECURRENCES, required: true },
-        departmentId: { type: Schema.Types.ObjectId, ref: "Department", required: true, index: true },
+        // One instance is scoped to exactly one store — a definition live in N stores stamps out N
+        // independent instances per period, one per store (see checklistInstanceGenerator.job.ts).
+        storeId: { type: Schema.Types.ObjectId, ref: "Store", required: true, index: true },
+        // Copied from the definition at stamp-out time — see checklistInstanceGenerator.job.ts.
+        opensTime: { type: String, default: null },
+        cutoffTime: { type: String, default: null },
         assigneeIds: [{ type: Schema.Types.ObjectId, ref: "User" }],
         periodKey: { type: String, required: true, index: true },
         periodStart: { type: Date, required: true },
@@ -30,7 +35,7 @@ const checklistInstanceSchema = new Schema(
     { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } },
 )
 
-checklistInstanceSchema.index({ definitionId: 1, periodKey: 1 }, { unique: true })
+checklistInstanceSchema.index({ definitionId: 1, storeId: 1, periodKey: 1 }, { unique: true })
 checklistInstanceSchema.index({ assigneeIds : 1, periodStart : -1})
 checklistInstanceSchema.index({ periodStart : -1})
 

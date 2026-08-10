@@ -1,7 +1,3 @@
-// One-off diagnostic script (run like: `npx tsx src/scripts/checkUser.ts someone@example.com`).
-// Read-only — reports whether an account exists for the given email and whether it's active,
-// without ever printing the password hash. Used to distinguish "no such account" / "deactivated"
-// from "wrong password" when a login is failing with the generic "Invalid credentials" message.
 import 'dotenv/config'
 import { connectDB, disconnectDB } from '../config/db.js'
 import { User } from '../models/User.js'
