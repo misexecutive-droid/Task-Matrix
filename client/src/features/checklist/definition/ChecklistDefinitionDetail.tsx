@@ -1,7 +1,7 @@
-import { useParams, useNavigate } from 'react-router';
-import { ArrowLeft, AlertCircle, Repeat, Users, Calendar } from 'lucide-react';
+import { useParams, useNavigate, Link } from 'react-router';
+import { ArrowLeft, AlertCircle, Repeat, Users, Calendar, Pencil } from 'lucide-react';
 import { Skeleton } from '../../../components';
-import { useChecklistDefinitionQuery, useInstancesForDefinitionQuery, useDepartmentsQuery } from '../hook';
+import { useChecklistDefinitionQuery, useInstancesForDefinitionQuery, useStoresQuery } from '../hook';
 import { ChecklistInstanceRow } from '../instance/ChecklistInstanceRow';
 import { formatDate, instanceProgressStatus, INSTANCE_STATUS_LABEL, type InstanceProgressStatus } from '../checklistDisplay';
 import type { ChecklistInstance } from '../../../api/checklistInstances';
@@ -22,10 +22,10 @@ export const ChecklistDefinitionDetail = () => {
   const navigate = useNavigate();
   const { data: definition, isPending, isError } = useChecklistDefinitionQuery(definitionId);
   const { data: instances = [] } = useInstancesForDefinitionQuery(definitionId);
-  const { data: departments = [] } = useDepartmentsQuery();
+  const { data: stores = [] } = useStoresQuery();
 
-  const departmentName = definition
-    ? departments.find(d => d.id === definition.departmentId)?.name ?? 'Unknown department'
+  const storeNames = definition
+    ? definition.storeIds.map(id => stores.find(s => s.id === id)?.name ?? 'Unknown store').join(', ')
     : '';
 
   if (isPending) {
@@ -49,12 +49,20 @@ export const ChecklistDefinitionDetail = () => {
 
   return (
     <div className="flex flex-col gap-6 max-w-3xl">
-      <button
-        onClick={() => navigate('/admin/scheduled-checklists')}
-        className="flex items-center gap-1.5 text-xs font-mono text-text-muted hover:text-text transition-colors cursor-pointer w-fit"
-      >
-        <ArrowLeft size={13} /> Back to Recurring Checklists
-      </button>
+      <div className="flex items-center justify-between gap-3">
+        <button
+          onClick={() => navigate('/admin/scheduled-checklists')}
+          className="flex items-center gap-1.5 text-xs font-mono text-text-muted hover:text-text transition-colors cursor-pointer w-fit"
+        >
+          <ArrowLeft size={13} /> Back to Templates
+        </button>
+        <Link
+          to={`/admin/scheduled-checklists/builder/${definition.id}`}
+          className="flex items-center gap-1.5 text-xs font-display font-semibold px-3 py-1.5 rounded-full border border-primary-500/40 text-primary-700 hover:bg-primary-50 transition-colors"
+        >
+          <Pencil size={12} /> Edit in Builder
+        </Link>
+      </div>
 
       <div className="flex flex-col gap-3 p-5 rounded-xl border border-border bg-surface">
         <div className="flex items-center gap-3">
@@ -75,9 +83,10 @@ export const ChecklistDefinitionDetail = () => {
         </div>
 
         <div className="flex items-center gap-4 flex-wrap text-xs font-mono text-text-muted pt-3 border-t border-border/50">
-          <span>{departmentName}</span>
+          <span>{storeNames}</span>
           <span className="flex items-center gap-1"><Users size={12} /> {definition.assigneeIds.length} assigned</span>
           <span className="flex items-center gap-1"><Calendar size={12} /> Starts {formatDate(definition.startDate)}</span>
+          <span className="font-semibold text-text-secondary">v{definition.version}</span>
         </div>
       </div>
 

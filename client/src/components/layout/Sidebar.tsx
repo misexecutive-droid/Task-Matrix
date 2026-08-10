@@ -1,4 +1,5 @@
-import { NavLink } from 'react-router';
+import { useState } from 'react';
+import { NavLink, useLocation } from 'react-router';
 import {
   LayoutDashboard,
   CheckSquare,
@@ -11,14 +12,37 @@ import {
   ClipboardCheck,
   ShieldQuestion,
   CalendarClock,
+  ChevronDown,
 } from 'lucide-react';
 
-const NAV = [
+interface NavChild {
+  to: string;
+  label: string;
+}
+
+interface NavItem {
+  to: string;
+  icon: typeof LayoutDashboard;
+  label: string;
+  children?: NavChild[];
+}
+
+const CHECKLIST_CHILDREN: NavChild[] = [
+  { to: '/checklists', label: "Today's runs" },
+];
+
+const CHECKLIST_ADMIN_CHILDREN: NavChild[] = [
+  { to: '/admin/checklist-templates', label: 'Task Templates' },
+  { to: '/admin/scheduled-checklists', label: 'Templates' },
+  { to: '/admin/scheduled-checklists/builder', label: 'Builder' },
+];
+
+const NAV: NavItem[] = [
   { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
   { to: '/tasks', icon: CheckSquare, label: 'Tasks' },
   { to: '/tickets', icon: TicketCheck, label: 'Tickets' },
   { to: '/events', icon: CalendarClock, label: 'Events' },
-  { to: '/checklists', icon: ClipboardCheck, label: 'My Checklists' },
+  { to: '/checklists', icon: ClipboardCheck, label: 'Checklists', children: CHECKLIST_CHILDREN },
   { to: '/projects', icon: FolderKanban, label: 'Projects' },
   { to: '/calendar', icon: Calendar, label: 'Calendar' },
   { to: '/settings', icon: Settings, label: 'Settings' },
@@ -28,11 +52,25 @@ interface SidebarProps {
   isOpen: boolean;
   user: { name: string; email: string; role?: string } | null;
   logout: () => void;
-  /** Called on backdrop click / nav-link click so mobile callers can close the drawer. */
   onNavigate?: () => void;
 }
 
 export const Sidebar = ({ isOpen, user, logout, onNavigate }: SidebarProps) => {
+  const location = useLocation();
+  const isAdmin = user?.role === 'ADMIN';
+  const [expandedKeys, setExpandedKeys] = useState<Set<string>>(
+    () => new Set(NAV.filter((item) => item.children?.length).map((item) => item.to)),
+  );
+
+  const toggleExpanded = (key: string) => {
+    setExpandedKeys((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  };
+
   const initials = (user?.name ?? 'U')
     .split(' ')
     .map((w) => w[0])
@@ -40,12 +78,16 @@ export const Sidebar = ({ isOpen, user, logout, onNavigate }: SidebarProps) => {
     .join('')
     .toUpperCase();
 
-  const navItems = [
-    ...NAV,
+  const navItems: NavItem[] = [
+    ...NAV.map((item) =>
+      item.label === 'Checklists' && isAdmin
+        ? { ...item, children: [...CHECKLIST_CHILDREN, ...CHECKLIST_ADMIN_CHILDREN] }
+        : item,
+    ),
     ...(user?.role === 'PC' || user?.role === 'ADMIN'
       ? [{ to: '/verify', icon: ShieldQuestion, label: 'Verification Queue' }]
       : []),
-    ...(user?.role === 'ADMIN' ? [{ to: '/admin/users', icon: ShieldCheck, label: 'Admin' }] : []),
+    ...(isAdmin ? [{ to: '/admin/users', icon: ShieldCheck, label: 'Admin' }] : []),
   ];
 
   const handleNavClick = () => {
@@ -54,7 +96,6 @@ export const Sidebar = ({ isOpen, user, logout, onNavigate }: SidebarProps) => {
 
   return (
     <>
-      {/* Mobile backdrop */}
       {isOpen && (
         <div
           className="md:hidden fixed inset-0 z-30 bg-black/40 backdrop-blur-xs transition-opacity duration-200"
@@ -63,111 +104,139 @@ export const Sidebar = ({ isOpen, user, logout, onNavigate }: SidebarProps) => {
         />
       )}
 
-      {/*
-        On desktop the aside's own width changes (68px rail <-> 240px expanded, via
-        md:hover:w-60, or pinned open via isOpen) — since it's a normal in-flow flex item next
-        to <main>, the flex row naturally reflows main's width along with it. No absolute
-        positioning/overlay: the page moves with the sidebar, as requested.
-      */}
       <aside
         className={[
-          'group flex flex-col shrink-0 border-r border-border/60 transition-[width,padding,transform] duration-300 ease-in-out overflow-hidden',
+          'flex flex-col shrink-0 border-r border-border/60 transition-[width,padding,transform] duration-300 ease-in-out overflow-hidden',
           'fixed top-14 bottom-0 left-0 z-40 w-72 px-3 py-5',
           'md:static md:top-auto md:z-auto md:h-full md:translate-x-0 md:py-5',
           isOpen ? 'translate-x-0' : '-translate-x-full',
-          isOpen ? 'md:w-60 md:px-3' : 'md:w-[68px] md:px-2.5 md:hover:w-60 md:hover:px-3',
+          isOpen ? 'md:w-60 md:px-3' : 'md:w-[68px] md:px-2.5',
         ].join(' ')}
-        style={{ background: 'var(--glass-bg)', backdropFilter: 'var(--glass-blur)' }}
+        style={{ background: 'var(--color-surface)' }}
       >
-        {/* Section Label — max-height/opacity fade instead of a hidden/block snap, so it eases
-            in and out in sync with the rail's own width transition rather than popping. */}
         <p
           className={[
-            'text-[11px] font-display font-semibold text-text-light uppercase tracking-wider px-3',
+            'text-[11px] font-bold text-text-light uppercase tracking-wider px-3',
             'overflow-hidden whitespace-nowrap transition-[max-height,opacity,margin] duration-300 ease-in-out',
-            isOpen ? 'max-h-5 opacity-100 mb-2' : 'md:max-h-0 md:opacity-0 md:mb-0 md:group-hover:max-h-5 md:group-hover:opacity-100 md:group-hover:mb-2',
+            isOpen ? 'max-h-5 opacity-100 mb-2' : 'max-h-0 opacity-0 mb-0',
           ].join(' ')}
         >
           Menu
         </p>
 
-        {/* Navigation Links — no gap on the row: spacing between icon and label comes from the
-            label's own margin, which collapses to 0 together with its width, so the icon is the
-            only thing left in the row and justify-center truly centers it (a flex `gap` reserves
-            space between items even at max-w-0, which was pushing the icon off-center before). */}
         <nav className="flex flex-col gap-0.5 flex-1">
-          {navItems.map(({ to, icon: Icon, label }) => (
-            <NavLink
-              key={to}
-              to={to}
-              end={to === '/'}
-              title={!isOpen ? label : undefined}
-              onClick={handleNavClick}
-              className={({ isActive }) =>
-                [
-                  'group/link flex items-center rounded-lg text-xs font-display font-medium transition-[background-color,color,justify-content,padding] duration-200',
-                  'px-3 py-2.5',
-                  isOpen ? 'md:px-3' : 'md:justify-center md:px-0 md:group-hover:justify-start md:group-hover:px-3',
-                  isActive
-                    ? 'bg-primary-500/10 text-primary-600 dark:text-primary-300'
-                    : 'text-text-secondary hover:bg-surface-hover/70 hover:text-text',
-                ].join(' ')
-              }
-            >
-              {({ isActive }) => (
-                <>
-                  <Icon
-                    size={17}
-                    strokeWidth={1.75}
-                    className={[
-                      'shrink-0 transition-transform group-hover/link:scale-105',
-                      isActive ? 'text-primary-500' : 'text-text-muted group-hover/link:text-text-secondary',
-                    ].join(' ')}
-                  />
-                  {/* max-width/opacity/margin fade instead of a hidden/inline snap, so the label
-                      eases in and out alongside the rail's width transition rather than popping. */}
-                  <span
-                    className={[
-                      'truncate leading-none transition-[max-width,opacity,margin] duration-300 ease-in-out',
-                      isOpen ? 'max-w-[10rem] opacity-100 ml-3' : 'md:max-w-0 md:opacity-0 md:ml-0 md:group-hover:max-w-[10rem] md:group-hover:opacity-100 md:group-hover:ml-3',
-                    ].join(' ')}
+          {navItems.map(({ to, icon: Icon, label, children }) => {
+            const hasActiveChild = children?.some((child) => location.pathname.startsWith(child.to)) ?? false;
+            const hasChildren = !!children?.length;
+            const isExpanded = expandedKeys.has(to);
+
+            return (
+              <div key={to}>
+                <div className="flex items-center gap-1">
+                  <NavLink
+                    to={to}
+                    end={to === '/'}
+                    title={!isOpen ? label : undefined}
+                    onClick={handleNavClick}
+                    className={({ isActive }) =>
+                      [
+                        'group/link flex flex-1 min-w-0 items-center rounded-lg text-[13px] font-semibold transition-[background-color,color,justify-content,padding] duration-200',
+                        'px-3 py-2.5',
+                        isOpen ? 'md:px-3' : 'md:justify-center md:px-0',
+                        isActive || hasActiveChild
+                          ? 'bg-primary-50 text-primary-700'
+                          : 'text-text-secondary font-medium hover:bg-surface-hover hover:text-text',
+                      ].join(' ')
+                    }
                   >
-                    {label}
-                  </span>
-                </>
-              )}
-            </NavLink>
-          ))}
+                    {({ isActive }) => (
+                      <>
+                        <Icon
+                          size={17}
+                          strokeWidth={1.75}
+                          className={[
+                            'shrink-0 transition-transform group-hover/link:scale-105',
+                            isActive || hasActiveChild ? 'text-primary-700' : 'text-text-muted group-hover/link:text-text-secondary',
+                          ].join(' ')}
+                        />
+                        <span
+                          className={[
+                            'truncate leading-none transition-[max-width,opacity,margin] duration-300 ease-in-out',
+                            isOpen ? 'max-w-[10rem] opacity-100 ml-3' : 'max-w-0 opacity-0 ml-0',
+                          ].join(' ')}
+                        >
+                          {label}
+                        </span>
+                      </>
+                    )}
+                  </NavLink>
+
+                  {hasChildren && isOpen && (
+                    <button
+                      type="button"
+                      onClick={() => toggleExpanded(to)}
+                      aria-label={isExpanded ? `Collapse ${label}` : `Expand ${label}`}
+                      aria-expanded={isExpanded}
+                      className="shrink-0 p-1.5 rounded-md text-text-light hover:text-text hover:bg-surface-hover transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50"
+                    >
+                      <ChevronDown
+                        size={14}
+                        strokeWidth={2.5}
+                        className={`transition-transform duration-200 ${isExpanded ? 'rotate-180' : 'rotate-0'}`}
+                      />
+                    </button>
+                  )}
+                </div>
+
+                {hasChildren && isOpen && isExpanded && (
+                  <div className="flex flex-col gap-0.5 mt-0.5 mb-1 ml-[1.55rem] pl-3 border-l border-border">
+                    {children!.map((child) => (
+                      <NavLink
+                        key={child.to}
+                        to={child.to}
+                        onClick={handleNavClick}
+                        className={({ isActive }) =>
+                          [
+                            'rounded-lg px-2.5 py-1.5 text-[12.5px] transition-colors duration-200',
+                            isActive
+                              ? 'bg-primary-50 text-primary-700 font-semibold'
+                              : 'text-text-secondary font-medium hover:bg-surface-hover hover:text-text',
+                          ].join(' ')
+                        }
+                      >
+                        {child.label}
+                      </NavLink>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </nav>
 
-        {/* Divider */}
-        <div className="border-t border-border/50 my-3" />
+        <div className="border-t border-border my-3" />
 
-        {/* User Footer Profile — same no-gap/margin-instead technique as the nav links above,
-            so the avatar centers cleanly when the trailing name/email/logout group collapses. */}
         <div
           className={[
-            'flex items-center p-1.5 rounded-xl bg-surface-hover/30 border border-border/40 transition-[justify-content] duration-200',
-            isOpen ? '' : 'md:justify-center md:group-hover:justify-start',
+            'flex items-center p-1.5 rounded-xl bg-surface-hover border border-border transition-[justify-content] duration-200',
+            isOpen ? '' : 'md:justify-center',
           ].join(' ')}
         >
-          {/* Avatar */}
           <div
-            className="size-8 rounded-full bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center text-white text-xs font-display font-bold shrink-0 shadow-xs"
+            className="size-8 rounded-full bg-primary-700 flex items-center justify-center text-white text-xs font-bold shrink-0"
             title={user?.name}
           >
             {initials}
           </div>
 
-          {/* User Details + Logout */}
           <div
             className={[
               'flex items-center gap-2 min-w-0 overflow-hidden transition-[max-width,opacity,margin] duration-300 ease-in-out',
-              isOpen ? 'max-w-[10rem] opacity-100 ml-3' : 'md:max-w-0 md:opacity-0 md:ml-0 md:group-hover:max-w-[10rem] md:group-hover:opacity-100 md:group-hover:ml-3',
+              isOpen ? 'max-w-[10rem] opacity-100 ml-3' : 'max-w-0 opacity-0 ml-0',
             ].join(' ')}
           >
             <div className="flex-1 min-w-0">
-              <p className="text-xs font-display font-semibold text-text truncate leading-tight">
+              <p className="text-xs font-semibold text-text truncate leading-tight">
                 {user?.name}
               </p>
               <p className="text-[11px] text-text-muted truncate leading-tight">{user?.email}</p>

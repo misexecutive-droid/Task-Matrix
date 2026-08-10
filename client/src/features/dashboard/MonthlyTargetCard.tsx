@@ -1,5 +1,5 @@
+import { useMemo } from 'react';
 import { MoreHorizontal, ArrowDown, ArrowUp, Target } from 'lucide-react';
-import { RadialBarChart, RadialBar, PolarAngleAxis, ResponsiveContainer } from 'recharts';
 import type { Trend } from './dashboardDisplay';
 
 interface FooterStat {
@@ -15,13 +15,25 @@ interface MonthlyTargetCardProps {
   stats: [FooterStat, FooterStat, FooterStat];
 }
 
-const GAUGE_DATA = (percent: number) => [{ value: percent, fill: 'var(--color-primary-500)' }];
-
 export const MonthlyTargetCard = ({ percent, change, description, stats }: MonthlyTargetCardProps) => {
   const ChangeIcon = change.direction === 'up' ? ArrowUp : ArrowDown;
   const changeClassName = change.direction === 'up' 
     ? 'bg-success/15 text-success border-success/20' 
     : 'bg-danger/15 text-danger border-danger/20';
+
+  // Calculate SVG arc properties for a 240-degree gauge (leaving a 120-degree gap at the bottom)
+  const { trackLength, fillLength, circumference } = useMemo(() => {
+    const radius = 40;
+    const circ = 2 * Math.PI * radius;
+    const track = (240 / 360) * circ;
+    const fill = (Math.min(Math.max(percent, 0), 100) / 100) * track;
+    
+    return {
+      circumference: circ,
+      trackLength: track,
+      fillLength: fill
+    };
+  }, [percent]);
 
   return (
     <div className="relative group rounded-2xl border border-border/60 bg-surface p-6 flex flex-col gap-1 shadow-sm hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300 overflow-hidden">
@@ -49,25 +61,37 @@ export const MonthlyTargetCard = ({ percent, change, description, stats }: Month
         </button>
       </div>
 
-      {/* Chart Section */}
-      <div className="relative h-[220px] mt-4 z-10">
-        <ResponsiveContainer width="100%" height="100%">
-          <RadialBarChart
-            innerRadius="75%"
-            outerRadius="100%"
-            barSize={16}
-            data={GAUGE_DATA(percent)}
-            startAngle={210}
-            endAngle={-30}
-          >
-            <PolarAngleAxis type="number" domain={[0, 100]} tick={false} />
-            <RadialBar 
-              background={{ fill: 'var(--color-surface-hover)' }} 
-              dataKey="value" 
-              cornerRadius={12} 
+      {/* Raw SVG Gauge Chart */}
+      <div className="relative h-[220px] mt-4 z-10 flex items-center justify-center">
+        <svg viewBox="0 0 100 100" className="w-full h-full overflow-visible drop-shadow-sm">
+          {/* Background Track */}
+          <circle
+            cx="50"
+            cy="50"
+            r="40"
+            fill="none"
+            stroke="var(--color-surface-hover, #f1f5f9)"
+            strokeWidth="8"
+            strokeLinecap="round"
+            strokeDasharray={`${trackLength} ${circumference}`}
+            transform="rotate(150 50 50)"
+          />
+          {/* Foreground Progress Arc */}
+          {percent > 0 && (
+            <circle
+              cx="50"
+              cy="50"
+              r="40"
+              fill="none"
+              stroke="var(--color-primary-500, #3b82f6)"
+              strokeWidth="8"
+              strokeLinecap="round"
+              strokeDasharray={`${fillLength} ${circumference}`}
+              transform="rotate(150 50 50)"
+              className="transition-all duration-1000 ease-out"
             />
-          </RadialBarChart>
-        </ResponsiveContainer>
+          )}
+        </svg>
         
         {/* Central Chart Info */}
         <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 pt-6">

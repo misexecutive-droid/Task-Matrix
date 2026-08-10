@@ -1,9 +1,21 @@
+import type { ReactElement } from 'react';
 import { useParams, useNavigate } from 'react-router';
 import { ArrowLeft, AlertCircle, ShieldCheck, ShieldAlert, ShieldQuestion } from 'lucide-react';
 import { Skeleton } from '../../../components';
 import { useChecklistInstanceQuery } from '../hook';
 import { ChecklistInstanceItemCard } from './ChecklistInstanceItemCard';
 import { ChecklistInstanceItemAuditCard } from './ChecklistInstanceItemAuditCard';
+import { ChecklistInstanceItemNumberEntryCard } from './ChecklistInstanceItemNumberEntryCard';
+import { ChecklistInstanceItemRatingCard } from './ChecklistInstanceItemRatingCard';
+import { ChecklistInstanceItemBooleanCard } from './ChecklistInstanceItemBooleanCard';
+import { ChecklistInstanceItemChoiceCard } from './ChecklistInstanceItemChoiceCard';
+import { ChecklistInstanceItemTextCard } from './ChecklistInstanceItemTextCard';
+import { ChecklistInstanceItemDateTimeCard } from './ChecklistInstanceItemDateTimeCard';
+import { ChecklistInstanceItemGpsCard } from './ChecklistInstanceItemGpsCard';
+import { ChecklistInstanceItemSignatureCard } from './ChecklistInstanceItemSignatureCard';
+import { ChecklistInstanceItemDualSignatureCard } from './ChecklistInstanceItemDualSignatureCard';
+import { ChecklistInstanceItemQrScanCard } from './ChecklistInstanceItemQrScanCard';
+import { ChecklistInstanceItemCashTallyCard } from './ChecklistInstanceItemCashTallyCard';
 import { formatDate } from '../checklistDisplay';
 import { useAuth } from '../../../context/AuthContext';
 import type { ChecklistInstanceItem } from '../../../api/checklistInstances';
@@ -14,12 +26,56 @@ type ItemCardContext = { instanceId: string; canWork: boolean; isLocked: boolean
 // (ChecklistInstanceItemAuditCard, its own currentUserId-scoped interactivity), everything else
 // keeps the original single-state card. A lookup map of render closures, not an if/else, since
 // the two cards take different prop shapes and can't share one component reference directly.
-const ITEM_CARD_RENDERERS: Record<ChecklistInstanceItem['itemType'], (item: ChecklistInstanceItem, ctx: ItemCardContext) => JSX.Element> = {
+const ITEM_CARD_RENDERERS: Record<ChecklistInstanceItem['itemType'], (item: ChecklistInstanceItem, ctx: ItemCardContext) => ReactElement> = {
   STANDARD: (item, ctx) => (
     <ChecklistInstanceItemCard item={item} instanceId={ctx.instanceId} canWork={ctx.canWork} isLocked={ctx.isLocked} />
   ),
   AUDIT: (item, ctx) => (
     <ChecklistInstanceItemAuditCard item={item} instanceId={ctx.instanceId} currentUserId={ctx.currentUserId} isLocked={ctx.isLocked} />
+  ),
+  NUMBER_ENTRY: (item, ctx) => (
+    <ChecklistInstanceItemNumberEntryCard item={item} instanceId={ctx.instanceId} canWork={ctx.canWork} isLocked={ctx.isLocked} />
+  ),
+  RATING: (item, ctx) => (
+    <ChecklistInstanceItemRatingCard item={item} instanceId={ctx.instanceId} canWork={ctx.canWork} isLocked={ctx.isLocked} />
+  ),
+  YES_NO: (item, ctx) => (
+    <ChecklistInstanceItemBooleanCard item={item} instanceId={ctx.instanceId} canWork={ctx.canWork} isLocked={ctx.isLocked} />
+  ),
+  PASS_FAIL: (item, ctx) => (
+    <ChecklistInstanceItemBooleanCard item={item} instanceId={ctx.instanceId} canWork={ctx.canWork} isLocked={ctx.isLocked} />
+  ),
+  MULTIPLE_CHOICE: (item, ctx) => (
+    <ChecklistInstanceItemChoiceCard item={item} instanceId={ctx.instanceId} canWork={ctx.canWork} isLocked={ctx.isLocked} />
+  ),
+  DROPDOWN: (item, ctx) => (
+    <ChecklistInstanceItemChoiceCard item={item} instanceId={ctx.instanceId} canWork={ctx.canWork} isLocked={ctx.isLocked} />
+  ),
+  TEXT_BOX: (item, ctx) => (
+    <ChecklistInstanceItemTextCard item={item} instanceId={ctx.instanceId} canWork={ctx.canWork} isLocked={ctx.isLocked} />
+  ),
+  DATE_TIME: (item, ctx) => (
+    <ChecklistInstanceItemDateTimeCard item={item} instanceId={ctx.instanceId} canWork={ctx.canWork} isLocked={ctx.isLocked} />
+  ),
+  GPS: (item, ctx) => (
+    <ChecklistInstanceItemGpsCard item={item} instanceId={ctx.instanceId} canWork={ctx.canWork} isLocked={ctx.isLocked} />
+  ),
+  SIGNATURE: (item, ctx) => (
+    <ChecklistInstanceItemSignatureCard item={item} instanceId={ctx.instanceId} canWork={ctx.canWork} isLocked={ctx.isLocked} />
+  ),
+  DUAL_SIGNATURE: (item, ctx) => (
+    <ChecklistInstanceItemDualSignatureCard item={item} instanceId={ctx.instanceId} canWork={ctx.canWork} isLocked={ctx.isLocked} />
+  ),
+  QR_SCAN: (item, ctx) => (
+    <ChecklistInstanceItemQrScanCard item={item} instanceId={ctx.instanceId} canWork={ctx.canWork} isLocked={ctx.isLocked} />
+  ),
+  CASH_TALLY: (item, ctx) => (
+    <ChecklistInstanceItemCashTallyCard item={item} instanceId={ctx.instanceId} canWork={ctx.canWork} isLocked={ctx.isLocked} />
+  ),
+  // VIDEO_UPLOAD reuses the STANDARD photo-evidence card — same upload pipeline, the card itself
+  // renders a <video> instead of an <img> and swaps the accept/button copy based on itemType.
+  VIDEO_UPLOAD: (item, ctx) => (
+    <ChecklistInstanceItemCard item={item} instanceId={ctx.instanceId} canWork={ctx.canWork} isLocked={ctx.isLocked} />
   ),
 };
 

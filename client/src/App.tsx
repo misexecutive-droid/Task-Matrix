@@ -12,12 +12,13 @@ import { useNotificationSocket } from './features/notifications/useNotificationS
 import { AdminLayout } from './features/admin/AdminLayout';
 import { UserList } from './features/admin/users';
 import { DepartmentList } from './features/admin/department';
+import { StoreList } from './features/admin/store';
 import { ChecklistTemplateList } from './features/admin/checklistTemplate';
 import { TatReport } from './features/admin/report';
 import { AdminTaskList } from './features/admin/AdminTaskList';
 import { AdminAnalytics } from './features/admin/analytics';
 import { SettingsPage } from './features/admin/SettingsPage';
-import { ChecklistDefinitionList, ChecklistDefinitionDetail, MyChecklists, ChecklistInstanceDetail } from './features/checklist';
+import { ChecklistTemplatesGrid, ChecklistDefinitionDetail, ChecklistBuilder, MyChecklists, ChecklistInstanceDetail } from './features/checklist';
 import { VerificationQueue } from './features/verification';
 import { MyErrorBoundary, NotFoundPage } from './components/error';
 import { CategoryList, SettingsLayout } from './features/settings';
@@ -102,8 +103,11 @@ const router = createBrowserRouter([
               { path: '/admin', element: <TatReport /> },
               { path: '/admin/users', element: <UserList /> },
               { path: '/admin/departments', element: <DepartmentList /> },
+              { path: '/admin/stores', element: <StoreList /> },
               { path: '/admin/checklist-templates', element: <ChecklistTemplateList /> },
-              { path: '/admin/scheduled-checklists', element: <ChecklistDefinitionList /> },
+              { path: '/admin/scheduled-checklists', element: <ChecklistTemplatesGrid /> },
+              { path: '/admin/scheduled-checklists/builder', element: <ChecklistBuilder /> },
+              { path: '/admin/scheduled-checklists/builder/:definitionId', element: <ChecklistBuilder /> },
               { path: '/admin/scheduled-checklists/:definitionId', element: <ChecklistDefinitionDetail /> },
               { path: '/admin/tickets', element: <TicketList /> },
               { path: '/admin/tasks', element: <AdminTaskList /> },

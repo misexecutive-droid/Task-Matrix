@@ -14,6 +14,7 @@ import type {
 } from '../../api/ticket';
 import { userApi } from "../../api/users";
 import { departmentApi } from "../../api/departments";
+import { storeApi } from "../../api/stores";
 import { checklistTemplateApi } from "../../api/checklistTemplates";
 import { handleQueryRetry, useEntityMutation } from '../../lib/queryHelpers';
 
@@ -212,11 +213,11 @@ export const useApplyChecklistTemplateMutation = (ticketId: string) =>
     errorFallback: 'Failed to apply template',
   });
 
-export const useAssignableUsersQuery = (departmentId?: string) => {
+export const useAssignableUsersQuery = (departmentId?: string, storeId?: string) => {
   const { token } = useAuth();
   return useQuery({
-    queryKey: ['assignable-users', departmentId ?? 'all'],
-    queryFn: () => userApi.getAssignable(departmentId).then(r => r.data),
+    queryKey: ['assignable-users', departmentId ?? 'all', storeId ?? 'all'],
+    queryFn: () => userApi.getAssignable(departmentId, storeId).then(r => r.data),
     enabled: !!token,
     retry: handleQueryRetry,
   });
@@ -241,6 +242,16 @@ export const useDepartmentsQuery = () => {
   return useQuery({
     queryKey: DEPARTMENT_KEY.all,
     queryFn: () => departmentApi.getAll().then(r => r.data),
+    enabled: !!token,
+    retry: handleQueryRetry,
+  });
+};
+
+export const useStoresQuery = () => {
+  const { token } = useAuth();
+  return useQuery({
+    queryKey: ['stores'] as const,
+    queryFn: () => storeApi.getAll().then(r => r.data),
     enabled: !!token,
     retry: handleQueryRetry,
   });

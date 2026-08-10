@@ -1,0 +1,1 @@
+export { StoreMultiSelect } from './StoreMultiSelect';

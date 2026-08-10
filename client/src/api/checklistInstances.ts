@@ -1,5 +1,5 @@
 import { apiFetch } from './http';
-import type { ApiResponse, ChecklistRecurrence, ChecklistItemType } from './checklistDefinitions';
+import type { ApiResponse, ChecklistRecurrence, ChecklistItemType, ChecklistConditionalAction } from './checklistDefinitions';
 import type { CaptureMethod } from './ticket';
 
 export type ChecklistInstanceStatus = 'OPEN' | 'COMPLETED';
@@ -32,12 +32,12 @@ export type ChecklistInstanceItemSubmissionImage = {
 export type ChecklistInstanceItemSubmissionAccessory = { name: string; checked: boolean };
 
 // userId is always populated server-side (see checklistInstance.service.ts's populateInstance) so
-// the UI can show the auditor's name and department without a separate lookup.
+// the UI can show the auditor's name and store without a separate lookup.
 export type ChecklistInstanceItemSubmissionUser = {
-  id:           string;
-  firstName:    string;
-  lastName:     string | null;
-  departmentId: string | null;
+  id:        string;
+  firstName: string;
+  lastName:  string | null;
+  storeId:   string | null;
 };
 
 export type ChecklistInstanceItemSubmission = {
@@ -63,6 +63,31 @@ export type ChecklistInstanceItem = {
   requiresLivePhoto:  boolean;
   itemType:           ChecklistItemType;
   accessories:        string[];
+  numberEntryUnit:    string | null;
+  numberEntryMin:     number | null;
+  numberEntryMax:     number | null;
+  ratingScale:        number | null;
+  numericValue:       number | null;
+  options:            string[];
+  booleanAnswer:      'YES' | 'NO' | null;
+  textValue:          string | null;
+  dateValue:          string | null;
+  gpsTargetLat:       number | null;
+  gpsTargetLng:       number | null;
+  gpsRadiusMeters:    number | null;
+  gpsLat:             number | null;
+  gpsLng:             number | null;
+  gpsAccuracy:        number | null;
+  gpsCapturedAt:      string | null;
+  signatureLabels:    string[];
+  signatureValue:     string | null;
+  secondSignatureValue: string | null;
+  qrExpectedValue:    string | null;
+  cashExpectedAmount: number | null;
+  conditionalTrigger: 'YES' | 'NO' | null;
+  conditionalActions: ChecklistConditionalAction[];
+  conditionalReasonValue: string | null;
+  issueId:            string | null;
   instanceId:         string;
   images:             ChecklistInstanceImage[];
   submissions:        ChecklistInstanceItemSubmission[];
@@ -73,7 +98,9 @@ export type ChecklistInstance = {
   definitionId:     string;
   title:            string;
   recurrence:       ChecklistRecurrence;
-  departmentId:     string;
+  storeId:          string;
+  opensTime:        string | null;
+  cutoffTime:       string | null;
   assigneeIds:      string[];
   periodKey:        string;
   periodStart:      string;
@@ -123,10 +150,21 @@ export const checklistInstanceApi = {
   getPendingVerification: () =>
     apiFetch<ApiResponse<ChecklistInstance[]>>('/checklist-instances/pending-verification'),
 
-  setItemDone: (itemId: string, isDone: boolean) =>
+  setItemDone: (itemId: string, isDone: boolean, values?: {
+    numericValue?: number;
+    booleanAnswer?: 'YES' | 'NO';
+    textValue?: string;
+    dateValue?: string;
+    gpsLat?: number;
+    gpsLng?: number;
+    gpsAccuracy?: number;
+    signatureValue?: string;
+    secondSignatureValue?: string;
+    conditionalReasonValue?: string;
+  }) =>
     apiFetch<ApiResponse<ChecklistInstanceItem>>(`/checklist-instance-items/${itemId}`, {
       method: 'PATCH',
-      body: JSON.stringify({ isDone }),
+      body: JSON.stringify({ isDone, ...values }),
     }),
 
   verify: (id: string, payload: VerifyChecklistInstancePayload) =>
@@ -148,9 +186,9 @@ export const checklistInstanceApi = {
   deleteImage: (id: string) =>
     apiFetch<ApiResponse<{ deleted: boolean }>>(`/checklist-instance-images/${id}`, { method: 'DELETE' }),
 
-  getComplianceReport: (groupBy: ComplianceReportGroupBy = 'month', departmentId?: string, from?: string, to?: string) => {
+  getComplianceReport: (groupBy: ComplianceReportGroupBy = 'month', storeId?: string, from?: string, to?: string) => {
     const params = new URLSearchParams({ groupBy });
-    if (departmentId) params.set('departmentId', departmentId);
+    if (storeId) params.set('storeId', storeId);
     if (from) params.set('from', from);
     if (to) params.set('to', to);
     return apiFetch<ApiResponse<ComplianceReportRow[]>>(`/checklist-instances/reports/compliance?${params.toString()}`);

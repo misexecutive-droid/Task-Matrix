@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "../../context/AuthContext";
 import { adminApi, type CreateUserPayload, type UpdateUserPayload } from "../../api/admin";
 import { departmentApi, type CreateDepartmentPayload, type UpdateDepartmentPayload } from "../../api/departments";
+import { storeApi, type CreateStorePayload, type UpdateStorePayload } from "../../api/stores";
 import {
     checklistTemplateApi,
     type ChecklistTemplateTarget,
@@ -150,6 +151,48 @@ export const useDeleteDepartmentMutation = () => {
             toast.success('Department deleted');
         },
         onError: (err) => toast.error(errorMessage(err, 'Failed to delete department')),
+    })
+}
+
+
+const STORE_KEY = {
+    all: ["stores"] as const, // matches useStoresQuery's queryKey in features/tickets/hook.ts
+};
+
+export const useCreateStoreMutation = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: (payload: CreateStorePayload) => storeApi.create(payload).then(r => r.data),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: STORE_KEY.all });
+            toast.success('Store created');
+        },
+        onError: (err) => toast.error(errorMessage(err, 'Failed to create store')),
+    })
+}
+
+export const useUpdateStoreMutation = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: ({ id, payload }: { id: string; payload: UpdateStorePayload }) =>
+            storeApi.update(id, payload).then(r => r.data),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: STORE_KEY.all });
+            toast.success('Store updated');
+        },
+        onError: (err) => toast.error(errorMessage(err, 'Failed to update store')),
+    })
+}
+
+export const useDeleteStoreMutation = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: (id: string) => storeApi.delete(id),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: STORE_KEY.all });
+            toast.success('Store deleted');
+        },
+        onError: (err) => toast.error(errorMessage(err, 'Failed to delete store')),
     })
 }
 

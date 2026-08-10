@@ -4,6 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import {
   checklistDefinitionApi,
   type CreateChecklistDefinitionPayload,
+  type UpdateChecklistDefinitionPayload,
   type ListChecklistDefinitionsParams,
 } from '../../api/checklistDefinitions';
 import { checklistInstanceApi, type ChecklistInstanceStatus, type VerifyChecklistInstancePayload } from '../../api/checklistInstances';
@@ -58,6 +59,20 @@ export const useCreateChecklistDefinitionMutation = () => {
       toast.success('Checklist created');
     },
     onError: (err) => toast.error(errorMessage(err, 'Failed to create checklist')),
+  });
+};
+
+export const useUpdateChecklistDefinitionMutation = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, payload }: { id: string; payload: UpdateChecklistDefinitionPayload }) =>
+      checklistDefinitionApi.update(id, payload).then(r => r.data),
+    onSuccess: (updated) => {
+      queryClient.setQueryData(KEYS.definitionDetail(updated.id), updated);
+      queryClient.invalidateQueries({ queryKey: ['checklist-definitions'] });
+      toast.success('Checklist updated');
+    },
+    onError: (err) => toast.error(errorMessage(err, 'Failed to update checklist')),
   });
 };
 
@@ -121,8 +136,23 @@ export const useInstancesForDefinitionQuery = (definitionId: string) => {
 export const useSetChecklistInstanceItemDoneMutation = (instanceId: string) => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ itemId, isDone }: { itemId: string; isDone: boolean }) =>
-      checklistInstanceApi.setItemDone(itemId, isDone).then(r => r.data),
+    mutationFn: ({ itemId, isDone, numericValue, booleanAnswer, textValue, dateValue, gpsLat, gpsLng, gpsAccuracy, signatureValue, secondSignatureValue, conditionalReasonValue }: {
+      itemId: string;
+      isDone: boolean;
+      numericValue?: number;
+      booleanAnswer?: 'YES' | 'NO';
+      textValue?: string;
+      dateValue?: string;
+      gpsLat?: number;
+      gpsLng?: number;
+      gpsAccuracy?: number;
+      signatureValue?: string;
+      secondSignatureValue?: string;
+      conditionalReasonValue?: string;
+    }) =>
+      checklistInstanceApi.setItemDone(itemId, isDone, {
+        numericValue, booleanAnswer, textValue, dateValue, gpsLat, gpsLng, gpsAccuracy, signatureValue, secondSignatureValue, conditionalReasonValue,
+      }).then(r => r.data),
     onSuccess: () => {
       // No success toast here — keeps checkbox-toggling snappy, matching
       // useUpdateChecklistItemMutation in tickets/hook.ts.
@@ -219,7 +249,7 @@ export const useVerifyChecklistInstanceMutation = () =>
     errorFallback: 'Failed to verify checklist',
   });
 
-export { useDepartmentsQuery, useAssignableUsersQuery } from '../tickets/hook';
+export { useDepartmentsQuery, useStoresQuery, useAssignableUsersQuery } from '../tickets/hook';
 // Templates are a separate one-off feature (see ChecklistDefinition model comment), but the
 // definition form lets admins import a template's step labels as a starting point.
 export { useChecklistTemplatesQuery } from '../admin/hook';

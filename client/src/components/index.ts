@@ -12,6 +12,7 @@ export { Skeleton }        from './skeleton';
 export { Dropdown }        from './dropdown';
 export type { DropdownAction } from './dropdown';
 export { UserMultiSelect } from './userMultiSelect';
+export { StoreMultiSelect } from './storeMultiSelect';
 export { AccessoriesListEditor } from './accessoriesListEditor';
 export { DateRangePicker } from './dateRangePicker';
 export type { DateRangeValue } from './dateRangePicker';

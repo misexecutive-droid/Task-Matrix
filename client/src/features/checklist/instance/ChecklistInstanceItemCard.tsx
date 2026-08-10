@@ -1,4 +1,4 @@
-import { CheckSquare, Square, Camera, ImageUp, X, Loader2, RotateCcw } from 'lucide-react';
+import { CheckSquare, Square, Camera, ImageUp, Video, X, Loader2, RotateCcw } from 'lucide-react';
 import {
   useSetChecklistInstanceItemDoneMutation,
   useUploadChecklistInstanceImagesMutation,
@@ -17,10 +17,14 @@ interface ChecklistInstanceItemCardProps {
   isLocked:   boolean; // instance already APPROVED — frozen, no further changes
 }
 
+const isVideoFile = (image: { mimeType: string }) => image.mimeType.startsWith('video/');
+
 export const ChecklistInstanceItemCard = ({ item, instanceId, canWork, isLocked }: ChecklistInstanceItemCardProps) => {
   const setItemDone = useSetChecklistInstanceItemDoneMutation(instanceId);
   const uploadImages = useUploadChecklistInstanceImagesMutation(instanceId);
   const deleteImage = useDeleteChecklistInstanceImageMutation(instanceId);
+  const isVideoItem = item.itemType === 'VIDEO_UPLOAD';
+  const mediaWord = isVideoItem ? 'video' : 'photo';
 
   const images = item.images ?? [];
   const qualifying = item.requiresLivePhoto
@@ -65,13 +69,13 @@ export const ChecklistInstanceItemCard = ({ item, instanceId, canWork, isLocked 
 
   return (
     <div className={`flex flex-col gap-3 p-3 rounded-lg border border-border bg-surface ${isLocked ? 'opacity-75' : ''}`}>
-      {/* Photo requirement badge */}
+      {/* Evidence requirement badge */}
       <div className="flex items-center gap-1.5">
         <span className={`flex items-center justify-center size-4 rounded shrink-0 ${photosSatisfied ? 'bg-emerald-500' : 'bg-amber-500'}`}>
-          <Camera size={10} className="text-white" />
+          {isVideoItem ? <Video size={10} className="text-white" /> : <Camera size={10} className="text-white" />}
         </span>
         <span className="text-xs font-mono text-text-muted truncate">
-          {qualifying}/{item.requiredImageCount} photo{item.requiredImageCount !== 1 ? 's' : ''}
+          {qualifying}/{item.requiredImageCount} {mediaWord}{item.requiredImageCount !== 1 ? 's' : ''}
           {item.requiresLivePhoto ? ' (live only)' : ''}
           {item.maxImageCount != null ? ` · max ${item.maxImageCount}` : ''}
         </span>
@@ -105,16 +109,26 @@ export const ChecklistInstanceItemCard = ({ item, instanceId, canWork, isLocked 
         )}
       </div>
 
-      {/* Evidence photo strip */}
+      {/* Evidence media strip */}
       {images.length > 0 && (
         <div className="flex flex-wrap gap-2">
           {images.map(img => (
             <div key={img.id} className="relative group/img">
-              <img
-                src={`${UPLOADS_BASE}${img.url}`}
-                alt={img.originalFilename ?? 'evidence'}
-                className="size-16 object-cover rounded-md border border-border"
-              />
+              {isVideoFile(img) ? (
+                <video
+                  src={`${UPLOADS_BASE}${img.url}`}
+                  className="size-16 object-cover rounded-md border border-border bg-surface-hover"
+                  muted
+                  playsInline
+                  controls
+                />
+              ) : (
+                <img
+                  src={`${UPLOADS_BASE}${img.url}`}
+                  alt={img.originalFilename ?? 'evidence'}
+                  className="size-16 object-cover rounded-md border border-border"
+                />
+              )}
               <span className={`absolute -top-1 -left-1 text-[9px] font-mono px-1 rounded-full text-white ${
                 img.captureMethod === 'LIVE' ? 'bg-emerald-500' : 'bg-text-light'
               }`}>
@@ -149,11 +163,11 @@ export const ChecklistInstanceItemCard = ({ item, instanceId, canWork, isLocked 
 
           <div className="flex items-center gap-2 flex-wrap pt-0.5">
             <label className="flex items-center gap-1.5 text-xs font-mono font-medium px-2.5 py-1 rounded-md border border-primary-500/50 text-primary-600 hover:bg-primary-500/10 cursor-pointer transition-colors">
-              <Camera size={12} />
-              Take photo
+              {isVideoItem ? <Video size={12} /> : <Camera size={12} />}
+              {isVideoItem ? 'Record video' : 'Take photo'}
               <input
                 type="file"
-                accept="image/*"
+                accept={isVideoItem ? 'video/*' : 'image/*'}
                 capture="environment"
                 multiple
                 className="hidden"
@@ -162,10 +176,10 @@ export const ChecklistInstanceItemCard = ({ item, instanceId, canWork, isLocked 
             </label>
             <label className="flex items-center gap-1.5 text-xs font-mono font-medium px-2.5 py-1 rounded-md border border-border text-text-secondary hover:bg-surface-hover cursor-pointer transition-colors">
               <ImageUp size={12} />
-              Gallery
+              {isVideoItem ? 'Choose video' : 'Gallery'}
               <input
                 type="file"
-                accept="image/*"
+                accept={isVideoItem ? 'video/*' : 'image/*'}
                 multiple
                 className="hidden"
                 onChange={e => { handleFiles(e.target.files, 'GALLERY'); e.target.value = ''; }}

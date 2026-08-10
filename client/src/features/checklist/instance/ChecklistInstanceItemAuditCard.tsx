@@ -6,7 +6,7 @@ import {
   useUpdateChecklistInstanceItemSubmissionRemarksMutation,
   useUploadChecklistInstanceItemSubmissionImagesMutation,
   useDeleteChecklistInstanceItemSubmissionImageMutation,
-  useDepartmentsQuery,
+  useStoresQuery,
 } from '../hook';
 import type { ChecklistInstanceItem, ChecklistInstanceItemSubmission } from '../../../api/checklistInstances';
 import type { CaptureMethod } from '../../../api/ticket';
@@ -26,8 +26,8 @@ interface ChecklistInstanceItemAuditCardProps {
 // viewer's own submission is interactive; everyone else's (including ADMIN's view of others')
 // renders read-only.
 export const ChecklistInstanceItemAuditCard = ({ item, instanceId, currentUserId, isLocked }: ChecklistInstanceItemAuditCardProps) => {
-  const { data: departments } = useDepartmentsQuery();
-  const departmentName = (id: string | null) => (id ? departments?.find(d => d.id === id)?.name ?? '—' : '—');
+  const { data: stores } = useStoresQuery();
+  const storeName = (id: string | null) => (id ? stores?.find(s => s.id === id)?.name ?? '—' : '—');
 
   const submissions = item.submissions ?? [];
   const submittedCount = submissions.filter(s => s.isDone).length;
@@ -57,7 +57,7 @@ export const ChecklistInstanceItemAuditCard = ({ item, instanceId, currentUserId
             item={item}
             submission={submission}
             instanceId={instanceId}
-            departmentName={departmentName(submission.userId?.departmentId ?? null)}
+            storeName={storeName(submission.userId?.storeId ?? null)}
             interactive={!isLocked && !!currentUserId && submission.userId?.id === currentUserId}
           />
         ))}
@@ -67,14 +67,14 @@ export const ChecklistInstanceItemAuditCard = ({ item, instanceId, currentUserId
 };
 
 interface SubmissionRowProps {
-  item:           ChecklistInstanceItem;
-  submission:     ChecklistInstanceItemSubmission;
-  instanceId:     string;
-  departmentName: string;
-  interactive:    boolean;
+  item:        ChecklistInstanceItem;
+  submission:  ChecklistInstanceItemSubmission;
+  instanceId:  string;
+  storeName:   string;
+  interactive: boolean;
 }
 
-const SubmissionRow = ({ item, submission, instanceId, departmentName, interactive }: SubmissionRowProps) => {
+const SubmissionRow = ({ item, submission, instanceId, storeName, interactive }: SubmissionRowProps) => {
   const setDone = useSetChecklistInstanceItemSubmissionDoneMutation(instanceId);
   const updateAccessories = useUpdateChecklistInstanceItemSubmissionAccessoriesMutation(instanceId);
   const updateRemarks = useUpdateChecklistInstanceItemSubmissionRemarksMutation(instanceId);
@@ -115,7 +115,7 @@ const SubmissionRow = ({ item, submission, instanceId, departmentName, interacti
           </span>
           <div className="min-w-0">
             <p className="text-xs font-mono font-semibold text-text truncate">{userLabel}</p>
-            <p className="text-[10px] text-text-muted font-mono truncate">{departmentName}</p>
+            <p className="text-[10px] text-text-muted font-mono truncate">{storeName}</p>
           </div>
         </div>
         {submission.isDone && interactive && (
