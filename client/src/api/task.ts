@@ -117,6 +117,12 @@ export const taskApi = {
     createFromSmart: (payload: ConfirmSmartTaskPayload) =>
         apiFetch<Task>('/tasks/ai/create', { method: 'POST', body: JSON.stringify(payload) }),
 
+    transcribeVoiceNote: (audioBlob: Blob) => {
+        const formData = new FormData();
+        formData.append('audio', audioBlob, 'voice-note.webm');
+        return apiFetch<{ transcript: string }>('/tasks/ai/transcribe', { method: 'POST', body: formData });
+    },
+
     getOne: (id: string) => apiFetch<Task>(`/tasks/${id}`),
 
     create: (payload: CreateTaskPayload) =>

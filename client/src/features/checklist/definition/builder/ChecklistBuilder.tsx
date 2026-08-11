@@ -1,7 +1,9 @@
-import { useEffect, useRef, useState } from 'react';
+import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router';
-import { ArrowLeft, AlertCircle, Trash2, Loader2 } from 'lucide-react';
-import { Button, Skeleton } from '../../../../components';
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
+import { ArrowLeft, AlertCircle, Trash2, ListChecks, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Skeleton } from '../../../../components';
+import { Badge } from '@/components/ui/badge';
 import {
   useChecklistDefinitionQuery,
   useCreateChecklistDefinitionMutation,
@@ -11,9 +13,13 @@ import { ChecklistDetailsFields } from '../form/ChecklistDetailsFields';
 import { ImportFromTemplateField } from '../form/ImportFromTemplateField';
 import { useChecklistTemplatesQuery } from '../../hook';
 import { QuestionTypePalette } from './QuestionTypePalette';
+import { isItemDraftComplete } from './ItemTypeConfigFields';
 import { BuilderSchedulePanel } from './BuilderSchedulePanel';
 import { BuilderAssignPanel } from './BuilderAssignPanel';
 import { BuilderProofPanel } from './BuilderProofPanel';
+import { BuilderStepper } from './wizard/BuilderStepper';
+import { BuilderStepFrame } from './wizard/BuilderStepFrame';
+import { BuilderReviewStep } from './wizard/BuilderReviewStep';
 import { ChecklistDefinitionItemDraftRow, emptyItemDraft, type ItemDraft } from '../ChecklistDefinitionItemDraftRow';
 import type {
   ChecklistRecurrence, ChecklistAssigneeRole, ChecklistProofType,
@@ -78,10 +84,19 @@ const buildItemPayloads = (itemDrafts: ItemDraft[]): CreateChecklistDefinitionIt
       } : {}),
     }));
 
+const STEPS = [
+  { key: 'basics', label: 'Basics' },
+  { key: 'schedule', label: 'Schedule' },
+  { key: 'items', label: 'Items' },
+  { key: 'assign', label: 'Assign & Proof' },
+  { key: 'review', label: 'Review' },
+] as const;
+
 export const ChecklistBuilder = () => {
   const { definitionId } = useParams();
   const isEditing = !!definitionId;
   const navigate = useNavigate();
+  const shouldReduceMotion = useReducedMotion();
 
   const { data: existing, isPending: isLoadingExisting, isError: loadError } = useChecklistDefinitionQuery(definitionId ?? '');
   const { data: templates } = useChecklistTemplatesQuery();
@@ -99,14 +114,32 @@ export const ChecklistBuilder = () => {
   const [assigneeIds, setAssigneeIds] = useState<string[]>([]);
   const [assigneeRoles, setAssigneeRoles] = useState<ChecklistAssigneeRole[]>([]);
   const [proofRequired, setProofRequired] = useState<ChecklistProofType[]>([]);
-  const [itemDrafts, setItemDrafts] = useState<ItemDraft[]>([emptyItemDraft()]);
+  const [itemDrafts, setItemDrafts] = useState<ItemDraft[]>([]);
 
-  // Hydrate local state from the loaded definition exactly once — a later refetch (e.g. after
-  // save) shouldn't clobber whatever the admin is mid-typing.
-  const hydrated = useRef(false);
-  useEffect(() => {
-    if (!existing || hydrated.current) return;
-    hydrated.current = true;
+  // Edit mode lands on Review — the only entry point is "Edit in Builder" from an existing,
+  // presumably-valid checklist, so there's no reason to walk the admin through onboarding again.
+  const [step, setStep] = useState(() => (definitionId ? STEPS.length - 1 : 0));
+  const [maxStepReached, setMaxStepReached] = useState(step);
+  const [direction, setDirection] = useState<1 | -1>(1);
+
+  const goToStep = (index: number) => {
+    setDirection(index > step ? 1 : -1);
+    setStep(index);
+    setMaxStepReached(m => Math.max(m, index));
+  };
+
+  // Hydrate local state from the loaded definition exactly once per definition — a later refetch
+  // (e.g. after save, or a window-focus refetch) shouldn't clobber whatever the admin is
+  // mid-typing. Done during render, React's "adjusting state when a prop changes" pattern
+  // (react.dev/learn/you-might-not-need-an-effect#adjusting-some-state-when-a-prop-changes),
+  // rather than in an effect: an effect only runs after commit, which would leave a one-render
+  // gap between `existing` resolving and local state catching up — invisible on the old
+  // all-at-once layout, but a visible flash of "0 stores, 0 items" now that Review can be the
+  // first thing rendered in edit mode. Keyed by id (not a plain once-only flag) so it re-hydrates
+  // correctly if this instance ever gets reused for a different definitionId.
+  const [hydratedId, setHydratedId] = useState<string | undefined>(undefined);
+  if (existing && hydratedId !== existing.id) {
+    setHydratedId(existing.id);
     setName(existing.name);
     setDescription(existing.description ?? '');
     setStoreIds(existing.storeIds);
@@ -117,8 +150,8 @@ export const ChecklistBuilder = () => {
     setAssigneeIds(existing.assigneeIds);
     setAssigneeRoles(existing.assigneeRoles);
     setProofRequired(existing.proofRequired);
-    setItemDrafts(existing.items.length ? existing.items.map(toItemDraft) : [emptyItemDraft()]);
-  }, [existing]);
+    setItemDrafts(existing.items.map(toItemDraft));
+  }
 
   const primaryStoreId = storeIds[0] ?? '';
 
@@ -147,15 +180,13 @@ export const ChecklistBuilder = () => {
   };
 
   const items = buildItemPayloads(itemDrafts);
-  const canSubmit =
-    !!name.trim() &&
-    storeIds.length > 0 &&
-    !!startDate &&
-    assigneeIds.length > 0 &&
-    items.length > 0 &&
-    itemDrafts.every(d => !d.label.trim() || d.itemType !== 'AUDIT' || d.auditUserIds.length > 0) &&
-    itemDrafts.every(d => !d.label.trim() || (d.itemType !== 'MULTIPLE_CHOICE' && d.itemType !== 'DROPDOWN') || d.options.length >= 2) &&
-    itemDrafts.every(d => !d.label.trim() || d.itemType !== 'GPS' || !d.gpsRadiusMeters.trim() || (d.gpsTargetLat.trim() !== '' && d.gpsTargetLng.trim() !== ''));
+  const basicsValid = !!name.trim();
+  const scheduleValid = storeIds.length > 0 && !!startDate;
+  const itemsValid = items.length > 0 && itemDrafts.every(d => !d.label.trim() || isItemDraftComplete(d));
+  const assignValid = assigneeIds.length > 0;
+  const sectionValidity = [basicsValid, scheduleValid, itemsValid, assignValid] as const;
+  const canSubmit = sectionValidity.every(Boolean);
+  const isStepValid = (index: number) => (index < sectionValidity.length ? sectionValidity[index] : true);
 
   const handleSubmit = () => {
     if (!canSubmit) return;
@@ -188,7 +219,7 @@ export const ChecklistBuilder = () => {
     return (
       <div className="flex flex-col gap-4">
         <Skeleton className="h-8 w-64" />
-        <Skeleton className="h-64 w-full rounded-2xl" />
+        <Skeleton className="h-64 w-full rounded-xl" />
       </div>
     );
   }
@@ -202,107 +233,176 @@ export const ChecklistBuilder = () => {
     );
   }
 
+  const stepContent = [
+    <BuilderStepFrame key="basics" stepIndex={step} title="Basics" description="Give this checklist a name your team will recognize.">
+      <div className="max-w-2xl">
+        <ChecklistDetailsFields name={name} onNameChange={setName} description={description} onDescriptionChange={setDescription} />
+      </div>
+    </BuilderStepFrame>,
+
+    <BuilderStepFrame key="schedule" stepIndex={step} title="Schedule" description="Choose which stores run this checklist and how often.">
+      <div className="max-w-xl">
+        <BuilderSchedulePanel
+          storeIds={storeIds}
+          onStoreIdsChange={setStoreIds}
+          recurrence={recurrence}
+          onRecurrenceChange={setRecurrence}
+          startDate={startDate}
+          onStartDateChange={setStartDate}
+          opensTime={opensTime}
+          onOpensTimeChange={setOpensTime}
+          cutoffTime={cutoffTime}
+          onCutoffTimeChange={setCutoffTime}
+        />
+      </div>
+    </BuilderStepFrame>,
+
+    <BuilderStepFrame key="items" stepIndex={step} title="Checklist Items" description="Add the steps your team needs to complete, in order.">
+      <div className="flex flex-col gap-4">
+        <ImportFromTemplateField templates={templates} onImport={handleImportTemplate} />
+        <div className="grid grid-cols-1 lg:grid-cols-[20rem_1fr] gap-6 items-start">
+          <div className="rounded-xl border border-border bg-surface p-4 lg:sticky lg:top-6">
+            <QuestionTypePalette onAdd={addItem} storeId={primaryStoreId} />
+          </div>
+
+          <div className="flex flex-col gap-4">
+            <label className="flex items-center gap-2 text-xs font-display font-semibold text-text-secondary uppercase tracking-wider">
+              Checklist Items
+              <Badge variant="outline">{itemDrafts.length}</Badge>
+            </label>
+
+            {itemDrafts.length === 0 ? (
+              <div className="flex flex-col items-center justify-center gap-2 py-10 px-4 rounded-xl border border-dashed border-border text-center">
+                <span className="flex items-center justify-center size-10 rounded-full bg-surface-hover text-text-light">
+                  <ListChecks size={18} />
+                </span>
+                <p className="text-sm font-display font-semibold text-text">No items yet</p>
+                <p className="text-xs font-display text-text-muted max-w-56">
+                  Pick a question type from the panel on the left to add your first item.
+                </p>
+              </div>
+            ) : (
+              <div className="flex flex-col gap-2.5">
+                {itemDrafts.map((draft, i) => (
+                  <div key={i} className="flex items-start gap-2">
+                    <div className="flex-1 min-w-0">
+                      <ChecklistDefinitionItemDraftRow index={i} draft={draft} onChange={updateDraft} storeId={primaryStoreId} />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => removeItem(i)}
+                      className="shrink-0 p-2 mt-1 text-text-light hover:text-danger hover:bg-danger/10 rounded-md transition-colors duration-150 cursor-pointer"
+                      aria-label="Remove item"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </BuilderStepFrame>,
+
+    <BuilderStepFrame key="assign" stepIndex={step} title="Assign & Proof" description="Decide who's responsible and what evidence they must provide.">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <BuilderAssignPanel
+          storeId={primaryStoreId}
+          assigneeIds={assigneeIds}
+          onAssigneeIdsChange={setAssigneeIds}
+          assigneeRoles={assigneeRoles}
+          onAssigneeRolesChange={setAssigneeRoles}
+        />
+        <BuilderProofPanel selected={proofRequired} onChange={setProofRequired} />
+      </div>
+    </BuilderStepFrame>,
+
+    <BuilderStepFrame key="review" stepIndex={step} title="Review & Create" description="Double-check everything below, then create the checklist.">
+      <BuilderReviewStep
+        name={name}
+        description={description}
+        storeIds={storeIds}
+        recurrence={recurrence}
+        startDate={startDate}
+        opensTime={opensTime}
+        cutoffTime={cutoffTime}
+        itemDrafts={itemDrafts}
+        assigneeIds={assigneeIds}
+        assigneeRoles={assigneeRoles}
+        proofRequired={proofRequired}
+        sectionValidity={sectionValidity}
+        onEditSection={goToStep}
+        canSubmit={canSubmit}
+        isSubmitting={mutation.isPending}
+        isEditing={isEditing}
+        onSubmit={handleSubmit}
+        submitError={mutation.isError ? (mutation.error instanceof Error ? mutation.error.message : 'Failed to save checklist.') : undefined}
+      />
+    </BuilderStepFrame>,
+  ];
+
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex items-center justify-between gap-3 flex-wrap">
-        <div>
-          <button
-            onClick={() => navigate('/admin/scheduled-checklists')}
-            className="flex items-center gap-1.5 text-xs font-display font-medium text-text-muted hover:text-text transition-colors cursor-pointer w-fit mb-2"
-          >
-            <ArrowLeft size={13} /> Back to Templates
-          </button>
-          <h1 className="font-display text-2xl font-bold text-text">
-            {isEditing ? `Editing: ${existing?.name}` : 'New Checklist'}
-          </h1>
-          {isEditing && existing && (
-            <p className="text-sm text-text-muted mt-0.5">
-              Version {existing.version} · Live in {existing.storeIds.length} store{existing.storeIds.length !== 1 ? 's' : ''}
-            </p>
-          )}
-        </div>
-        <Button variant="primary" onClick={handleSubmit} disabled={!canSubmit || mutation.isPending} className="gap-1.5">
-          {mutation.isPending && <Loader2 size={14} className="animate-spin" />}
-          {isEditing ? 'Save changes' : 'Create checklist'}
-        </Button>
+      <div>
+        <button
+          onClick={() => navigate('/admin/scheduled-checklists')}
+          className="flex items-center gap-1.5 text-xs font-display font-medium text-text-muted hover:text-text transition-colors cursor-pointer w-fit mb-2"
+        >
+          <ArrowLeft size={13} /> Back to Templates
+        </button>
+        <h1 className="font-display text-2xl font-bold text-text">
+          {isEditing ? `Editing: ${existing?.name}` : 'New Checklist'}
+        </h1>
+        {isEditing && existing && (
+          <p className="text-sm text-text-muted mt-0.5">
+            Version {existing.version} · Live in {existing.storeIds.length} store{existing.storeIds.length !== 1 ? 's' : ''}
+          </p>
+        )}
       </div>
 
-      {mutation.isError && (
-        <div className="flex items-center gap-2 px-4 py-3 rounded-lg bg-danger/10 text-danger text-sm font-display">
-          <AlertCircle size={15} />
-          {mutation.error instanceof Error ? mutation.error.message : 'Failed to save checklist.'}
-        </div>
-      )}
+      <BuilderStepper
+        steps={STEPS}
+        current={step}
+        maxReached={maxStepReached}
+        allUnlocked={isEditing}
+        isStepValid={isStepValid}
+        onSelect={goToStep}
+      />
 
-      <div className="grid grid-cols-1 lg:grid-cols-[15rem_1fr_18rem] gap-6 items-start">
-        <div className="rounded-2xl border border-border bg-surface p-4">
-          <QuestionTypePalette onAdd={addItem} />
-        </div>
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={step}
+          initial={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, x: direction * 24 }}
+          animate={{ opacity: 1, x: 0 }}
+          exit={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, x: direction * -24 }}
+          transition={{ duration: shouldReduceMotion ? 0.05 : 0.2, ease: 'easeOut' }}
+        >
+          {stepContent[step]}
+        </motion.div>
+      </AnimatePresence>
 
-        <div className="flex flex-col gap-4 rounded-2xl border border-border bg-surface p-4">
-          <p className="text-xs font-display font-bold uppercase tracking-wider text-text-muted">Editing Template</p>
-          <ChecklistDetailsFields
-            name={name}
-            onNameChange={setName}
-            description={description}
-            onDescriptionChange={setDescription}
-          />
-          <ImportFromTemplateField templates={templates} onImport={handleImportTemplate} />
+      <div className="flex items-center justify-between pt-2">
+        {step > 0 ? (
+          <button
+            type="button"
+            onClick={() => goToStep(step - 1)}
+            className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-display font-semibold text-text-secondary border border-border bg-surface hover:bg-surface-hover transition-colors duration-150 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40"
+          >
+            <ChevronLeft size={15} /> Back
+          </button>
+        ) : <span />}
 
-          <div className="flex items-center justify-between">
-            <label className="text-xs font-display font-semibold text-text-secondary uppercase tracking-wider">
-              Checklist Items
-              <span className="ml-2 inline-flex items-center justify-center size-5 rounded-full bg-surface-hover border border-border/50 text-[10px] text-text-muted">
-                {itemDrafts.length}
-              </span>
-            </label>
-          </div>
-
-          <div className="flex flex-col gap-2.5">
-            {itemDrafts.map((draft, i) => (
-              <div key={i} className="flex items-start gap-2">
-                <div className="flex-1 min-w-0">
-                  <ChecklistDefinitionItemDraftRow index={i} draft={draft} onChange={updateDraft} storeId={primaryStoreId} />
-                </div>
-                <button
-                  type="button"
-                  onClick={() => removeItem(i)}
-                  disabled={itemDrafts.length === 1}
-                  className="shrink-0 p-2 mt-1 text-text-light hover:text-danger hover:bg-danger/10 rounded-md transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
-                  aria-label="Remove item"
-                >
-                  <Trash2 size={14} />
-                </button>
-              </div>
-            ))}
-          </div>
-          <p className="text-xs font-display text-text-muted">
-            Add more items from the Question Types panel on the left.
-          </p>
-        </div>
-
-        <div className="flex flex-col gap-6">
-          <BuilderSchedulePanel
-            storeIds={storeIds}
-            onStoreIdsChange={setStoreIds}
-            recurrence={recurrence}
-            onRecurrenceChange={setRecurrence}
-            startDate={startDate}
-            onStartDateChange={setStartDate}
-            opensTime={opensTime}
-            onOpensTimeChange={setOpensTime}
-            cutoffTime={cutoffTime}
-            onCutoffTimeChange={setCutoffTime}
-          />
-          <BuilderAssignPanel
-            storeId={primaryStoreId}
-            assigneeIds={assigneeIds}
-            onAssigneeIdsChange={setAssigneeIds}
-            assigneeRoles={assigneeRoles}
-            onAssigneeRolesChange={setAssigneeRoles}
-          />
-          <BuilderProofPanel selected={proofRequired} onChange={setProofRequired} />
-        </div>
+        {step < STEPS.length - 1 && (
+          <button
+            type="button"
+            onClick={() => goToStep(step + 1)}
+            disabled={!sectionValidity[step]}
+            className="flex items-center gap-1.5 px-5 py-2 rounded-lg text-sm font-display font-semibold text-white bg-primary-700 shadow-sm transition-all duration-150 hover:bg-primary-800 hover:shadow-md active:scale-[0.98] cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:shadow-sm disabled:active:scale-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40"
+          >
+            Next <ChevronRight size={15} />
+          </button>
+        )}
       </div>
     </div>
   );

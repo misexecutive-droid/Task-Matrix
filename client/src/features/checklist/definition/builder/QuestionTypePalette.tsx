@@ -1,59 +1,107 @@
+import { useState } from 'react';
 import {
   CheckCircle2, ShieldCheck, List, ChevronDownSquare, AlignLeft, Hash, Calendar, Star,
   Camera, Video, PenLine, Users2, ScanLine, MapPin, Wallet, ClipboardCheck, SquareCheck,
   Plus, type LucideIcon,
 } from 'lucide-react';
+import { AddQuestionModal } from './AddQuestionModal';
 import type { ItemDraft } from '../ChecklistDefinitionItemDraftRow';
 
-interface PaletteEntry {
+export interface PaletteEntry {
   label: string;
   icon: LucideIcon;
   patch: Partial<ItemDraft>;
 }
 
-// Static catalog of every question type the Builder can add — mirrors the reference design's
-// "Question Types" panel, with a few extra Task-Matrix-native types (Cash tally, Audit, Dual
-// signature, plain checkbox) appended after the ones shown in the reference.
-const PALETTE: PaletteEntry[] = [
-  { label: 'Yes / No', icon: CheckCircle2, patch: { itemType: 'YES_NO' } },
-  { label: 'Pass / Fail', icon: ShieldCheck, patch: { itemType: 'PASS_FAIL' } },
-  { label: 'Multiple choice', icon: List, patch: { itemType: 'MULTIPLE_CHOICE' } },
-  { label: 'Dropdown', icon: ChevronDownSquare, patch: { itemType: 'DROPDOWN' } },
-  { label: 'Text box', icon: AlignLeft, patch: { itemType: 'TEXT_BOX' } },
-  { label: 'Number entry', icon: Hash, patch: { itemType: 'NUMBER_ENTRY' } },
-  { label: 'Date & time', icon: Calendar, patch: { itemType: 'DATE_TIME' } },
-  { label: 'Rating 1-5', icon: Star, patch: { itemType: 'RATING', ratingScale: '5' } },
-  { label: 'Photo upload', icon: Camera, patch: { itemType: 'STANDARD', requiredImageCount: '1' } },
-  { label: 'Video upload', icon: Video, patch: { itemType: 'VIDEO_UPLOAD', requiredImageCount: '1' } },
-  { label: 'Signature', icon: PenLine, patch: { itemType: 'SIGNATURE' } },
-  { label: 'Dual signature', icon: Users2, patch: { itemType: 'DUAL_SIGNATURE' } },
-  { label: 'Barcode / QR scan', icon: ScanLine, patch: { itemType: 'QR_SCAN' } },
-  { label: 'GPS verification', icon: MapPin, patch: { itemType: 'GPS' } },
-  { label: 'Cash tally', icon: Wallet, patch: { itemType: 'CASH_TALLY' } },
-  { label: 'Audit', icon: ClipboardCheck, patch: { itemType: 'AUDIT' } },
-  { label: 'Simple checkbox', icon: SquareCheck, patch: { itemType: 'STANDARD', requiredImageCount: '0' } },
+interface PaletteCategory {
+  title: string;
+  entries: PaletteEntry[];
+}
+
+// Static catalog of every question type the Builder can add — grouped the way the reference
+// UI kit groups its component demos (small uppercase section labels), so the 17 types stay
+// scannable instead of one long undifferentiated list.
+const CATEGORIES: PaletteCategory[] = [
+  {
+    title: 'Basic Answers',
+    entries: [
+      { label: 'Yes / No', icon: CheckCircle2, patch: { itemType: 'YES_NO' } },
+      { label: 'Pass / Fail', icon: ShieldCheck, patch: { itemType: 'PASS_FAIL' } },
+      { label: 'Multiple choice', icon: List, patch: { itemType: 'MULTIPLE_CHOICE' } },
+      { label: 'Dropdown', icon: ChevronDownSquare, patch: { itemType: 'DROPDOWN' } },
+      { label: 'Text box', icon: AlignLeft, patch: { itemType: 'TEXT_BOX' } },
+      { label: 'Number entry', icon: Hash, patch: { itemType: 'NUMBER_ENTRY' } },
+      { label: 'Date & time', icon: Calendar, patch: { itemType: 'DATE_TIME' } },
+      { label: 'Rating 1-5', icon: Star, patch: { itemType: 'RATING', ratingScale: '5' } },
+      { label: 'Simple checkbox', icon: SquareCheck, patch: { itemType: 'STANDARD', requiredImageCount: '0' } },
+    ],
+  },
+  {
+    title: 'Media & Signature',
+    entries: [
+      { label: 'Photo upload', icon: Camera, patch: { itemType: 'STANDARD', requiredImageCount: '1' } },
+      { label: 'Video upload', icon: Video, patch: { itemType: 'VIDEO_UPLOAD', requiredImageCount: '1' } },
+      { label: 'Signature', icon: PenLine, patch: { itemType: 'SIGNATURE' } },
+      { label: 'Dual signature', icon: Users2, patch: { itemType: 'DUAL_SIGNATURE' } },
+    ],
+  },
+  {
+    title: 'Verification',
+    entries: [
+      { label: 'Barcode / QR scan', icon: ScanLine, patch: { itemType: 'QR_SCAN' } },
+      { label: 'GPS verification', icon: MapPin, patch: { itemType: 'GPS' } },
+      { label: 'Cash tally', icon: Wallet, patch: { itemType: 'CASH_TALLY' } },
+      { label: 'Audit', icon: ClipboardCheck, patch: { itemType: 'AUDIT' } },
+    ],
+  },
 ];
 
 interface QuestionTypePaletteProps {
   onAdd: (patch: Partial<ItemDraft>) => void;
+  storeId?: string;
 }
 
-export const QuestionTypePalette = ({ onAdd }: QuestionTypePaletteProps) => (
-  <div className="flex flex-col gap-4">
-    <h2 className="text-xs font-display font-bold uppercase tracking-wider text-text-muted">Question Types</h2>
-    <div className="flex flex-col gap-1.5">
-      {PALETTE.map(({ label, icon: Icon, patch }) => (
-        <button
-          key={label}
-          type="button"
-          onClick={() => onAdd(patch)}
-          className="group flex items-center gap-2.5 px-3 py-2.5 rounded-xl border border-border bg-surface text-left text-sm font-display font-medium text-text-secondary hover:border-primary-300 hover:bg-primary-50/50 hover:text-primary-700 transition-all duration-150 cursor-pointer"
-        >
-          <Icon size={16} className="shrink-0 text-text-muted group-hover:text-primary-600 transition-colors" />
-          <span className="flex-1 min-w-0 truncate">{label}</span>
-          <Plus size={14} className="shrink-0 text-text-light group-hover:text-primary-600 transition-colors" />
-        </button>
+export const QuestionTypePalette = ({ onAdd, storeId }: QuestionTypePaletteProps) => {
+  const [activeEntry, setActiveEntry] = useState<PaletteEntry | null>(null);
+
+  return (
+    <div className="flex flex-col gap-1">
+      <h2 className="px-1 pb-2 text-xs font-display font-bold uppercase tracking-wider text-text-muted">Question Types</h2>
+      {CATEGORIES.map(({ title, entries }, i) => (
+        <div key={title} className={i > 0 ? 'mt-3' : ''}>
+          <p className="px-2.5 pb-1 text-[10px] font-display font-bold uppercase tracking-wider text-text-light">{title}</p>
+          <div className="flex flex-col gap-0.5">
+            {entries.map(entry => {
+              const Icon = entry.icon;
+              return (
+                <button
+                  key={entry.label}
+                  type="button"
+                  onClick={() => setActiveEntry(entry)}
+                  className="group relative flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-sm font-display font-medium text-text-secondary transition-all duration-200 hover:bg-primary-50 hover:text-primary-700 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-1"
+                >
+                  <span className="flex size-7 shrink-0 items-center justify-center rounded-md bg-surface-hover text-text-muted transition-colors duration-200 group-hover:bg-primary-100 group-hover:text-primary-700">
+                    <Icon size={15} />
+                  </span>
+                  <span className="min-w-0 flex-1 truncate">{entry.label}</span>
+                  <span className="flex size-6 shrink-0 scale-75 items-center justify-center rounded-full border border-border text-text-light opacity-0 transition-all duration-200 group-hover:scale-100 group-hover:border-primary-400 group-hover:bg-primary-50 group-hover:text-primary-600 group-hover:opacity-100">
+                    <Plus size={12} />
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
       ))}
+
+      {activeEntry && (
+        <AddQuestionModal
+          entry={activeEntry}
+          storeId={storeId}
+          onClose={() => setActiveEntry(null)}
+          onConfirm={patch => { onAdd(patch); setActiveEntry(null); }}
+        />
+      )}
     </div>
-  </div>
-);
+  );
+};

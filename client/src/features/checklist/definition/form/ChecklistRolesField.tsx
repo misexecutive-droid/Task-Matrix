@@ -2,7 +2,7 @@ import { Briefcase } from 'lucide-react';
 import { LABEL_CLASS } from './formConstants';
 import type { ChecklistAssigneeRole } from '../../../../api/checklistDefinitions';
 
-const ROLE_OPTIONS: { value: ChecklistAssigneeRole; label: string }[] = [
+export const ROLE_OPTIONS: { value: ChecklistAssigneeRole; label: string }[] = [
   { value: 'STORE_MANAGER', label: 'Store Manager' },
   { value: 'FLOOR_MANAGER', label: 'Floor Manager' },
   { value: 'CASHIER', label: 'Cashier' },

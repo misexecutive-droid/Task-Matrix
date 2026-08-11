@@ -234,5 +234,8 @@ export const useCreateSmartTaskMutation = () =>
         errorFallback : "Failed to create task"
     })
 
-export const useParseSmartTaskMutation = () => 
+export const useParseSmartTaskMutation = () =>
     useMutation({ mutationFn : (text : string) => taskApi.parseSmart(text)});
+
+export const useTranscribeVoiceNoteMutation = () =>
+    useMutation({ mutationFn : (audioBlob : Blob) => taskApi.transcribeVoiceNote(audioBlob)});

@@ -9,6 +9,7 @@ import { FIELD_LABEL_CLASS, FIELD_LABEL_ICON_CLASS } from "./taskFormFieldStyles
 import { TaskFormPrioritySelector } from "./TaskFormPrioritySelector";
 import { TaskFormDepartmentField } from "./TaskFormDepartmentField";
 import { TaskFormAssigneeField } from "./TaskFormAssigneeField";
+import { VoiceNoteRecorder } from "./VoiceNoteRecorder";
 import type { SmartTaskParseResult } from "@/api/task";
 import type { Department } from "@/api/departments";
 import type { AssignableUser } from "@/api/users";
@@ -18,14 +19,15 @@ interface SmartTaskModalProps {
 }
 
 type ChatMessage = { id: string; from: "bot" | "user"; text: string; timestamp: number };
-type Slot = "assignee" | "department" | "dueDate";
+type Slot = "assignee" | "department" | "dueDate" | "priority";
 
-const SLOT_ORDER: readonly Slot[] = ["assignee", "department", "dueDate"] as const;
+const SLOT_ORDER: readonly Slot[] = ["assignee", "department", "dueDate", "priority"] as const;
 
 const SLOT_QUESTIONS: Record<Slot, string> = {
     assignee: "Who should I assign this task to?",
     department: "Which department does this belong to?",
     dueDate: "When is this task due?",
+    priority: "Should this be low, medium, or high priority?",
 };
 
 type Draft = {
@@ -53,6 +55,31 @@ type ReviewState = {
 const DATE_HINT_PATTERN = /\b(today|tomorrow|in\s+\d+\s+days?|monday|tuesday|wednesday|thursday|friday|saturday|sunday|aaj|kal|\d{1,2}(st|nd|rd|th)?\s+(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)|\d{1,2}[/-]\d{1,2}(?:[/-]\d{2,4})?)\b/i;
 const WEEKDAYS = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"] as const;
 
+// Priority is never actually extracted from the message today — the server just defaults it from
+// the creator's rank (priorityForCreatorRank), so "urgent, fix this" and "no rush, whenever" were
+// both silently ignored. This mirrors DATE_HINT_PATTERN's approach: only trust an unprompted
+// mention in the free-form initial message when it's an unambiguous keyword (avoids a task whose
+// description merely contains the word "critical" for unrelated reasons silently going high-prio);
+// otherwise fall through to asking, same as a missing due date does.
+const PRIORITY_HINT_PATTERN = /\b(urgent|asap|immediately|critical|very important|high priority|top priority|low priority|not urgent|no rush|medium priority)\b/i;
+const HIGH_PRIORITY_HINT_PATTERN = /\b(urgent|asap|immediately|critical|very important|high priority|top priority)\b/i;
+
+const derivePriorityHint = (text: string): Draft["priority"] | null => {
+    if (!PRIORITY_HINT_PATTERN.test(text)) return null;
+    const lower = text.toLowerCase();
+    if (HIGH_PRIORITY_HINT_PATTERN.test(lower)) return "high";
+    if (/\b(low priority|not urgent|no rush)\b/.test(lower)) return "low";
+    return "medium";
+};
+
+// A meta-instruction to skip the "Create this task?" confirmation and create immediately once
+// review is ready — distinct from "create" appearing as the task's own content verb (e.g. "create
+// a task for Harsh", which is how most messages phrase their intent anyway and must NOT trigger
+// this). Requires "it"/"this"/"now" directly after "create", led by an imperative ("please"/
+// "just"/"go ahead"), or an explicit ask to skip confirmation outright.
+const SKIP_CONFIRMATION_PATTERN =
+    /\b(please|just|go ahead(?:\s+and)?)\s+create\s+(it|this|now)\b|\bcreate\s+it\s+(now|directly|right away)\b|\bskip\s+(the\s+)?confirmation\b|\bwithout\s+confirmation\b|\bdon'?t\s+ask,?\s+(just\s+)?create\b/i;
+
 // Helper: Secure ID Generator avoiding global closure leaks
 const createId = () => `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
 
@@ -74,7 +101,31 @@ const findDepartmentByName = (query: string, departments?: Department[]): Depart
     return departments.find((d) => d.name.toLowerCase().includes(cleanQuery));
 };
 
-const resolveDueDateLocally = (answer: string, reference: Date = new Date()): Date => {
+// Chat input is typed quickly and typo-prone ("tommorow", "tomorow") — an exact .includes() check
+// silently misses those, and previously fell all the way through to Date.parse returning NaN and
+// defaulting to *today*, which looks like a correct answer instead of a failure to understand one.
+// Levenshtein distance catches common misspellings without needing to hand-list every variant.
+const levenshteinDistance = (a: string, b: string): number => {
+    const rows: number[][] = Array.from({ length: a.length + 1 }, () => new Array(b.length + 1).fill(0));
+    for (let i = 0; i <= a.length; i++) rows[i][0] = i;
+    for (let j = 0; j <= b.length; j++) rows[0][j] = j;
+    for (let i = 1; i <= a.length; i++) {
+        for (let j = 1; j <= b.length; j++) {
+            rows[i][j] = a[i - 1] === b[j - 1]
+                ? rows[i - 1][j - 1]
+                : 1 + Math.min(rows[i - 1][j - 1], rows[i - 1][j], rows[i][j - 1]);
+        }
+    }
+    return rows[a.length][b.length];
+};
+
+const containsFuzzyWord = (text: string, keyword: string, maxDistance = 2): boolean =>
+    text.split(/\s+/).some((word) => levenshteinDistance(word, keyword) <= maxDistance);
+
+// Returns null when the answer genuinely can't be understood, rather than silently guessing —
+// callers should admit that ("couldn't understand X") the same way findUserByName/
+// findDepartmentByName already admit an unmatched name/department, instead of pretending success.
+const resolveDueDateLocally = (answer: string, reference: Date = new Date()): Date | null => {
     const lower = answer.toLowerCase().trim();
     const base = new Date(reference);
 
@@ -84,7 +135,7 @@ const resolveDueDateLocally = (answer: string, reference: Date = new Date()): Da
         return base;
     }
 
-    const weekdayIndex = WEEKDAYS.findIndex((w) => lower.includes(w));
+    const weekdayIndex = WEEKDAYS.findIndex((w) => containsFuzzyWord(lower, w));
     if (weekdayIndex !== -1) {
         const currentDay = base.getDay();
         const diff = (weekdayIndex + 7 - currentDay) % 7 || 7;
@@ -92,16 +143,26 @@ const resolveDueDateLocally = (answer: string, reference: Date = new Date()): Da
         return base;
     }
 
-    if (lower.includes("tomorrow") || lower.includes("kal")) {
+    if (containsFuzzyWord(lower, "tomorrow") || lower.includes("kal")) {
         base.setDate(base.getDate() + 1);
         return base;
     }
-    if (lower.includes("today") || lower.includes("aaj")) {
+    if (containsFuzzyWord(lower, "today") || lower.includes("aaj")) {
         return base;
     }
 
     const parsedTimestamp = Date.parse(answer);
-    return Number.isNaN(parsedTimestamp) ? base : new Date(parsedTimestamp);
+    return Number.isNaN(parsedTimestamp) ? null : new Date(parsedTimestamp);
+};
+
+// Separate from derivePriorityHint above: this parses a DIRECT answer to "low, medium, or high?",
+// where a bare "high" is the expected response — derivePriorityHint's stricter phrase-matching
+// (e.g. requiring "high priority") would miss that entirely.
+const resolvePriorityAnswer = (answer: string): Draft["priority"] => {
+    const lower = answer.toLowerCase();
+    if (/\b(high|urgent|asap|critical)\b/.test(lower)) return "high";
+    if (/\b(low|whenever|no rush)\b/.test(lower)) return "low";
+    return "medium";
 };
 
 // Deterministic Slot Resolution Strategy Pattern
@@ -135,8 +196,17 @@ const SLOT_RESOLVERS: Record<
     dueDate: (answer, draft) => {
         const resolved = resolveDueDateLocally(answer);
         return {
-            draft: { ...draft, dueDate: resolved },
-            ack: `Due date set for ${resolved.toLocaleDateString(undefined, { month: "short", day: "numeric" })}.`,
+            draft: { ...draft, dueDate: resolved ?? draft.dueDate },
+            ack: resolved
+                ? `Due date set for ${resolved.toLocaleDateString(undefined, { month: "short", day: "numeric" })}.`
+                : `Couldn't understand "${answer}" as a date. Set one manually below.`,
+        };
+    },
+    priority: (answer, draft) => {
+        const resolved = resolvePriorityAnswer(answer);
+        return {
+            draft: { ...draft, priority: resolved },
+            ack: `Priority set to ${resolved}.`,
         };
     },
 };
@@ -157,7 +227,7 @@ const buildDraftFromParse = (
         title: result.title,
         context: result.context,
         category: result.category,
-        priority: result.priority,
+        priority: derivePriorityHint(rawText) ?? result.priority,
         dueDate: DATE_HINT_PATTERN.test(rawText) && result.dueDate ? new Date(result.dueDate) : null,
         assigneeId: matchedUser?.id ?? result.assignee?.id ?? "",
         assigneeName: matchedUser ? `${matchedUser.firstName} ${matchedUser.lastName ?? ""}`.trim() : result.assignee?.name ?? "",
@@ -192,6 +262,9 @@ export const SmartTaskModal = ({ onClose }: SmartTaskModalProps) => {
     const [parsed, setParsed] = useState<SmartTaskParseResult | null>(null);
     const [review, setReview] = useState<ReviewState | null>(null);
     const [awaitingRetry, setAwaitingRetry] = useState(false);
+    const [initialInputMode, setInitialInputMode] = useState<"voice" | "text">("text");
+    const [voiceRecorderBusy, setVoiceRecorderBusy] = useState(false);
+    const [skipConfirmation, setSkipConfirmation] = useState(false);
     const hasAutoPromptedRef = useRef(false);
 
     const scrollRef = useRef<HTMLDivElement>(null);
@@ -224,11 +297,12 @@ export const SmartTaskModal = ({ onClose }: SmartTaskModalProps) => {
             .filter(Boolean)
             .join(", ");
 
-        addMessage("bot", `Here is what I prepared — ${summary}. Review and tweak if necessary.`);
+        const closing = skipConfirmation ? "Creating this now — no confirmation needed." : "Review and tweak if necessary.";
+        addMessage("bot", `Here is what I prepared — ${summary}. ${closing}`);
         setReview(mapDraftToReview(finalDraft));
         setPendingSlot(null);
         setPendingQueue([]);
-    }, [addMessage]);
+    }, [addMessage, skipConfirmation]);
 
     const processNextSlotOrFinish = useCallback(
         (queue: Slot[], currentDraft: Draft) => {
@@ -249,6 +323,10 @@ export const SmartTaskModal = ({ onClose }: SmartTaskModalProps) => {
             parseMutation.mutate(text, {
                 onSuccess: (result) => {
                     setParsed(result);
+                    // Urgency ("urgent"/"critical"/"very important") skips confirmation the same
+                    // way an explicit "please create it" does — no time to wait on a confirm click
+                    // for something the user just flagged as high priority.
+                    setSkipConfirmation(SKIP_CONFIRMATION_PATTERN.test(text) || HIGH_PRIORITY_HINT_PATTERN.test(text));
                     const initialDraft = buildDraftFromParse(result, text, assignableUsers, departments);
                     setDraft(initialDraft);
 
@@ -256,6 +334,7 @@ export const SmartTaskModal = ({ onClose }: SmartTaskModalProps) => {
                         if (slot === "assignee") return !initialDraft.assigneeId && !initialDraft.assigneeName;
                         if (slot === "department") return !initialDraft.departmentId && !initialDraft.departmentName;
                         if (slot === "dueDate") return !initialDraft.dueDate;
+                        if (slot === "priority") return derivePriorityHint(text) === null;
                         return false;
                     });
 
@@ -270,8 +349,8 @@ export const SmartTaskModal = ({ onClose }: SmartTaskModalProps) => {
         [parseMutation, assignableUsers, departments, processNextSlotOrFinish, addMessage]
     );
 
-    const handleSend = () => {
-        const trimmedInput = input.trim();
+    const handleSend = (overrideText?: string) => {
+        const trimmedInput = (overrideText ?? input).trim();
         if (!trimmedInput || parseMutation.isPending) return;
 
         addMessage("user", trimmedInput);
@@ -296,15 +375,20 @@ export const SmartTaskModal = ({ onClose }: SmartTaskModalProps) => {
         if (!review || !parsed) return;
 
         setAwaitingRetry(false);
-        const ok = await confirm({
-            title: "Create this task?",
-            description: `"${review.title}" will be created and assigned right away.`,
-            confirmLabel: "Yes, create it",
-            cancelLabel: "No, go back",
-        });
-        if (!ok) {
-            setAwaitingRetry(true);
-            return;
+
+        // Skipped when the message itself already said e.g. "please create it" — asking to
+        // confirm something the user just explicitly asked for is redundant friction, not safety.
+        if (!skipConfirmation) {
+            const ok = await confirm({
+                title: "Create this task?",
+                description: `"${review.title}" will be created and assigned right away.`,
+                confirmLabel: "Yes, create it",
+                cancelLabel: "No, go back",
+            });
+            if (!ok) {
+                setAwaitingRetry(true);
+                return;
+            }
         }
 
         createMutation.mutate(
@@ -320,13 +404,13 @@ export const SmartTaskModal = ({ onClose }: SmartTaskModalProps) => {
                 departmentRaw: parsed.departmentRaw || undefined,
                 confidence: parsed.confidence,
                 rawInput: parsed.rawInput,
-                inputMode: "text",
+                inputMode: initialInputMode,
                 wonBy: parsed.wonBy,
                 channel: "web",
             },
             { onSuccess: onClose }
         );
-    }, [review, parsed, confirm, createMutation]);
+    }, [review, parsed, confirm, createMutation, initialInputMode, skipConfirmation]);
 
     useEffect(() => {
         if (review && parsed && !hasAutoPromptedRef.current) {
@@ -379,17 +463,30 @@ export const SmartTaskModal = ({ onClose }: SmartTaskModalProps) => {
                         <input
                             type="text"
                             className="flex-1 h-10 px-3 text-sm rounded border border-gray-200 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 disabled:bg-gray-50 disabled:cursor-not-allowed"
-                            placeholder={pendingSlot ? `Provide ${pendingSlot}...` : "Type in English or Hinglish..."}
+                            placeholder={pendingSlot ? `Provide ${pendingSlot}...` : "Type in English or Hinglish, or record a voice note..."}
                             value={input}
-                            disabled={parseMutation.isPending}
+                            disabled={parseMutation.isPending || voiceRecorderBusy}
                             onChange={(e) => setInput(e.target.value)}
                             onKeyDown={(e) => e.key === "Enter" && handleSend()}
                             autoFocus
                         />
+                        {/* Voice notes only make sense for the free-form first message — slot answers
+                            (assignee/department/due date) are single facts faster to type than to
+                            record, and there's nowhere to route a "voice" flag for them anyway. */}
+                        {!pendingSlot && (
+                            <VoiceNoteRecorder
+                                disabled={parseMutation.isPending}
+                                onBusyChange={setVoiceRecorderBusy}
+                                onTranscribed={(transcript) => {
+                                    setInitialInputMode("voice");
+                                    handleSend(transcript);
+                                }}
+                            />
+                        )}
                         <Button
                             variant="primary"
-                            onClick={handleSend}
-                            disabled={!input.trim() || parseMutation.isPending}
+                            onClick={() => handleSend()}
+                            disabled={!input.trim() || parseMutation.isPending || voiceRecorderBusy}
                             className="shrink-0"
                         >
                             <Send size={14} />
