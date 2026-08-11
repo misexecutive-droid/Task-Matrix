@@ -29,5 +29,14 @@ export const departmentService = {
         const department = await Department.findByIdAndDelete(id)
         if(!department) throw AppError.notFound("Departmetn not found")
             return department
+    },
+
+    // Free-text -> Department resolution for the AI task-creation pipeline. Mirrors the client's
+    // findDepartmentByName (SmartTaskModal.tsx), which has no server-side equivalent today.
+    async resolveByName(name : string){
+        const clean = name.replace(/\b(department|dept|team)\b/gi, "").trim().toLowerCase()
+        if(!clean) return null
+        const active = await Department.find({ isActive : true })
+        return active.find((d) => d.name.toLowerCase().includes(clean)) ?? null
     }
 }

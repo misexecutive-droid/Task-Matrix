@@ -192,3 +192,33 @@ const taskAttachmentMulter = multer({
 
 export const taskAttachmentUpload = (req : Request , res : Response , next : NextFunction) =>
     taskAttachmentMulter.array("files", TASK_ATTACHMENT_MAX_FILES)(req, res, next)
+
+// Web Smart Add's voice-note recorder (client/src/features/tasks/VoiceNoteRecorder.tsx) — the
+// clip only needs to reach the transcription service once and can then be discarded, so this uses
+// memory storage rather than one of the disk-backed folders above; nothing here ever gets saved.
+const VOICE_NOTE_MIME_TYPES = [
+    "audio/webm",
+    "audio/ogg",
+    "audio/mp4",
+    "audio/mpeg",
+    "audio/wav",
+    "audio/mp3",
+]
+const VOICE_NOTE_MAX_SIZE_MB = 20
+
+const voiceNoteMulter = multer({
+    storage: multer.memoryStorage(),
+    limits: {
+        fileSize: VOICE_NOTE_MAX_SIZE_MB * 1024 * 1024,
+        files: 1,
+    },
+    fileFilter: (_req, file, cb) => {
+        if (!VOICE_NOTE_MIME_TYPES.includes(file.mimetype)) {
+            return cb(null, false)
+        }
+        cb(null, true)
+    },
+})
+
+export const voiceNoteUpload = (req : Request , res : Response , next : NextFunction) =>
+    voiceNoteMulter.single("audio")(req, res, next)

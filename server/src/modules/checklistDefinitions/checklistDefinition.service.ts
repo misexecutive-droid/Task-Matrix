@@ -63,11 +63,7 @@ export const checklistDefinitionService = {
         return populateDefinition(ChecklistDefinition.findById(definition._id))
     },
 
-    // Builder's "edit" mode — replaces name/schedule/items wholesale (simplest correct approach:
-    // delete the old ChecklistDefinitionItem rows, insert the new set) rather than diffing item by
-    // item. Already-generated ChecklistInstances are untouched — editing a template only changes
-    // what future periods stamp out, it doesn't rewrite history. Bumps `version` so the Templates
-    // grid's "v3" badge reflects the edit.
+   
     async update(id: string, input: UpdateChecklistDefinitionInput) {
         const definition = await ChecklistDefinition.findById(id)
         if (!definition) throw AppError.notFound("Checklist not found")
@@ -88,15 +84,26 @@ export const checklistDefinitionService = {
         })
         await definition.save()
 
-        await ChecklistDefinitionItem.deleteMany({ definitionId: definition._id })
-        await ChecklistDefinitionItem.insertMany(
+        // Insert the new items BEFORE deleting the old ones, and delete by exclusion rather than
+        // by definitionId alone - if insertMany fails partway, the old items are still intact
+        // instead of the definition being left with zero items.
+        const newItems = await ChecklistDefinitionItem.insertMany(
             input.items.map((item, index) => ({ ...item, order: item.order ?? index, definitionId: definition._id })),
         )
+        await ChecklistDefinitionItem.deleteMany({
+            definitionId: definition._id,
+            _id: { $nin: newItems.map(item => item._id) },
+        })
 
-        await generateInstanceForDefinition(definition, new Date())
+        // Only stamp out a fresh instance if this definition is still active - an admin editing a
+        // deactivated checklist (e.g. fixing a label typo) shouldn't silently bring it back to life.
+        if (definition.isActive) {
+            await generateInstanceForDefinition(definition, new Date())
+        }
 
         return populateDefinition(ChecklistDefinition.findById(definition._id))
     },
+
 
     async setActive(id: string, input: SetChecklistDefinitionActiveInput) {
         const definition = await ChecklistDefinition.findByIdAndUpdate(id, input, { new: true, runValidators: true })

@@ -3,7 +3,7 @@ import { taskController } from "./task.controller.js" // the functions that actu
 import { authenticate , requireRole } from "../../middleware/auth/auth.js" // middleware that checks the JWT and attaches req.user, or rejects the request
 import { taskChecklistController } from "../taskChecklists/taskChecklist.controller.js" // creating a checklist under a specific task
 import { taskAttachmentController } from "../taskAttachments/taskAttachment.controller.js" // attaching general files (pdf/csv/image/video) directly to a task
-import { taskAttachmentUpload } from "../../config/upload.js"
+import { taskAttachmentUpload, voiceNoteUpload } from "../../config/upload.js"
 import { taskAiController } from "./ai/task.ai.controller.js"
 
 export const taskRouter = Router()
@@ -27,3 +27,4 @@ taskRouter.post("/:id/attachments", taskAttachmentUpload, taskAttachmentControll
 
 taskRouter.post("/ai/parse", taskAiController.parse)
 taskRouter.post("/ai/create", taskAiController.create)
+taskRouter.post("/ai/transcribe", voiceNoteUpload, taskAiController.transcribe)

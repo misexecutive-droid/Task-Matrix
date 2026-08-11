@@ -32,6 +32,7 @@ import { reportRouter } from "./modules/reports/report.routes.js"
 import { eventRouter } from "./modules/events/event.routes.js"
 import { createApiLimiter, createAuthLimiter } from "./middleware/rateLimiter/rateLimiter.js"
 import { whatsappRouter } from "./modules/whatsapp/whatsapp.routes.js"
+import { doubletickRouter } from "./modules/doubletick/doubletick.routes.js"
 import helmet from "helmet"
 import compression from "compression"
 import type { Store } from "express-rate-limit"
@@ -48,8 +49,9 @@ class App {
     }
 
     private initMiddlewares(rateLimitStore?:Store): void {
+        this.app.set("trust proxy", 1);
         this.app.use(helmet({
-            crossOriginResourcePolicy : { policy : "cross-origin"} // needed so /uploads images still load cross-origin
+            crossOriginResourcePolicy : { policy : "cross-origin"} 
         }))
         this.app.use(compression())
         this.app.use(cors({ origin: env.CLIENT_URL, credentials: true }))
@@ -99,6 +101,7 @@ class App {
         this.app.use("/settings" , settingsRouter)
 
         this.app.use('/whatsapp', whatsappRouter);
+        this.app.use('/doubletick', doubletickRouter);
 
 
         this.app.use("/notifications", notificationRouter)

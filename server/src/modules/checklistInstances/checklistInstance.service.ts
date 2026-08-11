@@ -7,6 +7,7 @@ import { notificationService } from "../notifications/notification.service.js"
 import { ticketService } from "../tickets/ticket.service.js"
 import type { AccessTokenPayload } from "../../middleware/auth/auth.js"
 import type { VerifyChecklistInstanceInput } from "./checklistInstance.validation.js"
+import { ROLES , type Role } from "../../models/User.js"
 
 export type InstanceStatusFilter = "OPEN" | "COMPLETED"
 
@@ -16,9 +17,7 @@ const populateInstance = (query: any) =>
         options: { sort: { order: 1 } },
         populate: [
             { path: "images" },
-            // AUDIT items only — populate each auditor's own submission, their user record (for
-            // name/department display), and their evidence photos. Harmless no-op for STANDARD
-            // items, which have no submissions.
+           
             {
                 path: "submissions",
                 populate: [{ path: "images" }, { path: "userId", select: "firstName lastName storeId" }],
@@ -280,10 +279,15 @@ export const syncVerificationStatus = async (instance: any) => {
 
 // PC verification is store-scoped here (unlike Ticket's cross-department PC) — a PC only
 // verifies checklist instances within their own store.
+
+const CAN_VERIFY_BY_ROLE : Partial<Record <Role, (instance : any , user : AccessTokenPayload) => boolean>> = {
+   ADMIN : () => true,
+   PC : (instance, user) => Boolean(user.storeId) && instance.storeId?.toString() === user.storeId,
+}
+
 const assertCanVerify = (instance: any, user: AccessTokenPayload) => {
-    if (user.role === "ADMIN") return
-    if (user.role === "PC" && user.storeId && instance.storeId.toString() === user.storeId) return
-    throw AppError.forbidden()
+   const canVerify = CAN_VERIFY_BY_ROLE[user.role]?.(instance,user) ?? false
+   if(!canVerify) throw AppError.forbidden()
 }
 
 export const checklistInstanceService = {

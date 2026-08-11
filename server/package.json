@@ -13,7 +13,9 @@
     "test watch": "vitest",
     "seed:admin": "tsx src/scripts/seedAdmin.ts",
     "test:whatsapp" : "tsx src/scripts/testWhatsAppWebhook.ts",
-    "test:rules" : "tsx src/scripts/testRuleBasedExtraction.ts"
+    "test:rules" : "tsx src/scripts/testRuleBasedExtraction.ts",
+    "migrate:checklist-instance-indexes": "tsx src/scripts/migrateChecklistInstanceIndexes.ts"
+
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.115.0",

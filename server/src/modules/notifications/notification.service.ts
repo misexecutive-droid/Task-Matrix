@@ -20,7 +20,7 @@ type CreateNotificationInput = {
 type VerifiableChecklistInstance = {
   _id: any;
   title: string;
-  departmentId?: any;
+  storeId?: any;
   assigneeIds?: any[];
 };
 
@@ -145,8 +145,8 @@ export const notificationService = {
   // storeId and can have several assignees rather than one, so this scopes PCs by departmentId
   // only rather than reusing the ticket/task departmentId-or-storeId `$or`.
   async notifyChecklistPendingVerification(instance: VerifiableChecklistInstance) {
-    if (!instance.departmentId) return [];
-    const pcs = await User.find({ role: 'PC', departmentId: instance.departmentId }).select('_id');
+    if (!instance.storeId) return [];
+    const pcs = await User.find({ role: 'PC', departmentId: instance.storeId }).select('_id');
     const recipientIds = pcs.map((p) => p._id.toString());
     if (!recipientIds.length) return [];
 

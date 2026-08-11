@@ -46,10 +46,9 @@ async function transcribeWithGemini(buffer: Buffer, mimeType: string): Promise<s
 
 // Prefers Whisper when it's configured (dedicated transcription model, generally more
 // accurate for speech-to-text); falls back to Gemini if OpenAI isn't set up or its call
-// fails for any reason, so a voice note still gets transcribed either way.
-export async function transcribeWhatsAppVoiceNote(mediaId: string): Promise<string> {
-    const { buffer, mimeType } = await downloadWhatsAppMedia(mediaId);
-
+// fails for any reason, so a voice note still gets transcribed either way. Shared by the
+// WhatsApp voice-note path below and the web Smart Add recorder (task.ai.controller.ts).
+export async function transcribeVoiceNote(buffer: Buffer, mimeType: string): Promise<string> {
     if (process.env.OPENAI_API_KEY) {
         try {
             return await transcribeWithWhisper(buffer, mimeType);
@@ -59,4 +58,9 @@ export async function transcribeWhatsAppVoiceNote(mediaId: string): Promise<stri
     }
 
     return transcribeWithGemini(buffer, mimeType);
+}
+
+export async function transcribeWhatsAppVoiceNote(mediaId: string): Promise<string> {
+    const { buffer, mimeType } = await downloadWhatsAppMedia(mediaId);
+    return transcribeVoiceNote(buffer, mimeType);
 }

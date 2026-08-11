@@ -4,6 +4,7 @@ import { confirmSmartTaskSchema } from "../task.validation.js";
 import { taskService } from "../task.service.js";
 import { asyncHandler } from "../../../utils/asyncHandler.js";
 import { User } from "../../../models/User.js";
+import { transcribeVoiceNote } from "../../whatsapp/transcription.service.js";
 
 // export async function parseSmartInput(req: Request, res: Response) {
 //     const { text } = req.body as { text: string };
@@ -66,5 +67,20 @@ export const taskAiController = {
         const input = confirmSmartTaskSchema.parse(req.body);
         const task = await taskService.createFromSmartInput(input, req.user!);
         res.status(201).json(task)
-    })
+    }),
+
+    // Web Smart Add's voice recorder — transcribes a browser-recorded clip and hands back plain
+    // text, which the client then feeds through the exact same /ai/parse flow typed text uses.
+    transcribe : asyncHandler(async (req : Request , res : Response) => {
+        if (!req.file) {
+            return res.status(400).json({ message : "audio file is required" })
+        }
+
+        const transcript = await transcribeVoiceNote(req.file.buffer, req.file.mimetype);
+        if (!transcript.trim()) {
+            return res.status(422).json({ message : "Could not transcribe audio" })
+        }
+
+        res.json({ transcript })
+    }),
 }
