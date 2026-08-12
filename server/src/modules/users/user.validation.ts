@@ -1,7 +1,6 @@
 import { z } from "zod"
 import { ROLES } from "../../models/User.js"
-
-const objectId = z.string().regex(/^[0-9a-fA-F]{24}$/, 'Invalid id');
+import { objectId } from "../../utils/index.js"
 
 export const createUserSchema = z.object({
     email: z.string().email(),

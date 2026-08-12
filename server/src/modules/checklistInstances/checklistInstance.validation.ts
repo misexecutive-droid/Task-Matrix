@@ -1,7 +1,6 @@
 import { z } from "zod"
 import { CAPTURE_METHODS } from "../../models/TaskImage.js"
-
-const objectId = z.string().regex(/^[0-9a-fA-F]{24}$/, 'Invalid id');
+import { objectId } from "../../utils/index.js"
 
 // Every field below only matters for its own itemType — checklistInstance.service.ts's
 // setItemDone dispatches to the one relevant validator/persist step per item's itemType and

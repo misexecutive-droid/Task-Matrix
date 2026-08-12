@@ -1,9 +1,6 @@
-import { z } from "zod" 
+import { z } from "zod"
 import { TASK_PRIORITIES , TASK_STATUSES } from "../../models/Task.js" ;
-import { configDotenv } from "dotenv";
-
-
-const objectId = z.string().regex(/^[0-9a-fA-F]{24}$/, 'Invalid id');
+import { objectId } from "../../utils/index.js"
 
 export const createTaskSchema = z.object({
     title : z.string().min(1), 
@@ -34,6 +31,15 @@ export const confirmSmartTaskSchema = z.object({
     channel : z.enum(["whatsapp" , "web"])
 })
 
+export const listTasksQuerySchema = z.object({
+    userId : objectId.optional(),
+    status : z.enum(TASK_STATUSES).optional(),
+    page : z.coerce.number().int().min(1).optional().default(1),
+    // Capped at 200 (also the default) — high enough that today's usage never notices it, but
+    // still a real ceiling so GET /tasks can't be made to return an unbounded result set.
+    limit : z.coerce.number().int().min(1).max(200).optional().default(200),
+})
+
 export const complianceReportQuerySchema = z.object({
     groupBy : z.enum(["hour", "day", "week", "month", "year"]).default("day"),
     departmentId : objectId.optional(),
@@ -55,6 +61,7 @@ export const verifyTaskSchema = z.object({
     path : ["note"],
 })
 
+export type ListTasksQuery = z.infer<typeof listTasksQuerySchema>;
 export type CreateTaskInput = z.infer<typeof createTaskSchema>;
 export type UpdateTaskInput = z.infer<typeof updateTaskSchema>;
 export type ComplianceReportQuery = z.infer<typeof complianceReportQuerySchema>;

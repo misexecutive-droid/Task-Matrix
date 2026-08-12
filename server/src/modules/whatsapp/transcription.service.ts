@@ -2,20 +2,10 @@ import OpenAI from "openai";
 import { toFile } from "openai";
 import { GoogleGenAI } from "@google/genai";
 import { downloadWhatsAppMedia } from "./whatsapp.service.js";
+import { lazyClient } from "../../utils/index.js";
 
-let openaiClient: OpenAI | null = null;
-function getOpenAI(): OpenAI {
-    if (!process.env.OPENAI_API_KEY) throw new Error("OPENAI_API_KEY is not set");
-    if (!openaiClient) openaiClient = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-    return openaiClient;
-}
-
-let geminiClient: GoogleGenAI | null = null;
-function getGemini(): GoogleGenAI {
-    if (!process.env.GEMINI_API_KEY) throw new Error("GEMINI_API_KEY is not set");
-    if (!geminiClient) geminiClient = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-    return geminiClient;
-}
+const getOpenAI = lazyClient("OPENAI_API_KEY", () => new OpenAI({ apiKey: process.env.OPENAI_API_KEY }))
+const getGemini = lazyClient("GEMINI_API_KEY", () => new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY }))
 
 async function transcribeWithWhisper(buffer: Buffer, mimeType: string): Promise<string> {
     const file = await toFile(buffer, "voice-note.ogg", { type: mimeType });

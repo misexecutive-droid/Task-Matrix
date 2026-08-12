@@ -11,16 +11,11 @@ import { ChecklistInstanceItemSubmission } from "../models/ChecklistInstanceItem
 import { getCurrentPeriod } from "../utils/period.js"
 import { env } from "../config/env.js"
 
-// Stamps out the currently-due ChecklistInstance for one (definition, store) pair, or does nothing
-// if that store's period was already generated or the definition's startDate hasn't arrived yet.
-const generateInstanceForStore = async (definition: HydratedDocument<any>, storeId: unknown, period: { periodKey: string; periodStart: Date; periodEnd: Date }, now: Date) => {
-    const alreadyGenerated = await ChecklistInstance.exists({
-        definitionId: definition._id,
-        storeId,
-        periodKey: period.periodKey,
-    })
-    if (alreadyGenerated) return null
-
+// Stamps out the currently-due ChecklistInstance for one (definition, store) pair. Caller is
+// responsible for the "already generated for this period?" check — see generateInstanceForDefinition,
+// which now does that once for every store up front instead of once per store here. `items` is the
+// definition's item list, also hoisted up by the caller since it's identical for every store.
+const generateInstanceForStore = async (definition: HydratedDocument<any>, storeId: unknown, period: { periodKey: string; periodStart: Date; periodEnd: Date }, now: Date, items: HydratedDocument<any>[]) => {
     let instance
     try {
         instance = await ChecklistInstance.create({
@@ -43,51 +38,60 @@ const generateInstanceForStore = async (definition: HydratedDocument<any>, store
         throw err
     }
 
-    const items = await ChecklistDefinitionItem.find({ definitionId: definition._id }).sort({ order: 1 })
-    if (items.length) {
-        const instanceItems = await ChecklistInstanceItem.insertMany(
-            items.map((item, index) => ({
-                label: item.label,
-                order: item.order ?? index,
-                // Photo requirements are authored once on the definition item and copied onto
-                // every instance it stamps out — an instance item never edits these itself.
-                requiredImageCount: item.requiredImageCount,
-                maxImageCount: item.maxImageCount,
-                requiresLivePhoto: item.requiresLivePhoto,
-                itemType: item.itemType,
-                accessories: item.accessories,
-                numberEntryUnit: item.numberEntryUnit,
-                numberEntryMin: item.numberEntryMin,
-                numberEntryMax: item.numberEntryMax,
-                ratingScale: item.ratingScale,
-                options: item.options,
-                gpsTargetLat: item.gpsTargetLat,
-                gpsTargetLng: item.gpsTargetLng,
-                gpsRadiusMeters: item.gpsRadiusMeters,
-                signatureLabels: item.signatureLabels,
-                qrExpectedValue: item.qrExpectedValue,
-                cashExpectedAmount: item.cashExpectedAmount,
-                conditionalTrigger: item.conditionalTrigger,
-                conditionalActions: item.conditionalActions,
-                instanceId: instance._id,
-            })),
-        )
+    try {
+        if (items.length) {
+            const instanceItems = await ChecklistInstanceItem.insertMany(
+                items.map((item, index) => ({
+                    label: item.label,
+                    order: item.order ?? index,
+                    // Photo requirements are authored once on the definition item and copied onto
+                    // every instance it stamps out — an instance item never edits these itself.
+                    requiredImageCount: item.requiredImageCount,
+                    maxImageCount: item.maxImageCount,
+                    requiresLivePhoto: item.requiresLivePhoto,
+                    itemType: item.itemType,
+                    accessories: item.accessories,
+                    numberEntryUnit: item.numberEntryUnit,
+                    numberEntryMin: item.numberEntryMin,
+                    numberEntryMax: item.numberEntryMax,
+                    ratingScale: item.ratingScale,
+                    options: item.options,
+                    gpsTargetLat: item.gpsTargetLat,
+                    gpsTargetLng: item.gpsTargetLng,
+                    gpsRadiusMeters: item.gpsRadiusMeters,
+                    signatureLabels: item.signatureLabels,
+                    qrExpectedValue: item.qrExpectedValue,
+                    cashExpectedAmount: item.cashExpectedAmount,
+                    conditionalTrigger: item.conditionalTrigger,
+                    conditionalActions: item.conditionalActions,
+                    instanceId: instance._id,
+                })),
+            )
 
-        // AUDIT items fan out into one ChecklistInstanceItemSubmission per named auditor, seeded
-        // with that item's accessories checklist (all unchecked) — see ChecklistInstanceItemSubmission.ts.
-        // insertMany preserves input order, so `items[i]` and `instanceItems[i]` are the same step.
-        const submissionDrafts = items.flatMap((item, index) => {
-            if (item.itemType !== "AUDIT" || !item.auditUserIds?.length) return []
-            const instanceItem = instanceItems[index]
-            return item.auditUserIds.map(userId => ({
-                itemId: instanceItem._id,
-                userId,
-                accessories: (item.accessories ?? []).map(name => ({ name, checked: false })),
-            }))
-        })
-        if (submissionDrafts.length) {
-            await ChecklistInstanceItemSubmission.insertMany(submissionDrafts)
+            // AUDIT items fan out into one ChecklistInstanceItemSubmission per named auditor, seeded
+            // with that item's accessories checklist (all unchecked) — see ChecklistInstanceItemSubmission.ts.
+            // insertMany preserves input order, so `items[i]` and `instanceItems[i]` are the same step.
+            const submissionDrafts = items.flatMap((item, index) => {
+                if (item.itemType !== "AUDIT" || !item.auditUserIds?.length) return []
+                const instanceItem = instanceItems[index]
+                return item.auditUserIds.map(userId => ({
+                    itemId: instanceItem._id,
+                    userId,
+                    accessories: (item.accessories ?? []).map(name => ({ name, checked: false })),
+                }))
+            })
+            if (submissionDrafts.length) {
+                await ChecklistInstanceItemSubmission.insertMany(submissionDrafts)
+            }
         }
+    } catch (err) {
+        // Item/submission stamp-out failed after the instance itself was already persisted. Left
+        // alone, this instance would be a permanent orphan: it has no items to complete, yet its
+        // (definitionId, storeId, periodKey) now "exists", so no later sweep tick would ever retry
+        // stamping out this store's items for this period. Delete it so the next tick starts clean.
+        await ChecklistInstance.deleteOne({ _id: instance._id })
+        await ChecklistInstanceItem.deleteMany({ instanceId: instance._id })
+        throw err
     }
 
     return instance
@@ -102,10 +106,35 @@ export const generateInstanceForDefinition = async (definition: HydratedDocument
     const period = getCurrentPeriod(definition.recurrence, definition.startDate, now, env.CHECKLIST_TIMEZONE_OFFSET_MINUTES)
     if (!period) return []
 
+    const storeIds = definition.storeIds ?? []
+    if (!storeIds.length) return []
+
+    // One query covering every store this definition is live in, instead of one
+    // "already generated?" existence check per store.
+    const alreadyGeneratedStoreIds = await ChecklistInstance.find({
+        definitionId: definition._id,
+        storeId: { $in: storeIds },
+        periodKey: period.periodKey,
+    }).distinct("storeId")
+    const alreadyGeneratedSet = new Set(alreadyGeneratedStoreIds.map(String))
+    const pendingStoreIds = storeIds.filter((storeId: unknown) => !alreadyGeneratedSet.has(String(storeId)))
+    if (!pendingStoreIds.length) return []
+
+    // Definition items are identical for every store — fetch them once here instead of
+    // re-querying per store inside generateInstanceForStore.
+    const items = await ChecklistDefinitionItem.find({ definitionId: definition._id }).sort({ order: 1 })
+
     const created = []
-    for (const storeId of definition.storeIds ?? []) {
-        const instance = await generateInstanceForStore(definition, storeId, period, now)
-        if (instance) created.push(instance)
+    for (const storeId of pendingStoreIds) {
+        // Each store is isolated in its own try/catch — one store's failure (bad data, a
+        // transient DB error) must not stop the rest of this definition's stores from getting
+        // their instance this tick.
+        try {
+            const instance = await generateInstanceForStore(definition, storeId, period, now, items)
+            if (instance) created.push(instance)
+        } catch (err) {
+            console.error(`Checklist instance generation failed for definition ${definition._id}, store ${storeId}:`, err)
+        }
     }
 
     // A ONE_TIME definition has exactly one period, ever — deactivate it once generated (in at

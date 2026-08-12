@@ -1,10 +1,12 @@
 import { User } from "../../../../models/User.js";
 import { Department } from "../../../../models/Department.js";
+import { escapeRegex } from "../../../../utils/index.js";
 import { extractWithClaude } from "./claude.provider.js";
 import { extractWithGemini } from "./gemini.provider.js";
 import { extractWithOpenAI } from "./openai.provider.js";
 import type { RawExtraction } from "../schema.js";
 import { extractWithRules } from "./ruleBased.provider.js";
+import { WEEKDAYS, daysUntilWeekday, matchInDays } from "../dateParsing.js";
 
 const PROVIDERS = [
     { name: "claude", run: extractWithClaude },
@@ -12,7 +14,12 @@ const PROVIDERS = [
     { name: "gemini", run: extractWithGemini }
 ] as const;
 
-const TIEBREAK_RANK: Record<string, number> = { claude: 3, openai: 2, gemini: 1 }
+// Derived from PROVIDERS' declared order (earlier = higher priority) instead of a separately
+// maintained table, so a provider added/removed/reordered in PROVIDERS can't silently desync
+// from its tiebreak rank — a provider missing from a hand-kept table would lose every tiebreak.
+const TIEBREAK_RANK: Record<string, number> = Object.fromEntries(
+    PROVIDERS.map((p, i) => [p.name, PROVIDERS.length - i]),
+)
 
 export interface EnsembleResult extends RawExtraction {
     wonBy: string;
@@ -80,27 +87,23 @@ export function priorityForCreatorRank(rank: number): "low" | "medium" | "high" 
 }
 
 const RELATIVE_DATE_RESOLVERS: Record<string, (ref: Date) => Date> = {
-    today: (ref) => ref,
+    today: (ref) => new Date(ref),
     tomorrow: (ref) => new Date(ref.getTime() + 86_400_000),
 
 };
-
-const WEEKDAYS = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"]
 
 function resolveWeekday(rawInput: string, referenceDate: Date): Date | null {
     const match = rawInput.toLowerCase().match(new RegExp(`\\b(${WEEKDAYS.join("|")})\\b`));
     if (!match) return null;
     const targetDay = WEEKDAYS.indexOf(match[1]);
     const result = new Date(referenceDate);
-    const diff = (targetDay + 7 - result.getDay()) % 7 || 7;
-    result.setDate(result.getDate() + diff);
+    result.setDate(result.getDate() + daysUntilWeekday(result.getDay(), targetDay));
     return result;
 }
 
 function resolveInDays(rawInput: string, referenceDate: Date): Date | null {
-    const match = rawInput.toLowerCase().match(/\bin\s+(\d+)\s+days?\b/);
-    if (!match) return null;
-    return new Date(referenceDate.getTime() + Number(match[1]) * 86_400_000);
+    const days = matchInDays(rawInput);
+    return days == null ? null : new Date(referenceDate.getTime() + days * 86_400_000);
 }
 
 
@@ -108,14 +111,15 @@ function resolveInDays(rawInput: string, referenceDate: Date): Date | null {
 export function resolveDueDate(dueDateISO: string, rawInput: string, referenceDate: Date): Date {
     const parsed = new Date(dueDateISO);
     if (!Number.isNaN(parsed.getTime())) {
-        parsed.setHours(23, 59, 59, 999)
+        const isDateOnly = parsed.getHours() === 0 && parsed.getMinutes() === 0 && parsed.getSeconds() === 0;
+        if (isDateOnly) parsed.setHours(23, 59, 59, 999);
         return parsed;
     }
 
     const resolved = resolveInDays(rawInput, referenceDate) ??
         resolveWeekday(rawInput, referenceDate) ?? (() => {
             const keyword = Object.keys(RELATIVE_DATE_RESOLVERS).find((k) => rawInput.toLowerCase().includes(k));
-            return keyword ? RELATIVE_DATE_RESOLVERS[keyword](referenceDate) : referenceDate;
+            return keyword ? RELATIVE_DATE_RESOLVERS[keyword](referenceDate) : new Date(referenceDate);
         })()
 
     resolved.setHours(23, 59, 59, 999);
@@ -125,13 +129,13 @@ export function resolveDueDate(dueDateISO: string, rawInput: string, referenceDa
 
 export async function resolveAssignee(name: string, departmentHint?: string) {
     if (!name) return null;
-    const departmentFilter = departmentHint ? { departmentId: (await Department.findOne({ name: new RegExp(departmentHint, "i") }))?._id } : {};
+    const departmentFilter = departmentHint ? { departmentId: (await Department.findOne({ name: new RegExp(escapeRegex(departmentHint), "i") }))?._id } : {};
 
     const nameParts = name.trim().split(/\s+/);
     return User.findOne({
         isActive: true,
         ...departmentFilter,
-        $or: nameParts.map((part) => ({ firstName: new RegExp(`^${part}`, "i") })),
+        $or: nameParts.map((part) => ({ firstName: new RegExp(`^${escapeRegex(part)}`, "i") })),
 
 
     })

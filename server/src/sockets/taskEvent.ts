@@ -1,20 +1,6 @@
-import { getIO } from "./socket.js"
+import { emitRoomEvent, type RoomTarget } from "./roomFanout.js"
 
-type TaskRoomTarget = {
-    userId?: string | null;
-    assigneeId?: string | null;
-    departmentId?: string | null;
-};
+type TaskRoomTarget = Pick<RoomTarget, "userId" | "assigneeId" | "departmentId">
 
-const roomsFor = (target: TaskRoomTarget): string[] => {
-    const rooms = new Set<string>(["role:ADMIN"]);
-    if (target.userId) rooms.add(`user:${target.userId}`);
-    if (target.assigneeId) rooms.add(`user:${target.assigneeId}`);
-    if (target.departmentId) rooms.add(`department:${target.departmentId}`);
-    return [...rooms];
-};
-
-export const emitTaskEvent = (event: string, target: TaskRoomTarget, payload: unknown) => {
-    const io = getIO();
-    roomsFor(target).forEach((room) => io.to(room).emit(event, payload));
-};
+export const emitTaskEvent = (event: string, target: TaskRoomTarget, payload: unknown) =>
+    emitRoomEvent(event, target, payload)

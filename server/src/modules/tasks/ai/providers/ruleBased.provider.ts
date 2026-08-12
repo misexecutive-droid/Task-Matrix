@@ -1,10 +1,10 @@
 import { User } from "../../../../models/User.js"
 import { Department } from "../../../../models/Department.js"
 import type { RawExtraction } from "../schema.js"
+import { escapeRegex } from "../../../../utils/index.js"
+import { DATE_HINT_PATTERN } from "../slotFilling.js"
 
 const ISSUE_KEYWORDS = ["issue", "problem", "broken", "not working", "bug", "error", "fault", "complaint"]
-
-const DATE_HINT_PATTERN = /\btoday\b|\btomorrow\b|\bin\s+\d+\s+days?\b|\bmonday\b|\btuesday\b|\bwednesday\b|\bthursday\b|\bfriday\b|\bsaturday\b|\bsunday\b|\baaj\b|\bkal\b/i;
 
 
 export async function extractWithRules(rawInput: string, _referenceDate: Date): Promise<RawExtraction> {
@@ -17,10 +17,10 @@ export async function extractWithRules(rawInput: string, _referenceDate: Date): 
 
     ]);
 
-    const matchedUser = users.find((u) => u.firstName && new RegExp(`\\b${u.firstName}\\b`, "i").test(rawInput))
+    const matchedUser = users.find((u) => u.firstName && new RegExp(`\\b${escapeRegex(u.firstName)}\\b`, "i").test(rawInput))
     if (matchedUser) confidence += 0.25;
 
-    const matchedDept = departments.find((d) => d.name && new RegExp(`\\b${d.name}\\b`, "i")?.test(rawInput))
+    const matchedDept = departments.find((d) => d.name && new RegExp(`\\b${escapeRegex(d.name)}\\b`, "i")?.test(rawInput))
     if (matchedDept) confidence += 0.15;
 
     if (DATE_HINT_PATTERN.test(rawInput)) confidence += 0.15;

@@ -1,7 +1,5 @@
 import { z } from "zod"; // schema validation library, same as used in task.validation.ts
-
-// same reusable "is this a valid Mongo id" check as in task.validation.ts
-const objectId = z.string().regex(/^[0-9a-fA-F]{24}$/, "Invalid id");
+import { objectId } from "../../utils/index.js" // same reusable "is this a valid Mongo id" check as in task.validation.ts
 
 // shape of a valid "create project" request body
 export const createProjectSchema = z.object({

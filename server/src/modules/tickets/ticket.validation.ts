@@ -1,8 +1,7 @@
 import { z } from "zod"
 import { PRIORITIES, ASSIGNMENT_MODES, TICKET_STATUSES } from "../../models/Ticket.js"
 import { RESTRICTED_STATUSES } from "../../models/TicketStatusUpdate.js"
-
-const objectId = z.string().regex(/^[0-9a-fA-F]{24}$/, 'Invalid id');
+import { objectId } from "../../utils/index.js"
 
 export const createTicketSchema = z.object({
     title : z.string().min(1),

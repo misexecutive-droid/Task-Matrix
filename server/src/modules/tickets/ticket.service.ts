@@ -10,6 +10,7 @@ import { auditService } from "../audit/audit.service.js"
 import { emitTicketEvent } from "../../sockets/ticketEvent.js"
 import { notificationService } from "../notifications/notification.service.js"
 import { settingsService } from "../settings/settings.service.js"
+import { DATE_FORMATS, type DateBucket } from "../../utils/index.js"
 
 const populateTicket = (query: any) =>
   query
@@ -33,7 +34,13 @@ const populateTicket = (query: any) =>
 
 
 const visibilityFilter = (user: AccessTokenPayload) => {
-  if (user.role === "ADMIN" || user.role === "PC") return {}
+  if (user.role === "ADMIN") return {}
+
+  if (user.role === "PC") {
+    const or: Record<string, unknown>[] = [{ userId: user.sub }, { assigneeId: user.sub }];
+    if (user.departmentId) or.push({ departmentId: user.departmentId });
+    return { $or: or }
+  }
 
   if (user.role === "MANAGER") {
     const or: Record<string, unknown>[] = [{ userId: user.sub }];
@@ -111,7 +118,7 @@ export const ticketService = {
       after: ticket.toObject()
     })
 
-    const populated = await populateTicket(Ticket.findById(ticket._id));
+    const populated = await populateTicket(ticket);
     emitTicketEvent("ticket:created", {
       userId: ticket.userId?.toString(),
       assigneeId: ticket.assigneeId?.toString() ?? null,
@@ -140,8 +147,8 @@ export const ticketService = {
       }
       ticket.closedAt = new Date();
     } else if (input.status === "IN_REVIEW" && before.status !== "IN_REVIEW") {
-      const withItems = await Ticket.findById(id).populate({ path: "checklists", populate: { path: "items" } });
-      assertChecklistsResolved((withItems as any).checklists, "sending this ticket for review")
+      await ticket.populate({ path: "checklists", populate: { path: "items" } });
+      assertChecklistsResolved((ticket as any).checklists, "sending this ticket for review")
     } else if (input.status && input.status !== "CLOSED" && before.status === "CLOSED") {
       ticket.closedAt = null;
     }
@@ -157,7 +164,7 @@ export const ticketService = {
       after: ticket.toObject()
     });
 
-    const populated = await populateTicket(Ticket.findById(ticket._id));
+    const populated = await populateTicket(ticket);
     const target = {
       userId: ticket.userId?.toString(),
       assigneeId: ticket.assigneeId?.toString() ?? null,
@@ -188,8 +195,12 @@ export const ticketService = {
 
 
     if (input.status === "IN_REVIEW" && before.status !== "IN_REVIEW") {
-      const withItems = await Ticket.findById(id).populate({ path: "checklists", populate: { path: "items" } });
-      assertChecklistsResolved((withItems as any).checklists, "sending this ticket for review")
+      await ticket.populate({ path: "checklists", populate: { path: "items" } });
+      assertChecklistsResolved((ticket as any).checklists, "sending this ticket for review")
+    }
+
+    if (before.status === "CLOSED") {
+      ticket.closedAt = null;
     }
 
     const statusUpdate = await TicketStatusUpdate.create({
@@ -227,7 +238,7 @@ export const ticketService = {
       after: ticket.toObject(),
     });
 
-    const populated = await populateTicket(Ticket.findById(ticket._id));
+    const populated = await populateTicket(ticket);
     const target = {
       userId: ticket.userId?.toString(),
       assigneeId: ticket.assigneeId?.toString() ?? null,
@@ -279,7 +290,7 @@ export const ticketService = {
       after: ticket.toObject(),
     })
 
-    const populated = await populateTicket(Ticket.findById(ticket._id));
+    const populated = await populateTicket(ticket);
     emitTicketEvent("ticket:updated", {
       userId: ticket.userId?.toString(),
       assigneeId: ticket.assigneeId?.toString() ?? null,
@@ -304,14 +315,7 @@ export const ticketService = {
     return ticket;
   },
 
- async tatReport(groupBy: 'hour' | 'day' | 'week' | 'month' | 'year', from?: string, to?: string) {
-    const DATE_FORMATS: Record<'hour' | 'day' | 'week' | 'month' | 'year', string> = {
-      hour:  '%Y-%m-%dT%H:00',
-      day:   '%Y-%m-%d',
-      week:  '%G-W%V',
-      month: '%Y-%m',
-      year:  '%Y',
-    }
+ async tatReport(groupBy: DateBucket, from?: string, to?: string) {
 
     const closedMatch : Record<string , any> = { closedAt : { $ne : null}}
     if(from) closedMatch.closedAt = { ...closedMatch.closedAt, $gte : new Date(from)};

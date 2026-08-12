@@ -8,23 +8,23 @@ const definitionItemShape = z.object({
     label: z.string().min(1),
     order: z.number().int().min(0).optional(),
     requiredImageCount: z.number().int().min(0).optional(),
-    maxImageCount: z.number().int().min(0).optional(),
+    maxImageCount: z.number().int().min(0).nullable().optional(),
     requiresLivePhoto: z.boolean().optional(),
     itemType: z.enum(CHECKLIST_ITEM_TYPES).optional(),
     auditUserIds: z.array(z.string().min(1)).optional(),
     accessories: z.array(z.string().min(1)).optional(),
-    numberEntryUnit: z.string().trim().min(1).optional(),
-    numberEntryMin: z.number().optional(),
-    numberEntryMax: z.number().optional(),
-    ratingScale: z.number().int().min(2).max(10).optional(),
+    numberEntryUnit: z.string().trim().min(1).nullable().optional(),
+    numberEntryMin: z.number().nullable().optional(),
+    numberEntryMax: z.number().nullable().optional(),
+    ratingScale: z.number().int().min(2).max(10).nullable().optional(),
     options: z.array(z.string().min(1)).optional(),
-    gpsTargetLat: z.number().min(-90).max(90).optional(),
-    gpsTargetLng: z.number().min(-180).max(180).optional(),
-    gpsRadiusMeters: z.number().min(1).optional(),
+    gpsTargetLat: z.number().min(-90).max(90).nullable().optional(),
+    gpsTargetLng: z.number().min(-180).max(180).nullable().optional(),
+    gpsRadiusMeters: z.number().min(1).nullable().optional(),
     signatureLabels: z.array(z.string().min(1)).optional(),
-    qrExpectedValue: z.string().trim().min(1).optional(),
-    cashExpectedAmount: z.number().optional(),
-    conditionalTrigger: z.enum(["YES", "NO"]).optional(),
+    qrExpectedValue: z.string().trim().min(1).nullable().optional(),
+    cashExpectedAmount: z.number().nullable().optional(),
+    conditionalTrigger: z.enum(["YES", "NO"]).nullable().optional(),
     conditionalActions: z.array(z.enum(CHECKLIST_CONDITIONAL_ACTIONS)).optional(),
 }).refine(item => item.itemType !== "AUDIT" || (item.auditUserIds?.length ?? 0) >= 1, {
     message: "At least one auditor is required for an audit item",
@@ -38,10 +38,17 @@ const definitionItemShape = z.object({
 }).refine(item => item.gpsRadiusMeters == null || (item.gpsTargetLat != null && item.gpsTargetLng != null), {
     message: "A target location is required when a radius is set",
     path: ["gpsRadiusMeters"],
+}).refine(item => item.itemType !== "VIDEO_UPLOAD" || (item.requiredImageCount ?? 0) >= 1, {
+    message : "At least on video is required fro video upload item",
+    path : ["requiredImageCount"],
 }).refine(item => !item.conditionalTrigger || ["YES_NO", "PASS_FAIL"].includes(item.itemType ?? ""), {
-    message: "Conditional logic is only available on Yes/No and Pass/Fail items",
+    message: "Conditional rules only apply to Yes/No or Pass/Fail items",
+    path: ["conditionalTrigger"],
+}).refine(item => !(item.conditionalActions?.length) || !!item.conditionalTrigger, {
+    message: "Select a trigger answer (Yes/No) before adding conditional actions",
     path: ["conditionalTrigger"],
 })
+
 
 const checklistDefinitionFields = {
     name: z.string().min(1),

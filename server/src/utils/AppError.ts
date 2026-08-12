@@ -51,4 +51,7 @@ export class AppError extends Error {
     static notFound(message = 'Not found') { return new AppError(message, 404); }
     // 409 Conflict - the request conflicts with existing data (e.g. duplicate name/email).
     static conflict(message: string) { return new AppError(message, 409); }
+    // 422 Unprocessable Entity - the request was well-formed but couldn't be acted on
+    // (e.g. a file was readable but its contents couldn't be processed).
+    static unprocessable(message: string) { return new AppError(message, 422); }
 }

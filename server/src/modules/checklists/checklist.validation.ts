@@ -1,8 +1,7 @@
 // Zod is a schema library: we describe the shape we expect, and it both validates
 // incoming data at runtime AND lets TypeScript infer static types from that shape.
 import { z } from 'zod';
-
-const objectId = z.string().regex(/^[0-9a-fA-F]{24}$/, "Invalid id");
+import { objectId } from "../../utils/index.js"
 
 // Shape required to create a new Checklist (used by POST /tickets/:ticketId/checklists).
 // Items can now carry their own photo requirements from the moment they're created, same

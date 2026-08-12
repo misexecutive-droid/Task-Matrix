@@ -2,16 +2,11 @@ import OpenAI from "openai";
 import { zodResponseFormat } from "openai/helpers/zod";
 import { z } from "zod";
 import { buildExtractionPrompt, type RawExtraction } from "../schema.js";
+import { withTimeout, lazyClient } from "../../../../utils/index.js";
 
-// Built lazily (only when a request actually needs it) rather than at module load — the
-// OpenAI SDK throws synchronously in its constructor when no key is set, which would crash
-// the entire server on startup just because this one provider isn't configured yet.
-let client: OpenAI | null = null;
-function getClient(): OpenAI {
-    if (!process.env.OPENAI_API_KEY) throw new Error("OPENAI_API_KEY is not set");
-    if (!client) client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-    return client;
-}
+const EXTRACTION_TIMEOUT_MS = 20_000
+
+const getClient = lazyClient("OPENAI_API_KEY", () => new OpenAI({ apiKey: process.env.OPENAI_API_KEY }))
 
 const ExtractionZod = z.object({
     title: z.string(),
@@ -28,11 +23,11 @@ const ExtractionZod = z.object({
 const OPENAI_MODEL = process.env.OPENAI_MODEL ?? "gpt-4o-mini";
 
 export async function extractWithOpenAI(rawInput: string, referenceDate: Date): Promise<RawExtraction> {
-    const completion = await getClient().chat.completions.parse({
+    const completion = await withTimeout(getClient().chat.completions.parse({
         model: OPENAI_MODEL,
         messages: [{ role: "user", content: buildExtractionPrompt(rawInput, referenceDate) }],
         response_format: zodResponseFormat(ExtractionZod, "task_extraction"),
-    });
+    }), EXTRACTION_TIMEOUT_MS, "OpenAI extraction");
     const parsed = completion.choices[0]?.message.parsed;
     if (!parsed) throw new Error("OpenAI returned no parsed extraction");
     return parsed;

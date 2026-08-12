@@ -1,4 +1,5 @@
 import type { ConversationSlot } from "../../../models/PendingTaskConversation.js"
+import { WEEKDAYS, daysUntilWeekday, matchInDays } from "./dateParsing.js"
 
 // Ported from client/src/features/tasks/SmartTaskModal.tsx so the WhatsApp/DoubleTick bot can ask
 // the same follow-up questions the web "Smart Add" chat does. Kept framework-agnostic (no
@@ -46,23 +47,19 @@ export function containsFuzzyWord(text: string, keyword: string, maxDistance = 2
     return text.split(/\s+/).some((word) => levenshteinDistance(word, keyword) <= maxDistance)
 }
 
-const WEEKDAYS = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"]
-
 export function resolveDueDateLocally(answer: string, reference: Date = new Date()): Date | null {
     const lower = answer.toLowerCase().trim()
     const base = new Date(reference)
 
-    const inDaysMatch = lower.match(/\bin\s+(\d+)\s+days?\b/)
-    if (inDaysMatch) {
-        base.setDate(base.getDate() + Number(inDaysMatch[1]))
+    const days = matchInDays(lower)
+    if (days != null) {
+        base.setDate(base.getDate() + days)
         return base
     }
 
     const weekdayIndex = WEEKDAYS.findIndex((w) => containsFuzzyWord(lower, w))
     if (weekdayIndex !== -1) {
-        const currentDay = base.getDay()
-        const diff = (weekdayIndex + 7 - currentDay) % 7 || 7
-        base.setDate(base.getDate() + diff)
+        base.setDate(base.getDate() + daysUntilWeekday(base.getDay(), weekdayIndex))
         return base
     }
 
@@ -96,12 +93,13 @@ interface MissingSlotDraft {
     dueDate: Date | null
 }
 
+const SLOT_IS_MISSING: Record<ConversationSlot, (draft: MissingSlotDraft, rawInput: string) => boolean> = {
+    assignee: (draft) => !draft.assigneeId && !draft.assigneeName,
+    department: (draft) => !draft.departmentId && !draft.departmentName,
+    dueDate: (draft) => !draft.dueDate,
+    priority: (_draft, rawInput) => derivePriorityHint(rawInput) === null,
+}
+
 export function computeMissingSlots(draft: MissingSlotDraft, rawInput: string): ConversationSlot[] {
-    return SLOT_ORDER.filter((slot) => {
-        if (slot === "assignee") return !draft.assigneeId && !draft.assigneeName
-        if (slot === "department") return !draft.departmentId && !draft.departmentName
-        if (slot === "dueDate") return !draft.dueDate
-        if (slot === "priority") return derivePriorityHint(rawInput) === null
-        return false
-    })
+    return SLOT_ORDER.filter((slot) => SLOT_IS_MISSING[slot](draft, rawInput))
 }

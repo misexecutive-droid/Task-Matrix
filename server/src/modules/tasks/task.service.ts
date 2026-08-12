@@ -7,6 +7,7 @@ import { Types } from "mongoose"
 import { TaskChecklistItem } from "../../models/TaskChecklistItem.js"
 import { notificationService } from "../notifications/notification.service.js"
 import { emitTaskEvent } from "../../sockets/taskEvent.js"
+import { DATE_FORMATS, type DateBucket } from "../../utils/index.js"
 
 const visiblityFilter = (user: AccessTokenPayload) => {
     if (user.role === "ADMIN") return {};
@@ -17,22 +18,19 @@ const visiblityFilter = (user: AccessTokenPayload) => {
 }
 
 export const taskService = {
-    async list(user: AccessTokenPayload, filterUserId?: string, status?: string) {
+    async list(user: AccessTokenPayload, filterUserId?: string, status?: string, page = 1, limit = 200) {
         const ATTACHMENT_THUMBNAIL_SELECT = "url mimeType";
 
-        if (user.role === "ADMIN" && filterUserId) {
-            const filter: Record<string, unknown> = { $or: [{ userId: filterUserId }, { assigneeId: filterUserId }] };
-            if (status) filter.status = status;
-            return Task.find(filter)
-                .sort({ createdAt: -1 })
-                .populate({ path: "attachments", select: ATTACHMENT_THUMBNAIL_SELECT });
-        }
-        const filter: Record<string, unknown> = visiblityFilter(user);
+        const filter: Record<string, unknown> = user.role === "ADMIN" && filterUserId
+            ? { $or: [{ userId: filterUserId }, { assigneeId: filterUserId }] }
+            : visiblityFilter(user);
         if (status) filter.status = status;
+
         return Task.find(filter)
             .sort({ createdAt: -1 })
+            .skip((page - 1) * limit)
+            .limit(limit)
             .populate({ path: "attachments", select: ATTACHMENT_THUMBNAIL_SELECT });
-
     },
 
      async createFromSmartInput(input : ConfirmSmartTaskInput, user : AccessTokenPayload) {
@@ -112,8 +110,8 @@ export const taskService = {
     },
 
 
-    async verify(id: string, input: VerifyTaskInput, user: AccessTokenPayload) {
-        const task = await Task.findById(id);
+       async verify(id: string, input: VerifyTaskInput, user: AccessTokenPayload) {
+        const task = await Task.findOne({ _id: id, ...visiblityFilter(user) });
         if (!task) throw AppError.notFound("Task not found")
 
         if (task.status !== "pending_verification") {
@@ -136,6 +134,7 @@ export const taskService = {
         return task;
     },
 
+
     async remove(id: string, user: AccessTokenPayload) {
         const task = await Task.findOneAndDelete({ _id: id, ...visiblityFilter(user) })
 
@@ -143,14 +142,7 @@ export const taskService = {
         return task;
     },
 
-    async complianceReport(groupBy: "hour" | "day" | "week" | "month" | "year", departmentId?: string, from?: string, to?: string, userId?: string) {
-        const DATE_FORMATS: Record<"hour" | "day" | "week" | "month" | "year", string> = {
-            hour: '%Y-%m-%dT%H:00',
-            day: '%Y-%m-%d',
-            week: '%G-W%V',
-            month: '%Y-%m',
-            year: '%Y',
-        };
+    async complianceReport(groupBy: DateBucket, departmentId?: string, from?: string, to?: string, userId?: string) {
 
         const match: Record<string, any> = {};
         if (from || to) {

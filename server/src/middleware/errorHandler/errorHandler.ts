@@ -6,7 +6,16 @@ import { env } from '../../config/env.js';
 
 
 export const errorHandler = (err: unknown, _req: Request, res: Response, _next: NextFunction) => {
-  
+
+  // If a response was already sent — e.g. a webhook handler that acks immediately with
+  // res.sendStatus(200) before doing async work, then hits an error in that later work — there's
+  // nothing left to send here. Calling res.status()/.json() again would throw "Cannot set headers
+  // after they are sent", so just log and stop.
+  if (res.headersSent) {
+    console.error(err);
+    return;
+  }
+
   // A. CUSTOM OPERATIONAL ERRORS
   // Check if the error is an instance of our trusted custom error class (e.g., 401 Unauthorized, 404 Not Found)
   if (err instanceof AppError) {

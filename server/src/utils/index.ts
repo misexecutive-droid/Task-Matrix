@@ -9,3 +9,18 @@ export { AppError } from "./AppError.js"
 // Re-export the asyncHandler wrapper (see asyncHandler.ts) so consumers can do
 // `import { asyncHandler } from "../utils"`.
 export { asyncHandler } from "./asyncHandler.js"
+// Re-export escapeRegex (see regex.ts) so consumers can do
+// `import { escapeRegex } from "../utils"`.
+export { escapeRegex } from "./regex.js"
+// Re-export withTimeout (see withTimeout.ts) so consumers can do
+// `import { withTimeout } from "../utils"`.
+export { withTimeout } from "./withTimeout.js"
+// Re-export the shared objectId Zod validator (see validation.ts) so consumers can do
+// `import { objectId } from "../utils"`.
+export { objectId } from "./validation.js"
+// Re-export the shared report date-bucket map (see dateBucket.ts) so consumers can do
+// `import { DATE_FORMATS } from "../utils"`.
+export { DATE_FORMATS, type DateBucket } from "./dateBucket.js"
+// Re-export the shared lazy-client factory (see lazyClient.ts) so consumers can do
+// `import { lazyClient } from "../utils"`.
+export { lazyClient } from "./lazyClient.js"

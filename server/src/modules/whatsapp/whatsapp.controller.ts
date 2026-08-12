@@ -6,6 +6,7 @@ import { taskService } from "../tasks/task.service.js";
 import { sendWhatsAppMessage, verifySignature } from "./whatsapp.service.js";
 import { transcribeWhatsAppVoiceNote } from "./transcription.service.js";
 import { asyncHandler } from "../../utils/asyncHandler.js";
+import { departmentService } from "../departments/department.service.js";
 
 declare global {
     namespace Express {
@@ -40,37 +41,41 @@ export const whatsappController = {
 
         const from = message.from as string;
 
-        let text: string;
-        let inputMode: "voice" | "text";
+        // Everything below runs after the ack above — WhatsApp already has its 200, so nothing
+        // here can reach the client through the normal response cycle anymore. Any error from
+        // here on must be caught and reported back to the sender over WhatsApp itself, rather
+        // than bubbling up to errorHandler with no response left to send.
+        try {
+            let text: string;
+            let inputMode: "voice" | "text";
 
-        if (message.type === "text") {
-            text = message.text.body as string;
-            inputMode = "text";
-        } else if (message.type === "audio") {
-            try {
-                text = await transcribeWhatsAppVoiceNote(message.audio.id as string);
-                inputMode = "voice";
-            } catch (err) {
-                console.error("WhatsApp voice transcription failed:", err);
-                await sendWhatsAppMessage(from, "Sorry, I couldn't understand that voice note. Please try again or type it instead.");
+            if (message.type === "text") {
+                text = message.text.body as string;
+                inputMode = "text";
+            } else if (message.type === "audio") {
+                try {
+                    text = await transcribeWhatsAppVoiceNote(message.audio.id as string);
+                    inputMode = "voice";
+                } catch (err) {
+                    console.error("WhatsApp voice transcription failed:", err);
+                    await sendWhatsAppMessage(from, "Sorry, I couldn't understand that voice note. Please try again or type it instead.");
+                    return;
+                }
+            } else {
+                await sendWhatsAppMessage(from, "Sorry, I can only understand text messages or voice notes right now.");
                 return;
             }
-        } else {
-            await sendWhatsAppMessage(from, "Sorry, I can only understand text messages or voice notes right now.");
-            return;
-        }
 
-        const sender = await User.findOne({ phone: from, isActive: true });
-        if (!sender) {
-            await sendWhatsAppMessage(from, "This number isn't registered in Task Matrix. Ask an admin to add it to your profile first.");
-            return;
-        }
-
-        try {
+            const sender = await User.findOne({ phone: from, isActive: true });
+            if (!sender) {
+                await sendWhatsAppMessage(from, "This number isn't registered in Task Matrix. Ask an admin to add it to your profile first.");
+                return;
+            }
 
             const refereceDate = new Date();
             const extraction = await extractTaskFromText(text, refereceDate);
             const assignee = await resolveAssignee(extraction.assigneeName, extraction.department);
+            const department = await departmentService.resolveByName(extraction.department);
             const dueDate = resolveDueDate(extraction.dueDateISO, text, refereceDate)
             const priority = priorityForCreatorRank(sender.rank ?? 5)
 
@@ -82,6 +87,7 @@ export const whatsappController = {
                     priority,
                     dueDate : dueDate.toISOString(),
                     assigneeId : assignee?._id?.toString(),
+                    departmentId : department?._id?.toString(),
                     assigneeRaw : extraction.assigneeName || undefined,
                     departmentRaw : extraction.department || undefined,
                     confidence : extraction.confidence,

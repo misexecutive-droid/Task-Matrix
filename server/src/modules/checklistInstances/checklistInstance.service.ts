@@ -7,7 +7,8 @@ import { notificationService } from "../notifications/notification.service.js"
 import { ticketService } from "../tickets/ticket.service.js"
 import type { AccessTokenPayload } from "../../middleware/auth/auth.js"
 import type { VerifyChecklistInstanceInput } from "./checklistInstance.validation.js"
-import { ROLES , type Role } from "../../models/User.js"
+import { ROLES, type Role } from "../../models/User.js"
+import { DATE_FORMATS, type DateBucket } from "../../utils/index.js"
 
 export type InstanceStatusFilter = "OPEN" | "COMPLETED"
 
@@ -17,7 +18,7 @@ const populateInstance = (query: any) =>
         options: { sort: { order: 1 } },
         populate: [
             { path: "images" },
-           
+
             {
                 path: "submissions",
                 populate: [{ path: "images" }, { path: "userId", select: "firstName lastName storeId" }],
@@ -229,36 +230,57 @@ const assertConditionalActionsSatisfied = async (item: any, values: ItemValueInp
 // Applies CREATE_ISSUE/NOTIFY_AREA_MANAGER after validation passes and the item has been saved —
 // these are side effects, not completion gates. CREATE_ISSUE only fires once per item (guarded by
 // issueId) so reopening/resubmitting the same "No" doesn't spawn duplicate tickets.
+// const applyConditionalSideEffects = async (item: any, instance: any, user: AccessTokenPayload, values: ItemValueInput) => {
+//     if (!isConditionTriggered(item, values)) return
+//     const actions: string[] = item.conditionalActions ?? []
+
+//     if (actions.includes("CREATE_ISSUE") && !item.issueId) {
+//         const reason = values.conditionalReasonValue ?? item.conditionalReasonValue
+//         const ticket = await ticketService.create({
+//             title: `Checklist flag: ${item.label}`,
+//             description: `Raised automatically from "${instance.title}" — "${item.label}" was answered "${values.booleanAnswer}".${reason ? ` Reason: ${reason}` : ""}`,
+//             storeId: instance.storeId?.toString(),
+//         }, user)
+//         item.issueId = ticket._id
+//         await item.save()
+//     }
+
+//     if (actions.includes("NOTIFY_AREA_MANAGER")) {
+//         await notificationService
+//             .notifyAreaManagersOfChecklistFlag(instance, item)
+//             .catch((err: unknown) => console.error("Failed to notify area manager of checklist flag:", err))
+//     }
+// }
+
 const applyConditionalSideEffects = async (item: any, instance: any, user: AccessTokenPayload, values: ItemValueInput) => {
     if (!isConditionTriggered(item, values)) return
     const actions: string[] = item.conditionalActions ?? []
 
     if (actions.includes("CREATE_ISSUE") && !item.issueId) {
-        const reason = values.conditionalReasonValue ?? item.conditionalReasonValue
-        const ticket = await ticketService.create({
-            title: `Checklist flag: ${item.label}`,
-            description: `Raised automatically from "${instance.title}" — "${item.label}" was answered "${values.booleanAnswer}".${reason ? ` Reason: ${reason}` : ""}`,
-            storeId: instance.storeId?.toString(),
-        }, user)
-        item.issueId = ticket._id
-        await item.save()
+        try {
+            const reason = values.conditionalReasonValue ?? item.conditionalReasonValue
+            const ticket = await ticketService.create({
+                title: `Checklist flag : ${item.label}`,
+                description: `Raised automatically from "${instance.title}" -- "${item.label}" was answered "${values.booleanAnswer}".${reason ? `Reason: ${reason}` : ""}`,
+                storeId: instance.storeId?.toString(),
+            }, user)
+            item.issueId = ticket._id
+            await item.save()
+        } catch (err) {
+            console.error("Failed to auto-create issue from checklist flag:", err)
+        }
     }
 
-    if (actions.includes("NOTIFY_AREA_MANAGER")) {
+    if (actions.includes("NOTIFY_AREA_MANAGER") && !item.areaManagerNotifiedAt) {
+        item.areaManagerNotifiedAt = new Date()
+        await item.save()
         await notificationService
             .notifyAreaManagersOfChecklistFlag(instance, item)
-            .catch((err: unknown) => console.error("Failed to notify area manager of checklist flag:", err))
+            .catch((err: unknown) => console.error("Failed to notify area manager of checklist flage:", err))
+
     }
 }
 
-// Recomputes verificationStatus after an item's isDone flips. Going all-done pushes it into
-// PENDING (first submission, or an auto-resubmit after REJECTED) — unless it's already APPROVED,
-// since approval is treated as a settled decision that a later item edit shouldn't silently
-// reopen. Falling out of all-done while still PENDING pulls it back to NOT_SUBMITTED, since a PC
-// shouldn't see an incomplete checklist sitting in their queue.
-// Exported so checklistInstanceItemSubmission.service.ts can reuse this exact rule after an AUDIT
-// item's derived isDone flips (see ChecklistInstanceItem.ts) — verification logic lives in one
-// place regardless of which item type triggered the recompute.
 export const syncVerificationStatus = async (instance: any) => {
     const items = await ChecklistInstanceItem.find({ instanceId: instance._id })
     const allDone = items.length > 0 && items.every((i: any) => i.isDone)
@@ -280,14 +302,14 @@ export const syncVerificationStatus = async (instance: any) => {
 // PC verification is store-scoped here (unlike Ticket's cross-department PC) — a PC only
 // verifies checklist instances within their own store.
 
-const CAN_VERIFY_BY_ROLE : Partial<Record <Role, (instance : any , user : AccessTokenPayload) => boolean>> = {
-   ADMIN : () => true,
-   PC : (instance, user) => Boolean(user.storeId) && instance.storeId?.toString() === user.storeId,
+const CAN_VERIFY_BY_ROLE: Partial<Record<Role, (instance: any, user: AccessTokenPayload) => boolean>> = {
+    ADMIN: () => true,
+    PC: (instance, user) => Boolean(user.storeId) && instance.storeId?.toString() === user.storeId,
 }
 
 const assertCanVerify = (instance: any, user: AccessTokenPayload) => {
-   const canVerify = CAN_VERIFY_BY_ROLE[user.role]?.(instance,user) ?? false
-   if(!canVerify) throw AppError.forbidden()
+    const canVerify = CAN_VERIFY_BY_ROLE[user.role]?.(instance, user) ?? false
+    if (!canVerify) throw AppError.forbidden()
 }
 
 export const checklistInstanceService = {
@@ -315,33 +337,38 @@ export const checklistInstanceService = {
 
     async setItemDone(itemId: string, isDone: boolean, user: AccessTokenPayload, values: ItemValueInput = {}) {
         const item = await ChecklistInstanceItem.findById(itemId)
-        if (!item) throw AppError.notFound("Checklist item not found")
+        if (!item) throw AppError.notFound("Checklist item not found.")
 
         const instance = await ChecklistInstance.findById(item.instanceId)
-        if (!instance) throw AppError.notFound("Checklist instance not found")
+        if (!instance) throw AppError.notFound("Checklist instance not found.")
         assertCanAccess(instance, user)
 
-        if (isDone) {
-            await assertPhotosSatisfied(item)
-            VALUE_VALIDATORS_BY_ITEM_TYPE[item.itemType]?.(item, values)
-            await assertConditionalActionsSatisfied(item, values)
+        if (values.numericValue !== undefined) item.numericValue = values.numericValue as any;
+        if (values.booleanAnswer !== undefined) item.booleanAnswer = values.booleanAnswer as any;
+        if (values.textValue !== undefined) item.booleanAnswer = values.booleanAnswer as any;
+        if (values.dateValue !== undefined) {
+            const parsed = new Date(values.dateValue)
+            if (Number.isNaN(parsed.getTime())) throw AppError.badRequest("That doesn't look like a valid date.")
+            item.dateValue = parsed as any
         }
 
-        // Persisted whenever sent, not just when marking done, so a partially-filled answer
-        // survives a page refresh instead of forcing re-entry right before submitting.
-        if (values.numericValue !== undefined) item.numericValue = values.numericValue as any
-        if (values.booleanAnswer !== undefined) item.booleanAnswer = values.booleanAnswer as any
-        if (values.textValue !== undefined) item.textValue = values.textValue as any
-        if (values.dateValue !== undefined) item.dateValue = new Date(values.dateValue) as any
         if (values.gpsLat !== undefined) item.gpsLat = values.gpsLat as any
-        if (values.gpsLng !== undefined) item.gpsLng = values.gpsLng as any
+if (values.textValue !== undefined) item.booleanAnswer = values.booleanAnswer as any;
         if (values.gpsAccuracy !== undefined) item.gpsAccuracy = values.gpsAccuracy as any
         if (values.gpsLat !== undefined || values.gpsLng !== undefined) item.gpsCapturedAt = new Date() as any
         if (values.signatureValue !== undefined) item.signatureValue = values.signatureValue as any
         if (values.secondSignatureValue !== undefined) item.secondSignatureValue = values.secondSignatureValue as any
         if (values.conditionalReasonValue !== undefined) item.conditionalReasonValue = values.conditionalReasonValue as any
+
+        if (isDone) {
+            await item.save()
+            await assertPhotosSatisfied(item)
+            VALUE_VALIDATORS_BY_ITEM_TYPE[item.itemType]?.(item, values)
+            await assertConditionalActionsSatisfied(item, values)
+            item.completedBy = user.sub as any
+        }
+
         item.isDone = isDone
-        if (isDone) item.completedBy = user.sub as any
         await item.save()
 
         if (isDone) await applyConditionalSideEffects(item, instance, user, values)
@@ -393,14 +420,7 @@ export const checklistInstanceService = {
     // instance's periodStart rather than the item's own createdAt — periodStart is the
     // semantically correct "which operational period does this belong to" field; createdAt is
     // just whenever the cron job happened to stamp the item out (could lag on a backfill run).
-    async complianceReport(groupBy: "hour" | "day" | "week" | "month" | "year", storeId?: string, from?: string, to?: string) {
-        const DATE_FORMATS: Record<"hour" | "day" | "week" | "month" | "year", string> = {
-            hour: '%Y-%m-%dT%H:00',
-            day: '%Y-%m-%d',
-            week: '%G-W%V',
-            month: '%Y-%m',
-            year: '%Y',
-        };
+    async complianceReport(groupBy: DateBucket, storeId?: string, from?: string, to?: string) {
 
         const rows = await ChecklistInstanceItem.aggregate([
             { $lookup: { from: "checklistinstances", localField: "instanceId", foreignField: "_id", as: "instance" } },

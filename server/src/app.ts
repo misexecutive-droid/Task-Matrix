@@ -30,7 +30,7 @@ import { notificationRouter } from "./modules/notifications/notification.routes.
 import { settingsRouter } from "./modules/settings/settings.routes.js"
 import { reportRouter } from "./modules/reports/report.routes.js"
 import { eventRouter } from "./modules/events/event.routes.js"
-import { createApiLimiter, createAuthLimiter } from "./middleware/rateLimiter/rateLimiter.js"
+import { createApiLimiter, createAuthLimiter, createAiLimiter , createWebhookLimiter } from "./middleware/rateLimiter/rateLimiter.js"
 import { whatsappRouter } from "./modules/whatsapp/whatsapp.routes.js"
 import { doubletickRouter } from "./modules/doubletick/doubletick.routes.js"
 import helmet from "helmet"
@@ -74,6 +74,7 @@ class App {
         this.app.use('/departments', departmentRouter);
         this.app.use('/categories', categoryRouter);
 
+        this.app.use('/tasks/ai', createAiLimiter(rateLimitStore));
         this.app.use('/tasks', taskRouter);
         this.app.use('/projects', projectRouter)
 
@@ -100,7 +101,9 @@ class App {
 
         this.app.use("/settings" , settingsRouter)
 
+        this.app.use('/whatsapp/webhook', createWebhookLimiter(rateLimitStore));
         this.app.use('/whatsapp', whatsappRouter);
+        this.app.use('/doubletick/webhook', createWebhookLimiter(rateLimitStore));
         this.app.use('/doubletick', doubletickRouter);
 
 

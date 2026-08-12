@@ -114,6 +114,7 @@ const taskAttachmentStorage = multer.diskStorage({
 // the only difference is the file itself can be a video. Fixed allowlist, not admin-editable like
 // allowedImageTypes, since it's a narrow feature-specific exception rather than a general setting.
 const CHECKLIST_VIDEO_MIME_TYPES = ["video/mp4", "video/quicktime", "video/webm"]
+const CHECKLIST_VIDEO_MIN_SIZE_MB = 100
 
 // Builds a brand-new multer instance using whatever's currently in the settings cache. This is
 // cheap (no I/O — multer() just wires up config objects), so it's fine to call fresh on every
@@ -122,12 +123,14 @@ const CHECKLIST_VIDEO_MIME_TYPES = ["video/mp4", "video/quicktime", "video/webm"
 // the admin-configured allowedImageTypes for callers with their own fixed exception (see
 // CHECKLIST_VIDEO_MIME_TYPES above) — empty by default, so every other caller's behavior is
 // unchanged.
+
 const buildImageUpload = ( storageEngine : multer.StorageEngine, extraMimeTypes: string[] = []) => {
     const settings = settingsService.getCached();
+    const fileSizeMb = extraMimeTypes.length ? Math.max(settings.maxUploadSizeMb, CHECKLIST_VIDEO_MIN_SIZE_MB) : settings.maxUploadSizeMb
     return multer({
         storage : storageEngine,
         limits : {
-            fileSize : settings.maxUploadSizeMb * 1024 * 1024,
+            fileSize : fileSizeMb * 1024 * 1024,
             files : settings.maxUploadFiles,
         },
 
@@ -141,6 +144,7 @@ const buildImageUpload = ( storageEngine : multer.StorageEngine, extraMimeTypes:
 
     })
 }
+
 
 export const taskImageUpload = (req : Request , res : Response , next : NextFunction) =>
     buildImageUpload(storage).array("images" , settingsService.getCached().maxUploadFiles)(req,res,next)
