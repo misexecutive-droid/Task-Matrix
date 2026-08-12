@@ -14,7 +14,7 @@ interface ConfirmOptions {
   description?: string;
   confirmLabel?: string;
   cancelLabel?: string;
-  variant?: 'danger' | 'default';
+  variant?: 'default' | 'danger';
 }
 
 interface ConfirmState extends ConfirmOptions {

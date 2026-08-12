@@ -108,7 +108,7 @@ export const taskApi = {
         if (userId) params.set('userId', userId);
         if (status) params.set('status', status);
         const qs = params.toString();
-        return apiFetch<Task[]>(qs ? `/tasks?${qs}` : '/tasks');
+        return apiFetch<ApiResponse<Task[]>>(qs ? `/tasks?${qs}` : '/tasks').then(r => r.data);
     },
 
     parseSmart: (text: string) =>
@@ -123,19 +123,19 @@ export const taskApi = {
         return apiFetch<{ transcript: string }>('/tasks/ai/transcribe', { method: 'POST', body: formData });
     },
 
-    getOne: (id: string) => apiFetch<Task>(`/tasks/${id}`),
+    getOne: (id: string) => apiFetch<ApiResponse<Task>>(`/tasks/${id}`).then(r => r.data),
 
     create: (payload: CreateTaskPayload) =>
-        apiFetch<Task>('/tasks', { method: 'POST', body: JSON.stringify(payload) }),
+        apiFetch<ApiResponse<Task>>('/tasks', { method: 'POST', body: JSON.stringify(payload) }).then(r => r.data),
 
     update: (id: string, payload: UpdateTaskPayload) =>
-        apiFetch<Task>(`/tasks/${id}`, { method: 'PATCH', body: JSON.stringify(payload) }),
+        apiFetch<ApiResponse<Task>>(`/tasks/${id}`, { method: 'PATCH', body: JSON.stringify(payload) }).then(r => r.data),
 
     verify: (id: string, payload: VerifyTaskPayload) =>
-        apiFetch<Task>(`/tasks/${id}/verify`, { method: 'PATCH', body: JSON.stringify(payload) }),
+        apiFetch<ApiResponse<Task>>(`/tasks/${id}/verify`, { method: 'PATCH', body: JSON.stringify(payload) }).then(r => r.data),
 
     delete: (id: string) =>
-        apiFetch<{ success: boolean }>(`/tasks/${id}`, { method: 'DELETE' }),
+        apiFetch<ApiResponse<{ deleted: boolean }>>(`/tasks/${id}`, { method: 'DELETE' }),
 
     getComplianceReport: (groupBy: 'hour' | 'day' | 'week' | 'month' | 'year' = 'month', from?: string, to?: string) => {
         const params = new URLSearchParams({ groupBy });

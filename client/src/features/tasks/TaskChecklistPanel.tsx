@@ -17,12 +17,12 @@ export const TaskChecklistPanel = ({ taskId, checklists, isAdmin, currentUserId 
 
   return (
     <div className="flex flex-col gap-6">
-      
+
       {/* Header Section */}
-      <div className="flex items-center justify-between gap-4 flex-wrap pb-4 border-b border-gray-200">
+      <div className="flex items-center justify-between gap-4 flex-wrap pb-4 border-b border-border">
         <div>
-          <h3 className="text-lg font-semibold text-gray-900 tracking-tight">Checklists</h3>
-          <p className="text-sm text-gray-500 mt-0.5">Track sub-tasks and required evidence</p>
+          <h3 className="text-lg font-semibold text-text tracking-tight">Checklists</h3>
+          <p className="text-sm text-text-muted mt-0.5">Track sub-tasks and required evidence</p>
         </div>
         {isAdmin && !adding && (
           <Button
@@ -46,12 +46,12 @@ export const TaskChecklistPanel = ({ taskId, checklists, isAdmin, currentUserId 
 
       {/* Empty State */}
       {checklists.length === 0 && !adding && (
-        <div className="flex flex-col items-center justify-center p-8 sm:p-10 text-center bg-gray-50 rounded-2xl border-2 border-dashed border-gray-200">
-          <div className="flex items-center justify-center w-12 h-12 bg-white rounded-xl border border-gray-200 shadow-sm mb-4">
-             <CheckSquare size={24} className="text-gray-400" />
+        <div className="flex flex-col items-center justify-center p-8 sm:p-10 text-center bg-surface-hover/40 rounded-2xl border-2 border-dashed border-border">
+          <div className="flex items-center justify-center w-12 h-12 bg-surface rounded-xl border border-border shadow-sm mb-4">
+             <CheckSquare size={24} className="text-text-light" />
           </div>
-          <h4 className="text-base font-semibold text-gray-900">No Checklists Active</h4>
-          <p className="text-sm text-gray-500 mt-1 max-w-sm">
+          <h4 className="text-base font-semibold text-text">No Checklists Active</h4>
+          <p className="text-sm text-text-muted mt-1 max-w-sm">
             Break down this task into smaller, trackable items. Add a checklist to get started.
           </p>
           {isAdmin && (
@@ -63,7 +63,20 @@ export const TaskChecklistPanel = ({ taskId, checklists, isAdmin, currentUserId 
         </div>
       )}
 
-     
+      {/* Checklist Blocks */}
+      {checklists.length > 0 && (
+        <div className="flex flex-col gap-4">
+          {checklists.map(checklist => (
+            <ChecklistBlock
+              key={checklist.id}
+              checklist={checklist}
+              taskId={taskId}
+              isAdmin={isAdmin}
+              currentUserId={currentUserId}
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 };

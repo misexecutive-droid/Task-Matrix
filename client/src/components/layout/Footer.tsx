@@ -22,7 +22,6 @@ export const Footer = () => {
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-5 flex flex-col md:flex-row items-center justify-between gap-x-6 gap-y-4">
         
-        {/* Brand Anchor */}
         <NavLink
           to="/"
           className="flex items-center gap-2 shrink-0 group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 rounded-lg p-0.5"
@@ -35,7 +34,6 @@ export const Footer = () => {
           </span>
         </NavLink>
 
-        {/* Navigation Links */}
         <nav className="flex flex-wrap items-center justify-center gap-x-1 gap-y-1">
           {LINKS.map(({ to, label }) => (
             <NavLink
@@ -55,8 +53,6 @@ export const Footer = () => {
             </NavLink>
           ))}
         </nav>
-
-        {/* Copyright Notice */}
         <p className="text-xs text-text-muted font-mono shrink-0">
           © {currentYear} TaskMatrix. All rights reserved.
         </p>

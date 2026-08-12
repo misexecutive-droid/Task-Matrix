@@ -7,7 +7,7 @@ import {
   BreadcrumbLink,
   BreadcrumbPage,
   BreadcrumbSeparator,
-} from '@/components/ui/breadcrumb'; 
+} from '@/components/ui/breadcrumb';
 
 export interface BreadcrumbTrailItem {
   label: string;
@@ -19,7 +19,6 @@ export interface BreadcrumbsProps {
   className?: string;
 }
 
-  
 export const Breadcrumbs = ({ items, className }: BreadcrumbsProps) => {
   if (!items || items.length === 0) {
     return null;

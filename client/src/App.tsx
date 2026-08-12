@@ -7,7 +7,7 @@ import { Dashboard } from './features/dashboard';
 import { HomePage } from './features/dashboard/HomePage';
 import { PublicLayout } from './components/layout';
 import { TicketList, useTicketSocket } from './features/tickets';
-import { TaskList } from './features/tasks';
+import { TaskList, useTaskSocket } from './features/tasks';
 import { useNotificationSocket } from './features/notifications/useNotificationSocket';
 import { AdminLayout } from './features/admin/AdminLayout';
 import { UserList } from './features/admin/users';
@@ -125,6 +125,7 @@ const router = createBrowserRouter([
 
 export default function App() {
   useTicketSocket();
+  useTaskSocket();
   useNotificationSocket();
   return <RouterProvider router={router} />;
 }

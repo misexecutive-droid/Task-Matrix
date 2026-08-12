@@ -16,12 +16,14 @@ export const useTicketSocket = () => {
         socket.on("ticket:created", invalidateTickets);
         socket.on("ticket:updated", invalidateTickets);
         socket.on("ticket:assigned", invalidateTickets)
+        socket.on("ticket:overdue", invalidateTickets)
         socket.on("checklistItem:updated", invalidateTickets);
 
         return () => {
             socket.off("ticket:created", invalidateTickets);
             socket.off("ticket:updated", invalidateTickets);
             socket.off("ticket:assigned", invalidateTickets);
+            socket.off("ticket:overdue", invalidateTickets)
             socket.off("checklistItem:updated", invalidateTickets)
             releaseSocket()
             disconnectSocket()

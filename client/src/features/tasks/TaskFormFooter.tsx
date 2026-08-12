@@ -1,4 +1,3 @@
-import { ArrowRight } from 'lucide-react';
 import { Button } from '../../components';
 
 interface TaskFormFooterProps {

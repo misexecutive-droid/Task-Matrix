@@ -11,7 +11,7 @@ import type {
     CaptureMethod,
 } from "../../api/taskChecklist";
 import { handleQueryRetry, useEntityMutation } from "../../lib/queryHelpers";
-import type { SmartTaskParseResult , ConfirmSmartTaskPayload } from "../../api/task";
+import type { ConfirmSmartTaskPayload } from "../../api/task";
 
 const TASK_KEYS = {
     // The cache key includes which user's tasks we're looking at, so "my tasks" and "some other

@@ -52,14 +52,14 @@ export const TaskCard = ({ task, assigneeName, departmentName, isAdmin, isVerifi
   return (
     <div
       onClick={() => onOpen(task)}
-      className="group relative flex flex-col p-2.5 rounded-lg border border-gray-200 bg-white shadow-xs hover:border-gray-300 hover:shadow-sm transition-all duration-150 cursor-pointer select-none"
+      className="group relative flex flex-col p-2.5 rounded-lg border border-border bg-surface shadow-xs hover:border-border-hover hover:shadow-sm transition-all duration-150 cursor-pointer select-none"
     >
       <div className="flex items-start justify-between gap-2 mb-2">
         <div className="flex items-center gap-1.5 min-w-0">
-          <div className="flex items-center justify-center size-5 rounded bg-gray-100 text-gray-600 font-bold text-[10px] shrink-0 border border-gray-200">
+          <div className="flex items-center justify-center size-5 rounded bg-surface-hover text-text-secondary font-bold text-[10px] shrink-0 border border-border">
             {task.title.charAt(0).toUpperCase()}
           </div>
-          <h4 className="text-xs font-semibold text-gray-900 group-hover:text-blue-600 transition-colors truncate leading-tight">
+          <h4 className="text-xs font-semibold text-text group-hover:text-blue-600 transition-colors truncate leading-tight">
             {task.title}
           </h4>
         </div>
@@ -73,11 +73,11 @@ export const TaskCard = ({ task, assigneeName, departmentName, isAdmin, isVerifi
               deleteMutation.mutate(task.id);
             }}
             disabled={deleteMutation.isPending}
-            className="shrink-0 p-0.5 rounded text-gray-400 hover:text-red-600 hover:bg-red-50 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+            className="shrink-0 p-0.5 rounded text-text-light hover:text-danger hover:bg-danger/10 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
             title="Delete task"
           >
             {deleteMutation.isPending ? (
-              <Loader2 size={12} className="animate-spin text-red-600" />
+              <Loader2 size={12} className="animate-spin text-danger" />
             ) : (
               <Trash2 size={12} />
             )}
@@ -85,7 +85,7 @@ export const TaskCard = ({ task, assigneeName, departmentName, isAdmin, isVerifi
         )}
       </div>
 
-      <div className="space-y-1 my-1 text-[11px] text-gray-500">
+      <div className="space-y-1 my-1 text-[11px] text-text-muted">
         {departmentName && (
           <div className="flex items-center justify-between">
             <span>Dept:</span>
@@ -107,15 +107,15 @@ export const TaskCard = ({ task, assigneeName, departmentName, isAdmin, isVerifi
         {task.dueDate && (
           <div className="flex items-center justify-between">
             <span>Due:</span>
-            <span className={`flex items-center gap-1 font-medium ${isOverdue ? 'text-red-600 font-semibold' : 'text-gray-700'}`}>
-              <Clock size={10} className={isOverdue ? 'text-red-500' : 'text-gray-400'} />
+            <span className={`flex items-center gap-1 font-medium ${isOverdue ? 'text-danger font-semibold' : 'text-text-secondary'}`}>
+              <Clock size={10} className={isOverdue ? 'text-danger' : 'text-text-light'} />
               {new Date(task.dueDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
             </span>
           </div>
         )}
       </div>
 
-      <div className="flex items-center justify-between pt-2 mt-1 border-t border-gray-100">
+      <div className="flex items-center justify-between pt-2 mt-1 border-t border-border/60">
         <div className="flex items-center gap-1.5 min-w-0">
           {assigneeName ? (
             <div
@@ -125,11 +125,11 @@ export const TaskCard = ({ task, assigneeName, departmentName, isAdmin, isVerifi
               {getInitials(assigneeName)}
             </div>
           ) : (
-            <div className="flex items-center justify-center size-5 rounded-full border border-dashed border-gray-300 text-gray-400 shrink-0 bg-gray-50" title="Unassigned">
+            <div className="flex items-center justify-center size-5 rounded-full border border-dashed border-border-hover text-text-light shrink-0 bg-surface-hover" title="Unassigned">
               <User size={10} />
             </div>
           )}
-          <span className="text-[11px] text-gray-700 font-medium truncate">
+          <span className="text-[11px] text-text-secondary font-medium truncate">
             {assigneeName || "Unassigned"}
           </span>
         </div>
@@ -144,7 +144,7 @@ export const TaskCard = ({ task, assigneeName, departmentName, isAdmin, isVerifi
                 type="button"
                 onClick={goBack}
                 disabled={updateMutation.isPending}
-                className="p-1 rounded text-gray-400 hover:text-blue-600 hover:bg-blue-50 opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-200 ease-out"
+                className="p-1 rounded text-text-light hover:text-blue-600 hover:bg-blue-500/10 opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-200 ease-out"
                 title={`Move back to ${STATUS_LABEL[prev]}`}
               >
                 <ArrowLeft size={12} />
@@ -154,7 +154,7 @@ export const TaskCard = ({ task, assigneeName, departmentName, isAdmin, isVerifi
               type="button"
               onClick={advance}
               disabled={updateMutation.isPending}
-              className="p-1 rounded text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"
+              className="p-1 rounded text-text-light hover:text-blue-600 hover:bg-blue-500/10 transition-colors"
               title={`Move to ${STATUS_LABEL[next]}`}
             >
               {updateMutation.isPending ? <Loader2 size={12} className="animate-spin text-blue-600" /> : <ArrowRight size={12} />}
@@ -165,19 +165,19 @@ export const TaskCard = ({ task, assigneeName, departmentName, isAdmin, isVerifi
             <TaskVerifyActions task={task} />
           ) : (
             <span title="Awaiting verification">
-              <ShieldQuestion size={12} className="text-amber-500" />
+              <ShieldQuestion size={12} className="text-warning" />
             </span>
           )
         ) : (
           <span title="Task Completed">
-            <CheckCircle2 size={12} className="text-emerald-500" />
+            <CheckCircle2 size={12} className="text-success" />
           </span>
         )}
       </div>
 
       {updateMutation.isError && (
-        <div className="flex items-center gap-1 mt-1.5 p-1 bg-red-50 rounded text-[10px] text-red-600 font-medium border border-red-100">
-          <AlertCircle size={10} className="shrink-0 text-red-600" />
+        <div className="flex items-center gap-1 mt-1.5 p-1 bg-danger/10 rounded text-[10px] text-danger font-medium border border-danger/20">
+          <AlertCircle size={10} className="shrink-0 text-danger" />
           <span className="truncate">{updateMutation.error instanceof Error ? updateMutation.error.message : 'Error updating.'}</span>
         </div>
       )}

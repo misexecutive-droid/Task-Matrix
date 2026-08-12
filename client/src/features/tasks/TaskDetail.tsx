@@ -40,20 +40,20 @@ export const TaskDetail = ({ task: initialTask, assigneeName, departmentName, on
     <Sheet open onOpenChange={(open) => { if (!open) onClose(); }}>
       <SheetContent
         side="bottom"
-        className="flex flex-col h-[92vh] sm:h-[88vh] w-full p-0 overflow-hidden rounded-t border-t border-gray-200 bg-white shadow-2xl text-gray-900 transition-all outline-none"
+        className="flex flex-col h-[92vh] sm:h-[88vh] w-full p-0 overflow-hidden rounded-t border-t border-border bg-surface shadow-2xl text-text transition-all outline-none"
       >
         <div className={`h-1.5 shrink-0 transition-all duration-300 ${task.status === 'done'
-            ? 'bg-emerald-500' :
+            ? 'bg-success' :
             task.status === 'in_progress'
-              ? 'bg-amber-500' :
+              ? 'bg-warning' :
               task.status === 'pending_verification'
-                ? 'bg-indigo-500' :
-                'bg-gray-400'
+                ? 'bg-info' :
+                'bg-border-hover'
           }`} />
 
         <TaskDetailHeader task={task} isOverdue={isOverdue} />
 
-        <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-6 scrollbar-thin scrollbar-thumb-gray-200 hover:scrollbar-thumb-gray-300">
+        <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-6 scrollbar-thin scrollbar-thumb-border hover:scrollbar-thumb-border-hover">
           <div className="max-w-3xl mx-auto w-full space-y-8">
             <TaskDetailInfoGrid
               task={task}
@@ -75,7 +75,7 @@ export const TaskDetail = ({ task: initialTask, assigneeName, departmentName, on
         </div>
 
         {isVerifier && task.status === 'pending_verification' && (
-          <div className="border-t border-gray-200 bg-gray-50/80">
+          <div className="border-t border-border bg-surface-hover/80">
             <div className="max-w-3xl mx-auto w-full px-4 sm:px-6 pt-3 pb-2">
               <TaskVerifyActions task={task} />
             </div>

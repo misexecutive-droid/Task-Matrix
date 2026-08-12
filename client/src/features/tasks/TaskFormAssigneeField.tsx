@@ -28,30 +28,30 @@ export const TaskFormAssigneeField = ({ value, onChange, users, isLoading }: Tas
       onValueChange={(v) => onChange(v === UNASSIGNED ? '' : v)}
       disabled={isLoading}
     >
-      <SelectTrigger className="h-10 text-sm font-medium bg-white border-gray-300 rounded shadow-sm hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all w-full">
+      <SelectTrigger className="h-10 text-sm font-medium bg-surface border-border rounded shadow-sm hover:border-border-hover focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all w-full">
         <SelectValue placeholder="Assign team member" />
       </SelectTrigger>
-      
-      <SelectContent className="bg-white border-gray-200 shadow-lg rounded">
-        <SelectItem value={UNASSIGNED} className="text-sm font-medium text-gray-500">
+
+      <SelectContent className="bg-surface border-border shadow-lg rounded">
+        <SelectItem value={UNASSIGNED} className="text-sm font-medium text-text-muted">
           Unassigned
         </SelectItem>
-        
+
         {users?.map((u) => (
-          <SelectItem key={u.id} value={u.id} className="cursor-pointer rounded-sm hover:bg-gray-50 transition-colors">
+          <SelectItem key={u.id} value={u.id} className="cursor-pointer rounded-sm hover:bg-surface-hover transition-colors">
             <div className="flex items-center gap-2.5 truncate py-0.5">
               {/* Avatar Icon */}
               <div className="flex items-center justify-center w-6 h-6 rounded-full bg-blue-50 text-blue-700 border border-blue-200 text-[10px] font-bold shrink-0 shadow-sm">
                 {u.firstName?.[0]}
               </div>
-              
+
               {/* User Name */}
-              <span className="text-sm font-semibold text-gray-900 truncate">
+              <span className="text-sm font-semibold text-text truncate">
                 {u.firstName} {u.lastName ?? ''}
               </span>
-              
+
               {/* Role Badge (Using sharp 'rounded' corners to match container) */}
-              <span className="text-[10px] font-bold uppercase tracking-wider text-gray-500 px-1.5 py-0.5 rounded bg-gray-50 border border-gray-200 shrink-0 mt-0.5">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-text-muted px-1.5 py-0.5 rounded bg-surface-hover border border-border shrink-0 mt-0.5">
                 {u.role}
               </span>
             </div>

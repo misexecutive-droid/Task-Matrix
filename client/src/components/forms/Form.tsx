@@ -1,20 +1,26 @@
-import React from "react";
+import  { type FormHTMLAttributes, type FormEventHandler } from 'react';
+import { clsx, type ClassValue } from 'clsx';
+import { twMerge } from 'tailwind-merge';
 
-interface FormProps extends Omit<React.FormHTMLAttributes<HTMLFormElement>, 'onSubmit'> {
-  title?:       string;
-  description?: string;
-  onSubmit?:    React.FormEventHandler<HTMLFormElement>;
+function cn(...inputs: ClassValue[]) {
+  return twMerge(clsx(inputs));
 }
 
-export const Form: React.FC<FormProps> = ({
+export interface FormProps extends Omit<FormHTMLAttributes<HTMLFormElement>, 'onSubmit'> {
+  title?: string;
+  description?: string;
+  onSubmit?: FormEventHandler<HTMLFormElement>;
+}
+
+export function Form({
   children,
   title,
   description,
   onSubmit,
-  className = "",
+  className,
   ...props
-}) => {
-  const handleSubmit: React.FormEventHandler<HTMLFormElement> = (e) => {
+}: FormProps) {
+  const handleSubmit: FormEventHandler<HTMLFormElement> = (e) => {
     e.preventDefault();
     onSubmit?.(e);
   };
@@ -22,23 +28,23 @@ export const Form: React.FC<FormProps> = ({
   return (
     <form
       onSubmit={handleSubmit}
-      className={[
-        'w-full max-w-md p-6 bg-surface',
-        'rounded-md shadow-md',
-        'flex flex-col gap-6',
-        className,
-      ].join(' ')}
+      className={cn(
+        'w-full max-w-lg p-7 bg-surface border border-border rounded-lg shadow-sm space-y-5',
+        className
+      )}
       {...props}
     >
       {(title || description) && (
-        <div className="flex flex-col gap-1">
+        <div className="flex flex-col gap-1.5 mb-2">
           {title && (
-            <h2 className="text-xl font-semibold font-display text-text">
+            <h2 className="font-display text-lg font-bold text-primary-700">
               {title}
             </h2>
           )}
           {description && (
-            <p className="text-sm text-text-secondary">{description}</p>
+            <p className="text-sm text-text-secondary leading-relaxed">
+              {description}
+            </p>
           )}
         </div>
       )}
@@ -46,4 +52,4 @@ export const Form: React.FC<FormProps> = ({
       {children}
     </form>
   );
-};
+}

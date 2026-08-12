@@ -441,17 +441,17 @@ export const SmartTaskModal = ({ onClose }: SmartTaskModalProps) => {
                 <div ref={scrollRef} className="flex flex-col gap-3 max-h-64 overflow-y-auto pr-1">
                     {messages.map((m) => (
                         <div key={m.id} className={`flex items-start gap-2 ${m.from === "user" ? "flex-row-reverse" : ""}`}>
-                            <div className={`flex items-center justify-center size-6 rounded-full shrink-0 ${m.from === "bot" ? "bg-blue-100 text-blue-700" : "bg-gray-100 text-gray-600"}`}>
+                            <div className={`flex items-center justify-center size-6 rounded-full shrink-0 ${m.from === "bot" ? "bg-blue-100 text-blue-700" : "bg-surface-hover text-text-secondary"}`}>
                                 {m.from === "bot" ? <Sparkles size={12} /> : <UserIcon size={12} />}
                             </div>
-                            <div className={`max-w-[80%] text-sm rounded-lg px-3 py-2 ${m.from === "bot" ? "bg-blue-50 text-blue-900" : "bg-gray-100 text-gray-800"}`}>
+                            <div className={`max-w-[80%] text-sm rounded-lg px-3 py-2 ${m.from === "bot" ? "bg-blue-50 text-blue-900" : "bg-surface-hover text-text"}`}>
                                 {m.text}
                             </div>
                         </div>
                     ))}
 
                     {parseMutation.isPending && (
-                        <div className="flex items-center gap-2 text-xs text-gray-400 pl-8">
+                        <div className="flex items-center gap-2 text-xs text-text-light pl-8">
                             <Sparkles size={12} className="animate-pulse" /> Thinking...
                         </div>
                     )}
@@ -459,10 +459,10 @@ export const SmartTaskModal = ({ onClose }: SmartTaskModalProps) => {
 
                 {/* Dynamic Chat Input */}
                 {!review && (
-                    <div className="flex items-center gap-2 pt-3 border-t border-gray-100">
+                    <div className="flex items-center gap-2 pt-3 border-t border-border/60">
                         <input
                             type="text"
-                            className="flex-1 h-10 px-3 text-sm rounded border border-gray-200 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 disabled:bg-gray-50 disabled:cursor-not-allowed"
+                            className="flex-1 h-10 px-3 text-sm rounded border border-border bg-surface text-text focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 disabled:bg-surface-hover disabled:cursor-not-allowed"
                             placeholder={pendingSlot ? `Provide ${pendingSlot}...` : "Type in English or Hinglish, or record a voice note..."}
                             value={input}
                             disabled={parseMutation.isPending || voiceRecorderBusy}
@@ -496,7 +496,7 @@ export const SmartTaskModal = ({ onClose }: SmartTaskModalProps) => {
 
                 {/* Form Review Panel */}
                 {review && (
-                    <div className="flex flex-col gap-5 pt-2 border-t border-gray-100">
+                    <div className="flex flex-col gap-5 pt-2 border-t border-border/60">
                         <Input
                             id="smart-title"
                             label="Title"
@@ -542,7 +542,7 @@ export const SmartTaskModal = ({ onClose }: SmartTaskModalProps) => {
                             isLoading={isLoadingUsers}
                         />
                         {parsed && parsed.confidence < 0.6 && (
-                            <p className="text-xs font-medium text-amber-600 bg-amber-50 border border-amber-200 rounded px-3 py-2">
+                            <p className="text-xs font-medium text-warning bg-warning/10 border border-warning/20 rounded px-3 py-2">
                                 Low confidence extraction ({Math.round(parsed.confidence * 100)}%) — please review all fields carefully before creating.
                             </p>
                         )}

@@ -14,8 +14,8 @@ export const TaskVerifyActions = ({ task }: { task: Task }) => {
 
   if (rejecting) {
     return (
-      <div 
-        className="flex flex-col gap-2.5 p-3 bg-red-50/50 border border-red-100 rounded-lg animate-in fade-in zoom-in-95 duration-200" 
+      <div
+        className="flex flex-col gap-2.5 p-3 bg-danger/10 border border-danger/20 rounded-lg animate-in fade-in zoom-in-95 duration-200"
         onClick={e => e.stopPropagation()}
       >
         <textarea
@@ -24,13 +24,13 @@ export const TaskVerifyActions = ({ task }: { task: Task }) => {
           onChange={e => setNote(e.target.value)}
           placeholder="Reason for rejection..."
           rows={2}
-          className="w-full px-3 py-2 text-sm text-gray-900 bg-white border border-red-200 rounded-md placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 transition-all resize-none shadow-sm"
+          className="w-full px-3 py-2 text-sm text-text bg-surface border border-danger/30 rounded-md placeholder:text-text-light focus:outline-none focus:ring-2 focus:ring-danger/20 focus:border-danger transition-all resize-none shadow-sm"
         />
         <div className="flex items-center gap-2 justify-end">
           <Button
             size="sm"
             variant="outline"
-            className="text-xs h-7 px-3 font-medium border-gray-200 text-gray-600 hover:bg-gray-100 bg-white"
+            className="text-xs h-7 px-3 font-medium border-border text-text-secondary hover:bg-surface-hover bg-surface"
             disabled={verifyMut.isPending}
             onClick={() => { setRejecting(false); setNote(''); }}
           >
@@ -39,7 +39,7 @@ export const TaskVerifyActions = ({ task }: { task: Task }) => {
           <Button
             size="sm"
             variant="primary"
-            className="text-xs h-7 px-3 font-medium bg-red-600 hover:bg-red-700 text-white shadow-sm"
+            className="text-xs h-7 px-3 font-medium bg-danger hover:bg-danger/90 text-white shadow-sm"
             disabled={verifyMut.isPending || !note.trim()}
             onClick={() => verifyMut.mutate({ id: task.id, payload: { action: 'REJECT', note: note.trim() } })}
           >
@@ -55,7 +55,7 @@ export const TaskVerifyActions = ({ task }: { task: Task }) => {
       <Button
         size="sm"
         variant="primary"
-        className="flex-1 gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-xs h-8 px-3 shadow-sm border-0"
+        className="flex-1 gap-1.5 bg-success hover:bg-success/90 text-white font-medium text-xs h-8 px-3 shadow-sm border-0"
         disabled={verifyMut.isPending}
         onClick={() => verifyMut.mutate({ id: task.id, payload: { action: 'APPROVE' } })}
       >
@@ -69,7 +69,7 @@ export const TaskVerifyActions = ({ task }: { task: Task }) => {
       <Button
         size="sm"
         variant="outline"
-        className="flex-1 gap-1.5 border-gray-200 bg-white text-red-600 hover:bg-red-50 hover:border-red-200 font-medium text-xs h-8 px-3 shadow-sm transition-all"
+        className="flex-1 gap-1.5 border-border bg-surface text-danger hover:bg-danger/10 hover:border-danger/30 font-medium text-xs h-8 px-3 shadow-sm transition-all"
         disabled={verifyMut.isPending}
         onClick={() => setRejecting(true)}
       >

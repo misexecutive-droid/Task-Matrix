@@ -4,3 +4,4 @@ export { TaskDetail } from './TaskDetail';
 export { TaskCard } from './TaskCard';
 export { TaskRow } from './TaskRow';
 export { TaskBoard } from './TaskBoard';
+export { useTaskSocket } from './useTaskSocket';

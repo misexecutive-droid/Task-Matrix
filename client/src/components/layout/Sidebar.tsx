@@ -18,6 +18,9 @@ import {
 interface NavChild {
   to: string;
   label: string;
+  /** Shown as a disabled row with a "Soon" badge instead of a real link — for IA the reference
+   *  design calls for but that has no backing state in the data model yet. */
+  soon?: boolean;
 }
 
 interface NavItem {
@@ -37,9 +40,25 @@ const CHECKLIST_ADMIN_CHILDREN: NavChild[] = [
   { to: '/admin/scheduled-checklists/builder', label: 'Builder' },
 ];
 
+// "My Tasks"/"Delegated Tasks"/"Pending Approvals" map onto TaskList's existing category/status
+// filters via URL search params (read once on mount there) rather than being separate pages —
+// there's only one real task list per user, just pre-filtered differently.
+const TASK_CHILDREN: NavChild[] = [
+  { to: '/tasks', label: 'My Tasks' },
+  { to: '/tasks?category=delegation', label: 'Delegated Tasks' },
+  { to: '/tasks?status=pending_verification', label: 'Pending Approvals' },
+  { to: '/tasks/draft', label: 'Draft Tasks', soon: true },
+  { to: '/tasks/archived', label: 'Archived', soon: true },
+];
+
+// Org-wide task list — admin-only (/admin/tasks), separate from the filtered views above.
+const TASK_ADMIN_CHILDREN: NavChild[] = [
+  { to: '/admin/tasks', label: 'Team Tasks' },
+];
+
 const NAV: NavItem[] = [
   { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
-  { to: '/tasks', icon: CheckSquare, label: 'Tasks' },
+  { to: '/tasks', icon: CheckSquare, label: 'Tasks', children: TASK_CHILDREN },
   { to: '/tickets', icon: TicketCheck, label: 'Tickets' },
   { to: '/events', icon: CalendarClock, label: 'Events' },
   { to: '/checklists', icon: ClipboardCheck, label: 'Checklists', children: CHECKLIST_CHILDREN },
@@ -47,6 +66,14 @@ const NAV: NavItem[] = [
   { to: '/calendar', icon: Calendar, label: 'Calendar' },
   { to: '/settings', icon: Settings, label: 'Settings' },
 ];
+
+// NavLink's built-in isActive only compares pathname, so a query-string child (e.g.
+// "?category=delegation") would show active alongside the plain parent path at the same time —
+// compare the full URL for those instead.
+const isChildActive = (child: NavChild, location: { pathname: string; search: string }) =>
+  child.to.includes('?')
+    ? `${location.pathname}${location.search}` === child.to
+    : location.pathname === child.to;
 
 interface SidebarProps {
   isOpen: boolean;
@@ -79,11 +106,15 @@ export const Sidebar = ({ isOpen, user, logout, onNavigate }: SidebarProps) => {
     .toUpperCase();
 
   const navItems: NavItem[] = [
-    ...NAV.map((item) =>
-      item.label === 'Checklists' && isAdmin
-        ? { ...item, children: [...CHECKLIST_CHILDREN, ...CHECKLIST_ADMIN_CHILDREN] }
-        : item,
-    ),
+    ...NAV.map((item) => {
+      if (item.label === 'Checklists' && isAdmin) {
+        return { ...item, children: [...CHECKLIST_CHILDREN, ...CHECKLIST_ADMIN_CHILDREN] };
+      }
+      if (item.label === 'Tasks' && isAdmin) {
+        return { ...item, children: [...TASK_CHILDREN, ...TASK_ADMIN_CHILDREN] };
+      }
+      return item;
+    }),
     ...(user?.role === 'PC' || user?.role === 'ADMIN'
       ? [{ to: '/verify', icon: ShieldQuestion, label: 'Verification Queue' }]
       : []),
@@ -126,7 +157,7 @@ export const Sidebar = ({ isOpen, user, logout, onNavigate }: SidebarProps) => {
 
         <nav className="flex flex-col gap-0.5 flex-1">
           {navItems.map(({ to, icon: Icon, label, children }) => {
-            const hasActiveChild = children?.some((child) => location.pathname.startsWith(child.to)) ?? false;
+            const hasActiveChild = children?.some((child) => !child.soon && isChildActive(child, location)) ?? false;
             const hasChildren = !!children?.length;
             const isExpanded = expandedKeys.has(to);
 
@@ -190,23 +221,37 @@ export const Sidebar = ({ isOpen, user, logout, onNavigate }: SidebarProps) => {
 
                 {hasChildren && isOpen && isExpanded && (
                   <div className="flex flex-col gap-0.5 mt-0.5 mb-1 ml-[1.55rem] pl-3 border-l border-border">
-                    {children!.map((child) => (
-                      <NavLink
-                        key={child.to}
-                        to={child.to}
-                        onClick={handleNavClick}
-                        className={({ isActive }) =>
-                          [
+                    {children!.map((child) => {
+                      if (child.soon) {
+                        return (
+                          <span
+                            key={child.to}
+                            className="flex items-center justify-between gap-2 rounded-lg px-2.5 py-1.5 text-[12.5px] font-medium text-text-light cursor-not-allowed select-none"
+                          >
+                            {child.label}
+                            <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-surface-hover border border-border text-text-light">
+                              Soon
+                            </span>
+                          </span>
+                        );
+                      }
+
+                      return (
+                        <NavLink
+                          key={child.to}
+                          to={child.to}
+                          onClick={handleNavClick}
+                          className={[
                             'rounded-lg px-2.5 py-1.5 text-[12.5px] transition-colors duration-200',
-                            isActive
+                            isChildActive(child, location)
                               ? 'bg-primary-50 text-primary-700 font-semibold'
                               : 'text-text-secondary font-medium hover:bg-surface-hover hover:text-text',
-                          ].join(' ')
-                        }
-                      >
-                        {child.label}
-                      </NavLink>
-                    ))}
+                          ].join(' ')}
+                        >
+                          {child.label}
+                        </NavLink>
+                      );
+                    })}
                   </div>
                 )}
               </div>

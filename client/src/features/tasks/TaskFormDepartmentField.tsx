@@ -28,19 +28,19 @@ export const TaskFormDepartmentField = ({ value, onChange, departments, isLoadin
       onValueChange={(v) => onChange(v === NO_DEPARTMENT ? '' : v)}
       disabled={isLoading}
     >
-      <SelectTrigger className="h-10 text-sm font-medium bg-white border-gray-300 rounded shadow-sm hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all w-full">
+      <SelectTrigger className="h-10 text-sm font-medium bg-surface border-border rounded shadow-sm hover:border-border-hover focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all w-full">
         <SelectValue placeholder="Select Department" />
       </SelectTrigger>
-      
-      <SelectContent className="bg-white border-gray-200 shadow-lg rounded">
-        <SelectItem value={NO_DEPARTMENT} className="text-sm font-medium text-gray-500">
+
+      <SelectContent className="bg-surface border-border shadow-lg rounded">
+        <SelectItem value={NO_DEPARTMENT} className="text-sm font-medium text-text-muted">
           No Department
         </SelectItem>
-        
+
         {departments?.map((d) => (
-          <SelectItem key={d.id} value={d.id} className="text-sm font-medium text-gray-900 cursor-pointer rounded-sm hover:bg-gray-50 transition-colors">
+          <SelectItem key={d.id} value={d.id} className="text-sm font-medium text-text cursor-pointer rounded-sm hover:bg-surface-hover transition-colors">
             <span className="flex items-center gap-2 truncate">
-              <Layers className="w-4 h-4 text-gray-400 shrink-0" />
+              <Layers className="w-4 h-4 text-text-light shrink-0" />
               <span className="truncate">{d.name}</span>
             </span>
           </SelectItem>

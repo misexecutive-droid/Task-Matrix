@@ -21,11 +21,11 @@ export const TaskFormPrioritySelector = ({ value, onChange }: TaskFormPrioritySe
     </label>
     
     {/* Segmented Control Container */}
-    <div className="grid grid-cols-3 gap-1.5 p-1 rounded border border-gray-200 bg-gray-50 focus-within:ring-blue-500/20 transition-all">
+    <div className="grid grid-cols-3 gap-1.5 p-1 rounded border border-border bg-surface-hover focus-within:ring-blue-500/20 transition-all">
       {PRIORITIES.map((p) => {
         const isSelected = value === p.value;
         const meta = PRIORITY_MAP[p.value];
-        
+
         return (
           <button
             key={p.value}
@@ -35,7 +35,7 @@ export const TaskFormPrioritySelector = ({ value, onChange }: TaskFormPrioritySe
             className={`relative flex items-center justify-center gap-2 px-3 py-2 text-sm font-semibold rounded border transition-all duration-150 cursor-pointer outline-none ${
               isSelected
                 ? `${meta.className} shadow-sm`
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-200/50'
+                : 'border-transparent text-text-muted hover:text-text-secondary hover:bg-surface-active/50'
             }`}
           >
            

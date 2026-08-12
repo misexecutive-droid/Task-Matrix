@@ -1,14 +1,22 @@
 import { useState } from "react";
-import { Sparkles, CheckCheck, AlertCircle, LayoutList, Kanban, Inbox } from "lucide-react";
+import { useSearchParams } from "react-router";
+import { toast } from "sonner";
+import { Sparkles, CheckCheck, AlertCircle, LayoutList, Kanban, Table2, GanttChartSquare, ArrowUpDown, Save, Inbox, X, Plus } from "lucide-react";
 import { Button, Skeleton } from "../../components";
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { useTasksQuery, useAssignableUsersQuery } from "./hook";
 import { useDepartmentsQuery } from "../tickets/hook";
 import type { Task } from '../../api/task';
 import { TaskForm } from "./TaskForm";
 import { TaskDetail } from "./TaskDetail";
 import { TaskBoard } from "./TaskBoard";
+import { TaskTable } from "./TaskTable";
+import { TaskTimeline } from "./TaskTimeline";
 import { TaskRow } from "./TaskRow";
 import { SmartTaskModal } from "./SmartTaskModal";
+import { TaskFiltersPopover, type TaskFilters } from "./TaskFiltersPopover";
+import { CATEGORY_PREDICATES, SORT_LABEL, SORT_COMPARATORS, type CategoryFilterKey, type TaskSortKey } from "./taskFilters";
+import { STATUS_LABEL, PRIORITY_MAP } from "./taskDisplay";
 import { useAuth } from "../../context/AuthContext"
 
 // Groups tasks by departmentId, sorted alphabetically by department name with "No department"
@@ -41,33 +49,63 @@ interface TaskListProps {
     dateRange?: { from: Date | null; to: Date | null };
 }
 
-// "Issue" and "Delegation" are the two real category values on Task, but a plain task typed
-// into the "New Task" form also lands in category "delegation" with no aiMeta at all — so from
-// the user's point of view that's really a third bucket ("Tasks") distinct from AI/WhatsApp
-// delegations. These are UI-only filter keys, not stored values, split out via a lookup map
-// (rather than if/else) so adding another bucket later is just one more entry here.
-type CategoryFilterKey = 'all' | 'issue' | 'delegation' | 'task';
+type TaskView = 'list' | 'board' | 'table' | 'timeline';
 
-const CATEGORY_PREDICATES: Record<CategoryFilterKey, (t: Task) => boolean> = {
-    all: () => true,
-    issue: (t) => t.category === 'issue',
-    delegation: (t) => t.category === 'delegation' && !!t.aiMeta,
-    task: (t) => t.category === 'delegation' && !t.aiMeta,
-};
+const VIEW_TABS: { key: TaskView; label: string; icon: typeof LayoutList }[] = [
+    { key: 'list', label: 'List', icon: LayoutList },
+    { key: 'board', label: 'Board', icon: Kanban },
+    { key: 'table', label: 'Table', icon: Table2 },
+    { key: 'timeline', label: 'Timeline', icon: GanttChartSquare },
+];
+
+const DEFAULT_FILTERS: TaskFilters = { category: 'all', status: 'all', priority: 'all', departmentId: '' };
+
+const filtersStorageKey = (userId?: string) => `task-filters:${userId ?? 'anon'}`;
 
 export const TaskList = ({ userId, hideHeader = false, dateRange }: TaskListProps = {}) => {
     const { user } = useAuth();
     const isAdmin = user?.role === "ADMIN";
     const isVerifier = user?.role === "PC" || user?.role === "ADMIN";
+    const [searchParams] = useSearchParams();
     const [ showSmartModal , setShowSmartModal ] = useState(false)
     const [showForm, setShowForm] = useState(false);
     const [selected, setSelected] = useState<Task | null>(null);
     const { data: tasks, isPending, isError } = useTasksQuery(userId);
     const { data: assignableUsers } = useAssignableUsersQuery();
     const { data: departments } = useDepartmentsQuery();
-    const [filter, setFilter] = useState<Task['status'] | 'all'>('all');
-    const [categoryFilter, setCategoryFilter] = useState<CategoryFilterKey>('all');
-    const [view, setView] = useState<'list' | 'board'>('board');
+
+    // Sidebar links (e.g. "Delegated Tasks", "Pending Approvals") pass their filter via URL
+    // search params, which take priority over a saved filter — otherwise, restore whatever the
+    // user last saved with "Save this filter" for this account, if anything.
+    const [filters, setFilters] = useState<TaskFilters>(() => {
+        const fromUrl: Partial<TaskFilters> = {};
+        const category = searchParams.get('category');
+        const status = searchParams.get('status');
+        if (category) fromUrl.category = category as CategoryFilterKey;
+        if (status) fromUrl.status = status as Task['status'];
+        if (Object.keys(fromUrl).length) return { ...DEFAULT_FILTERS, ...fromUrl };
+
+        try {
+            const raw = localStorage.getItem(filtersStorageKey(user?.id));
+            if (raw) return { ...DEFAULT_FILTERS, ...JSON.parse(raw) };
+        } catch {
+            // Corrupt/unavailable localStorage — fall through to defaults.
+        }
+        return DEFAULT_FILTERS;
+    });
+    const [sort, setSort] = useState<TaskSortKey>('dueDate');
+    const [view, setView] = useState<TaskView>('board');
+
+    const updateFilters = (patch: Partial<TaskFilters>) => setFilters(f => ({ ...f, ...patch }));
+    const clearFilters = () => setFilters(DEFAULT_FILTERS);
+    const saveFilters = () => {
+        try {
+            localStorage.setItem(filtersStorageKey(user?.id), JSON.stringify(filters));
+            toast.success('Filter saved');
+        } catch {
+            toast.error('Could not save filter');
+        }
+    };
 
     const assigneeNames = new Map(
         (assignableUsers ?? []).map(u => [u.id, `${u.firstName} ${u.lastName ?? ''}`.trim()]),
@@ -89,30 +127,22 @@ export const TaskList = ({ userId, hideHeader = false, dateRange }: TaskListProp
             return true;
         });
 
-    const categoryFiltered = dateFiltered.filter(CATEGORY_PREDICATES[categoryFilter]);
+    const categoryFiltered = dateFiltered.filter(CATEGORY_PREDICATES[filters.category]);
+    const priorityFiltered = filters.priority === 'all' ? categoryFiltered : categoryFiltered.filter(t => t.priority === filters.priority);
+    const departmentFiltered = filters.departmentId ? priorityFiltered.filter(t => t.departmentId === filters.departmentId) : priorityFiltered;
+    const filtered = filters.status === 'all' ? departmentFiltered : departmentFiltered.filter(t => t.status === filters.status);
 
-    const filtered = filter === 'all'
-        ? categoryFiltered
-        : categoryFiltered.filter(t => t.status === filter);
+    const sorted = [...filtered].sort(SORT_COMPARATORS[sort]);
+    const departmentGroups = groupByDepartment(sorted, departmentNames);
 
-    const departmentGroups = groupByDepartment(filtered, departmentNames);
-
-    const FILTERS: { key: Task['status'] | 'all'; label: string }[] = [
-        { key: 'all', label: 'All' },
-        { key: 'todo', label: 'To Do' },
-        { key: 'in_progress', label: 'In Progress' },
-        { key: 'pending_verification', label: 'Pending Verification' },
-        { key: 'done', label: 'Done' },
+    const activeChips: { key: keyof TaskFilters; label: string; onClear: () => void }[] = [
+        ...(filters.status !== 'all' ? [{ key: 'status' as const, label: `Status: ${STATUS_LABEL[filters.status]}`, onClear: () => updateFilters({ status: 'all' }) }] : []),
+        ...(filters.category !== 'all' ? [{ key: 'category' as const, label: `Category: ${filters.category === 'task' ? 'Tasks' : filters.category === 'issue' ? 'Issues' : 'Delegations'}`, onClear: () => updateFilters({ category: 'all' }) }] : []),
+        ...(filters.priority !== 'all' ? [{ key: 'priority' as const, label: `Priority: ${PRIORITY_MAP[filters.priority].label}`, onClear: () => updateFilters({ priority: 'all' }) }] : []),
+        ...(filters.departmentId ? [{ key: 'departmentId' as const, label: `Dept: ${departmentNames.get(filters.departmentId) ?? 'Unknown'}`, onClear: () => updateFilters({ departmentId: '' }) }] : []),
     ];
 
-    const CATEGORY_FILTERS: { key: CategoryFilterKey; label: string }[] = [
-        { key: 'all', label: 'All' },
-        { key: 'issue', label: 'Issues' },
-        { key: 'delegation', label: 'Delegations' },
-        { key: 'task', label: 'Tasks' },
-    ];
-
-    const isEmpty = view === 'board' ? categoryFiltered.length === 0 : filtered.length === 0;
+    const isEmpty = sorted.length === 0;
 
     return (
         <div className="flex flex-col gap-6 mx-auto w-full max-w-[1400px] transition-all duration-300">
@@ -135,37 +165,31 @@ export const TaskList = ({ userId, hideHeader = false, dateRange }: TaskListProp
 
                 <div className={`flex items-center gap-3 ${hideHeader ? 'ml-auto' : ''}`}>
                     {/* View Toggle (Segmented Control) */}
-                    <div className="flex gap-1 p-1 bg-surface-hover/80 border border-border rounded">
-                        <button
-                            onClick={() => setView('list')}
-                            title="List view"
-                            aria-label="List view"
-                            className={`flex items-center justify-center w-8 h-8 rounded transition-all duration-200 outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 ${
-                                view === 'list'
-                                    ? 'bg-surface text-text ring-1 ring-border/50'
-                                    : 'text-text-muted hover:text-text-secondary hover:bg-surface-active/50'
-                            }`}
-                        >
-                            <LayoutList size={16} />
-                        </button>
-                        <button
-                            onClick={() => setView('board')}
-                            title="Board view"
-                            aria-label="Board view"
-                            className={`flex items-center justify-center w-8 h-8 rounded transition-all duration-200 outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 ${
-                                view === 'board'
-                                    ? 'bg-surface text-text ring-1 ring-border/50'
-                                    : 'text-text-muted hover:text-text-secondary hover:bg-surface-active/50'
-                            }`}
-                        >
-                            <Kanban size={16} />
-                        </button>
+                    <div className="flex items-center gap-0.5 p-1 bg-surface-hover/60 border border-border rounded-md">
+                        {VIEW_TABS.map(tab => (
+                            <button
+                                key={tab.key}
+                                type="button"
+                                onClick={() => setView(tab.key)}
+                                title={`${tab.label} view`}
+                                aria-label={`${tab.label} view`}
+                                aria-pressed={view === tab.key}
+                                className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-semibold transition-all duration-200 cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 ${
+                                    view === tab.key
+                                        ? 'bg-surface text-text shadow-xs border border-border-hover'
+                                        : 'text-text-muted hover:text-text-secondary hover:bg-surface-active/50 border border-transparent'
+                                }`}
+                            >
+                                <tab.icon size={14} />
+                                {tab.label}
+                            </button>
+                        ))}
                     </div>
 
                     {!userId && isAdmin && (
                         <Button
                             size="sm"
-                            variant="outline"
+                            variant="secondary"
                             className="gap-2 font-semibold shadow-sm"
                             onClick={() => setShowSmartModal(true)}
                         >
@@ -173,62 +197,76 @@ export const TaskList = ({ userId, hideHeader = false, dateRange }: TaskListProp
                             Smart Task
                         </Button>
                     )}
-                </div>
-            </div>
 
-            {/* Category Filter (Issues vs Delegations) — always visible, in both list and board views */}
-            <div className="flex gap-1 p-1 bg-surface-hover/80 border border-border rounded w-fit overflow-x-auto max-w-full scrollbar-hide">
-                {CATEGORY_FILTERS.map(f => {
-                    const count = dateFiltered.filter(CATEGORY_PREDICATES[f.key]).length;
-                    const active = categoryFilter === f.key;
-                    return (
-                        <button
-                            key={f.key}
-                            onClick={() => setCategoryFilter(f.key)}
-                            className={`flex items-center gap-2 px-3.5 py-1.5 text-sm font-semibold rounded transition-all duration-200 cursor-pointer whitespace-nowrap outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 ${
-                                active
-                                    ? 'bg-surface text-text ring-1 ring-border/50'
-                                    : 'text-text-muted hover:text-text-secondary hover:bg-surface-active/50'
-                            }`}
+                    {!userId && (
+                        <Button
+                            size="sm"
+                            variant="primary"
+                            className="gap-2 font-semibold shadow-sm"
+                            onClick={() => setShowForm(true)}
                         >
-                            {f.label}
-                            <span className={`flex items-center justify-center min-w-[1.25rem] h-5 px-1 text-[11px] font-bold rounded-full ${
-                                active ? 'bg-blue-50 text-blue-700' : 'bg-surface-active text-text-light'
-                            }`}>
-                                {count}
-                            </span>
-                        </button>
-                    );
-                })}
+                            <Plus size={16} strokeWidth={2.5} />
+                            New Task
+                        </Button>
+                    )}
+                </div>
             </div>
 
-            {/* List View Filters */}
-            {view === 'list' && (
-                <div className="flex gap-1 p-1 bg-surface-hover/80 border border-border rounded w-fit overflow-x-auto max-w-full scrollbar-hide">
-                    {FILTERS.map(f => {
-                        const count = f.key === 'all' ? categoryFiltered.length : categoryFiltered.filter(t => t.status === f.key).length;
-                        const active = filter === f.key;
-                        return (
-                            <button
-                                key={f.key}
-                                onClick={() => setFilter(f.key)}
-                                className={`flex items-center gap-2 px-3.5 py-1.5 text-sm font-semibold rounded transition-all duration-200 cursor-pointer whitespace-nowrap outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 ${
-                                    active
-                                        ? 'bg-surface text-text ring-1 ring-border/50'
-                                        : 'text-text-muted hover:text-text-secondary hover:bg-surface-active/50'
-                                }`}
-                            >
-                                {f.label}
-                                <span className={`flex items-center justify-center min-w-[1.25rem] h-5 px-1 text-[11px] font-bold rounded-full ${
-                                    active ? 'bg-blue-50 text-blue-700' : 'bg-surface-active text-text-light'
-                                }`}>
-                                    {count}
-                                </span>
-                            </button>
-                        );
-                    })}
+            {/* Filter Bar — Filters popover + active-filter chips on the left, count + sort on the right */}
+            <div className="flex items-center gap-2 flex-wrap">
+                <TaskFiltersPopover
+                    filters={filters}
+                    onChange={updateFilters}
+                    onClearAll={clearFilters}
+                    departments={departments}
+                    activeCount={activeChips.length}
+                />
+
+                {activeChips.map(chip => (
+                    <span
+                        key={chip.key}
+                        className="flex items-center gap-1.5 pl-3 pr-1.5 py-1 text-xs font-semibold rounded-full bg-blue-50 text-blue-700 border border-blue-200"
+                    >
+                        {chip.label}
+                        <button
+                            type="button"
+                            onClick={chip.onClear}
+                            aria-label={`Clear ${chip.label} filter`}
+                            className="p-0.5 rounded-full hover:bg-blue-100 transition-colors cursor-pointer"
+                        >
+                            <X size={12} />
+                        </button>
+                    </span>
+                ))}
+
+                <button
+                    type="button"
+                    onClick={saveFilters}
+                    disabled={activeChips.length === 0}
+                    title={activeChips.length === 0 ? 'Set a filter first to save it' : 'Save this filter combination as your default'}
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-full border border-dashed border-border text-text-muted hover:text-text hover:border-border-hover hover:bg-surface-hover transition-all duration-200 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-text-muted disabled:hover:border-border"
+                >
+                    <Save size={13} />
+                    Save this filter
+                </button>
+
+                <div className="ml-auto flex items-center gap-3">
+                    <span className="text-xs font-medium text-text-muted whitespace-nowrap">
+                        {sorted.length} task{sorted.length !== 1 ? 's' : ''}
+                    </span>
+                    <Select value={sort} onValueChange={(v) => setSort(v as TaskSortKey)}>
+                        <SelectTrigger className="h-8 text-xs w-44 rounded bg-surface" aria-label="Sort tasks by">
+                            <ArrowUpDown size={13} className="text-text-light shrink-0" />
+                            <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {(Object.keys(SORT_LABEL) as TaskSortKey[]).map(key => (
+                                <SelectItem key={key} value={key}>Sort: {SORT_LABEL[key]}</SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
                 </div>
-            )}
+            </div>
 
             {/* Loading States */}
             {isPending && view === 'list' && (
@@ -239,6 +277,33 @@ export const TaskList = ({ userId, hideHeader = false, dateRange }: TaskListProp
                             <Skeleton className="h-5 flex-1 max-w-md" />
                             <Skeleton className="h-6 w-20 rounded-md shrink-0" />
                             <Skeleton className="w-8 h-8 rounded-full shrink-0" />
+                        </div>
+                    ))}
+                </div>
+            )}
+
+            {isPending && view === 'table' && (
+                <div className="flex flex-col gap-1 rounded border border-border overflow-hidden">
+                    <Skeleton className="h-9 w-full rounded-none" />
+                    {Array.from({ length: 6 }).map((_, i) => (
+                        <div key={i} className="flex items-center gap-6 px-4 py-2.5 bg-surface">
+                            <Skeleton className="h-4 flex-1 max-w-xs" />
+                            <Skeleton className="h-4 w-24" />
+                            <Skeleton className="h-4 w-24" />
+                            <Skeleton className="h-4 w-16" />
+                            <Skeleton className="h-5 w-20 rounded-full" />
+                        </div>
+                    ))}
+                </div>
+            )}
+
+            {isPending && view === 'timeline' && (
+                <div className="flex flex-col gap-1 rounded border border-border overflow-hidden">
+                    <Skeleton className="h-9 w-full rounded-none" />
+                    {Array.from({ length: 5 }).map((_, i) => (
+                        <div key={i} className="flex items-center gap-3 px-4 py-3 bg-surface">
+                            <Skeleton className="h-4 w-40" />
+                            <Skeleton className="h-6 flex-1 max-w-xs rounded-md" />
                         </div>
                     ))}
                 </div>
@@ -281,8 +346,8 @@ export const TaskList = ({ userId, hideHeader = false, dateRange }: TaskListProp
                     </div>
                     <h3 className="text-lg font-semibold text-text tracking-tight">No tasks found</h3>
                     <p className="text-sm text-text-muted mt-1 max-w-sm">
-                        {filter !== 'all' 
-                            ? `There are no tasks currently marked as "${FILTERS.find(f => f.key === filter)?.label}".` 
+                        {activeChips.length > 0
+                            ? "No tasks match the current filters — try clearing one or more of them."
                             : "You're all caught up! There are no tasks assigned to this view."}
                     </p>
                 </div>
@@ -329,13 +394,32 @@ export const TaskList = ({ userId, hideHeader = false, dateRange }: TaskListProp
             {!isPending && !isError && !isEmpty && view === 'board' && (
                 <div className="pb-10">
                     <TaskBoard
-                        tasks={categoryFiltered}
+                        tasks={sorted}
                         assigneeNames={assigneeNames}
                         departmentNames={departmentNames}
                         isAdmin={isAdmin}
                         isVerifier={isVerifier}
                         onOpen={setSelected}
                     />
+                </div>
+            )}
+
+            {/* Table View Render */}
+            {!isPending && !isError && !isEmpty && view === 'table' && (
+                <div className="pb-10">
+                    <TaskTable
+                        tasks={sorted}
+                        assigneeNames={assigneeNames}
+                        departmentNames={departmentNames}
+                        onOpen={setSelected}
+                    />
+                </div>
+            )}
+
+            {/* Timeline View Render */}
+            {!isPending && !isError && !isEmpty && view === 'timeline' && (
+                <div className="pb-10">
+                    <TaskTimeline tasks={sorted} assigneeNames={assigneeNames} onOpen={setSelected} />
                 </div>
             )}
 
