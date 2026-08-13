@@ -41,12 +41,20 @@ export const TaskAttachmentPicker = ({ files, onChange }: TaskAttachmentPickerPr
   return (
     <div className="group/field space-y-2">
       <label className={FIELD_LABEL_CLASS}>
-        <Paperclip className="w-3.5 h-3.5 text-text-light group-hover/field:text-blue-500 transition-colors" /> Reference Files
+        <Paperclip className="w-3.5 h-3.5 text-text-light group-hover/field:text-primary-500 transition-colors" /> Reference Files
       </label>
 
       <div
         onClick={() => fileInputRef.current?.click()}
-        className="group border border-dashed border-border hover:border-blue-500/50 bg-surface-hover/40 hover:bg-blue-500/5 p-4 rounded flex flex-col items-center justify-center cursor-pointer transition-all duration-200"
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            fileInputRef.current?.click();
+          }
+        }}
+        role="button"
+        tabIndex={0}
+        className="group border border-dashed border-border hover:border-primary-500/50 bg-surface-hover/40 hover:bg-primary-500/5 p-4 rounded flex flex-col items-center justify-center cursor-pointer transition-all duration-200 outline-none focus-visible:ring-2 focus-visible:ring-primary-500/30"
       >
         <input
           ref={fileInputRef}
@@ -56,10 +64,10 @@ export const TaskAttachmentPicker = ({ files, onChange }: TaskAttachmentPickerPr
           className="hidden"
           onChange={(e) => { addFiles(e.target.files); e.target.value = ''; }}
         />
-        <div className="p-2 rounded-full bg-surface group-hover:bg-blue-500/10 text-text-muted group-hover:text-blue-500 transition-colors mb-1.5">
+        <div className="p-2 rounded-full bg-surface group-hover:bg-primary-500/10 text-text-muted group-hover:text-primary-500 transition-colors mb-1.5">
           <UploadCloud size={18} />
         </div>
-        <p className="text-xs font-medium text-text group-hover:text-blue-500 transition-colors">
+        <p className="text-xs font-medium text-text group-hover:text-primary-500 transition-colors">
           Click or drop files here
         </p>
         <p className="text-[10px] text-text-muted mt-0.5">PDF, CSV, photos, or videos — attached once the task is created</p>
@@ -90,7 +98,7 @@ export const TaskAttachmentPicker = ({ files, onChange }: TaskAttachmentPickerPr
                   type="button"
                   onClick={() => removeAt(i)}
                   aria-label={`Remove ${file.name}`}
-                  className="p-1 text-text-light hover:text-danger hover:bg-danger/10 rounded transition-colors cursor-pointer shrink-0"
+                  className="p-1 text-text-light hover:text-danger hover:bg-danger/10 rounded transition-colors cursor-pointer shrink-0 outline-none focus-visible:ring-2 focus-visible:ring-danger/40"
                 >
                   <X size={14} />
                 </button>

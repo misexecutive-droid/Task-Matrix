@@ -16,9 +16,10 @@ interface TaskFormAssigneeFieldProps {
   onChange: (value: string) => void;
   users?: AssignableUser[];
   isLoading: boolean;
+  disabled?: boolean;
 }
 
-export const TaskFormAssigneeField = ({ value, onChange, users, isLoading }: TaskFormAssigneeFieldProps) => (
+export const TaskFormAssigneeField = ({ value, onChange, users, isLoading, disabled = false }: TaskFormAssigneeFieldProps) => (
   <div className="group/field flex flex-col">
     <label className={FIELD_LABEL_CLASS}>
       <User className={FIELD_LABEL_ICON_CLASS} /> Assignee
@@ -26,9 +27,9 @@ export const TaskFormAssigneeField = ({ value, onChange, users, isLoading }: Tas
     <Select
       value={value || UNASSIGNED}
       onValueChange={(v) => onChange(v === UNASSIGNED ? '' : v)}
-      disabled={isLoading}
+      disabled={isLoading || disabled}
     >
-      <SelectTrigger className="h-10 text-sm font-medium bg-surface border-border rounded shadow-sm hover:border-border-hover focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all w-full">
+      <SelectTrigger className="h-10 text-sm font-medium bg-surface border-border rounded shadow-sm hover:border-border-hover focus:outline-none focus:ring-2 focus:ring-primary-500/20 transition-all w-full">
         <SelectValue placeholder="Assign team member" />
       </SelectTrigger>
 
@@ -41,7 +42,7 @@ export const TaskFormAssigneeField = ({ value, onChange, users, isLoading }: Tas
           <SelectItem key={u.id} value={u.id} className="cursor-pointer rounded-sm hover:bg-surface-hover transition-colors">
             <div className="flex items-center gap-2.5 truncate py-0.5">
               {/* Avatar Icon */}
-              <div className="flex items-center justify-center w-6 h-6 rounded-full bg-blue-50 text-blue-700 border border-blue-200 text-[10px] font-bold shrink-0 shadow-sm">
+              <div className="flex items-center justify-center w-6 h-6 rounded-full bg-primary-50 text-primary-700 border border-primary-200 text-[10px] font-bold shrink-0 shadow-sm">
                 {u.firstName?.[0]}
               </div>
 

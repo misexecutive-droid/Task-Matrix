@@ -1,5 +1,3 @@
-// Deterministic tag-pill color per department name, so the same department always
-// renders with the same color across cards (no color stored on the Department model).
 const TAG_PALETTE = [
   'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-500/30',
   'bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-900/30 dark:text-purple-400 dark:border-purple-500/30',

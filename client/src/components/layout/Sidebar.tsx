@@ -51,9 +51,11 @@ const TASK_CHILDREN: NavChild[] = [
   { to: '/tasks/archived', label: 'Archived', soon: true },
 ];
 
-// Org-wide task list — admin-only (/admin/tasks), separate from the filtered views above.
+// Org-wide task list — PC and ADMIN only (they're the two roles with department/person/day/
+// status-wise visibility server-side; see task.service.ts's visiblityFilter), separate from
+// the self-scoped filtered views above.
 const TASK_ADMIN_CHILDREN: NavChild[] = [
-  { to: '/admin/tasks', label: 'Team Tasks' },
+  { to: '/tasks/team', label: 'Team Tasks' },
 ];
 
 const NAV: NavItem[] = [
@@ -85,6 +87,7 @@ interface SidebarProps {
 export const Sidebar = ({ isOpen, user, logout, onNavigate }: SidebarProps) => {
   const location = useLocation();
   const isAdmin = user?.role === 'ADMIN';
+  const isPC = user?.role === 'PC';
   const [expandedKeys, setExpandedKeys] = useState<Set<string>>(
     () => new Set(NAV.filter((item) => item.children?.length).map((item) => item.to)),
   );
@@ -110,7 +113,7 @@ export const Sidebar = ({ isOpen, user, logout, onNavigate }: SidebarProps) => {
       if (item.label === 'Checklists' && isAdmin) {
         return { ...item, children: [...CHECKLIST_CHILDREN, ...CHECKLIST_ADMIN_CHILDREN] };
       }
-      if (item.label === 'Tasks' && isAdmin) {
+      if (item.label === 'Tasks' && (isAdmin || isPC)) {
         return { ...item, children: [...TASK_CHILDREN, ...TASK_ADMIN_CHILDREN] };
       }
       return item;

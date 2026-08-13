@@ -1,13 +1,18 @@
 import {
-  DndContext, useDraggable, useDroppable, PointerSensor, useSensor, useSensors,
-  type DragEndEvent,
+  DndContext, DragOverlay, useDraggable, useDroppable, PointerSensor, useSensor, useSensors,
+  type DragStartEvent, type DragEndEvent,
 } from '@dnd-kit/core';
+import { useState } from 'react';
 import { toast } from 'sonner';
-import { Sparkles } from "lucide-react";
+import { Sparkles, Plus } from "lucide-react";
 import { TaskCard } from "./TaskCard";
 import { useUpdateTaskMutation } from "./hook";
 import { STATUS_LABEL, STATUS_CONFIG } from "./taskDisplay";
+import { taskAssigneeIds, type CardFieldVisibility } from "./cardFields";
 import type { Task } from "../../api/task";
+
+const resolveAssigneeNames = (task: Task, assigneeNames: Map<string, string>) =>
+  taskAssigneeIds(task).map((id) => assigneeNames.get(id)).filter((n): n is string => !!n);
 
 const COLUMNS: Task['status'][] = ['todo', 'in_progress', 'pending_verification', 'done'];
 
@@ -15,35 +20,39 @@ interface TaskBoardProps {
   tasks: Task[];
   assigneeNames: Map<string, string>;
   departmentNames?: Map<string, string>;
-  isAdmin: boolean;
   isVerifier?: boolean;
   onOpen: (task: Task) => void;
+  onAddTask?: () => void;
+  fields: CardFieldVisibility;
 }
 
 interface CardProps {
   task: Task;
-  isAdmin: boolean;
   isVerifier: boolean;
   onOpen: (task: Task) => void;
-  assigneeName?: string;
+  assigneeNames?: string[];
   departmentName?: string;
+  fields: CardFieldVisibility;
 }
 
 // Wraps TaskCard so the whole card can be picked up and dropped on another column. dnd-kit only
 // treats the gesture as a drag once the pointer has moved past the sensor's activation distance
 // (see PointerSensor config below) — anything shorter still reaches TaskCard's own onClick to
 // open the detail sheet, so drag and click coexist without extra handling here.
+//
+// Deliberately spreads only `listeners` (the pointer handlers), not dnd-kit's `attributes` —
+// those add their own `role="button" tabIndex={0}`, and since there's no KeyboardSensor wired
+// up, that would just stack a second, non-functional keyboard stop on top of TaskCard's own
+// role="button". The floating drag visual comes from DragOverlay below, so this node itself
+// only needs to fade out while its content is "lifted".
 const DraggableCard = ({ task, ...cardProps }: CardProps) => {
-  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({ id: task.id });
-  const style = transform ? { transform: `translate3d(${transform.x}px, ${transform.y}px, 0)` } : undefined;
+  const { listeners, setNodeRef, isDragging } = useDraggable({ id: task.id });
 
   return (
     <div
       ref={setNodeRef}
-      style={style}
       {...listeners}
-      {...attributes}
-      className={isDragging ? 'opacity-50 z-10 cursor-grabbing touch-none' : 'cursor-grab touch-none'}
+      className={isDragging ? 'opacity-40 cursor-grabbing touch-none' : 'cursor-grab touch-none'}
     >
       <TaskCard task={task} {...cardProps} />
     </div>
@@ -55,29 +64,29 @@ interface ColumnProps {
   tasks: Task[];
   assigneeNames: Map<string, string>;
   departmentNames?: Map<string, string>;
-  isAdmin: boolean;
   isVerifier: boolean;
   onOpen: (task: Task) => void;
+  onAddTask?: () => void;
+  fields: CardFieldVisibility;
 }
 
-const Column = ({ status, tasks, assigneeNames, departmentNames, isAdmin, isVerifier, onOpen }: ColumnProps) => {
+const Column = ({ status, tasks, assigneeNames, departmentNames, isVerifier, onOpen, onAddTask, fields }: ColumnProps) => {
   const { setNodeRef, isOver } = useDroppable({ id: status });
 
   return (
     <div
       ref={setNodeRef}
-      className={`flex flex-col rounded-lg border min-w-0 p-1.5 transition-colors duration-150 ${
-        isOver ? 'border-blue-400 bg-blue-50/40' : 'border-border bg-surface-hover/40'
+      className={`flex flex-col gap-1.5 rounded-lg border min-w-0 p-1.5 transition-colors duration-150 ${
+        isOver ? 'border-primary-400 bg-primary-50/40' : 'border-border bg-surface-hover/40'
       }`}
     >
       {/* Column Header */}
-      <div className="flex items-center justify-between px-2 py-1.5 mb-1.5">
-        <div className="flex items-center gap-1.5 min-w-0">
-          <span className={`size-2 rounded-full shrink-0 ${STATUS_CONFIG[status].indicator}`} />
+      <div className="flex items-center justify-between px-2 py-1.5">
+        <div className="flex items-center gap-2 min-w-0">
           <h3 className="text-xs font-semibold text-text-secondary truncate">
             {STATUS_LABEL[status]}
           </h3>
-          <span className="px-1.5 py-0.2 text-[11px] font-semibold text-text-muted bg-surface-active/60 rounded-full">
+          <span className={`flex items-center justify-center min-w-[1.5rem] h-5 px-2 text-xs font-bold rounded-full border ${STATUS_CONFIG[status].badge}`}>
             {tasks.length}
           </span>
         </div>
@@ -94,24 +103,44 @@ const Column = ({ status, tasks, assigneeNames, departmentNames, isAdmin, isVeri
             <DraggableCard
               key={task.id}
               task={task}
-              isAdmin={isAdmin}
               isVerifier={isVerifier}
               onOpen={onOpen}
-              assigneeName={task.assigneeId ? assigneeNames.get(task.assigneeId) : undefined}
+              assigneeNames={resolveAssigneeNames(task, assigneeNames)}
               departmentName={task.departmentId ? departmentNames?.get(task.departmentId) : undefined}
+              fields={fields}
             />
           ))
         )}
       </div>
+
+      {/* New tasks always start in "To Do" server-side, so a quick-add only makes sense here —
+          it reuses the same handler as the toolbar's "New Task" button. */}
+      {onAddTask && (
+        <button
+          type="button"
+          onClick={onAddTask}
+          className="flex items-center justify-center gap-1.5 px-2 py-2 rounded-md text-xs font-medium text-text-muted bg-surface/60 hover:bg-surface hover:text-primary-600 transition-colors cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-primary-500/30"
+        >
+          <Plus size={14} />
+          Add new task
+        </button>
+      )}
     </div>
   );
 };
 
-export const TaskBoard = ({ tasks, assigneeNames, departmentNames, isAdmin, isVerifier = false, onOpen }: TaskBoardProps) => {
+export const TaskBoard = ({ tasks, assigneeNames, departmentNames, isVerifier = false, onOpen, onAddTask, fields }: TaskBoardProps) => {
   const updateMutation = useUpdateTaskMutation();
+  const [activeTask, setActiveTask] = useState<Task | null>(null);
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
 
+  const handleDragStart = (event: DragStartEvent) => {
+    setActiveTask(tasks.find(t => t.id === event.active.id) ?? null);
+  };
+
   const handleDragEnd = (event: DragEndEvent) => {
+    setActiveTask(null);
+
     const newStatus = event.over?.id as Task['status'] | undefined;
     if (!newStatus) return;
 
@@ -130,7 +159,12 @@ export const TaskBoard = ({ tasks, assigneeNames, departmentNames, isAdmin, isVe
   };
 
   return (
-    <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
+    <DndContext
+      sensors={sensors}
+      onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
+      onDragCancel={() => setActiveTask(null)}
+    >
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 items-start">
         {COLUMNS.map(status => (
           <Column
@@ -139,12 +173,31 @@ export const TaskBoard = ({ tasks, assigneeNames, departmentNames, isAdmin, isVe
             tasks={tasks.filter(t => t.status === status)}
             assigneeNames={assigneeNames}
             departmentNames={departmentNames}
-            isAdmin={isAdmin}
             isVerifier={isVerifier}
             onOpen={onOpen}
+            onAddTask={status === 'todo' ? onAddTask : undefined}
+            fields={fields}
           />
         ))}
       </div>
+
+      {/* Renders the dragged card in a top-level portal with its own transform, instead of
+          translating the source node in place — keeps it visually above every column
+          regardless of stacking context, and gives it a "lifted" tilt/shadow as feedback. */}
+      <DragOverlay>
+        {activeTask && (
+          <div className="w-60 rotate-1 shadow-xl cursor-grabbing">
+            <TaskCard
+              task={activeTask}
+              isVerifier={isVerifier}
+              onOpen={onOpen}
+              assigneeNames={resolveAssigneeNames(activeTask, assigneeNames)}
+              departmentName={activeTask.departmentId ? departmentNames?.get(activeTask.departmentId) : undefined}
+              fields={fields}
+            />
+          </div>
+        )}
+      </DragOverlay>
     </DndContext>
   );
 };

@@ -70,6 +70,9 @@ export const useCreateUserMutation = () => {
         mutationFn: (payload: CreateUserPayload) => adminApi.create(payload).then(r => r.data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: USER_KEYS.all });
+            // Also covers the "/users/assignable" lookups (tasks & tickets hooks) so a newly
+            // created user shows up immediately in assignee pickers, not just admin's user list.
+            queryClient.invalidateQueries({ queryKey: ['assignable-users'] });
             toast.success('User created');
         },
         onError: (err) => toast.error(errorMessage(err, 'Failed to create user')),

@@ -1,4 +1,5 @@
-import { MessageCircle, Sparkles } from 'lucide-react';
+import { Mic, Bot } from 'lucide-react';
+import { FaWhatsapp } from 'react-icons/fa';
 import type { Task } from '../../api/task';
 
 interface TaskSourceBadgeProps {
@@ -11,24 +12,31 @@ export const TaskSourceBadge = ({ aiMeta }: TaskSourceBadgeProps) => {
   if (!aiMeta) return null;
 
   if (aiMeta.channel === 'whatsapp') {
+    const isVoice = aiMeta.inputMode === 'voice';
+    const label = `Created via WhatsApp${isVoice ? ' (voice note)' : ''}`;
     return (
       <span
-        className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 shrink-0"
-        title={`Created via WhatsApp${aiMeta.inputMode === 'voice' ? ' (voice note)' : ''}`}
+        role="img"
+        aria-label={label}
+        title={label}
+        className="relative flex items-center justify-center size-6 rounded-full bg-success/10 text-success shrink-0"
       >
-        <MessageCircle size={10} />
-        WhatsApp
+        <FaWhatsapp size={15} />
+        {isVoice && (
+          <Mic size={9} strokeWidth={3} className="absolute -bottom-0.5 -right-0.5 bg-surface rounded-full p-px" />
+        )}
       </span>
     );
   }
 
   return (
     <span
-      className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200 shrink-0"
+      role="img"
+      aria-label="Created via Smart Add on the web app"
       title="Created via Smart Add on the web app"
+      className="flex items-center justify-center size-6 rounded-full bg-primary-50 text-primary-700 shrink-0"
     >
-      <Sparkles size={10} />
-      Smart Add
+      <Bot size={14} strokeWidth={2.5} />
     </span>
   );
 };

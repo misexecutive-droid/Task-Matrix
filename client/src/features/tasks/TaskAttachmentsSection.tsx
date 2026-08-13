@@ -29,7 +29,7 @@ export const TaskAttachmentsSection = ({ taskId, attachments, canManage }: TaskA
     <div className="space-y-2">
       <div className="flex items-center justify-between">
         <h3 className="flex items-center gap-1.5 text-[11px] font-semibold text-text-muted uppercase tracking-wider select-none">
-          <Paperclip size={13} className="text-blue-400" /> Attachments
+          <Paperclip size={13} className="text-primary-400" /> Attachments
         </h3>
         <span className="text-[11px] text-text-muted">{attachments.length} file{attachments.length === 1 ? '' : 's'}</span>
       </div>
@@ -37,7 +37,15 @@ export const TaskAttachmentsSection = ({ taskId, attachments, canManage }: TaskA
       {canManage && (
         <div
           onClick={() => fileInputRef.current?.click()}
-          className="group border border-dashed border-border hover:border-blue-500/50 bg-surface-hover/30 hover:bg-blue-500/5 p-4 rounded-xl flex flex-col items-center justify-center cursor-pointer transition-all duration-200"
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              fileInputRef.current?.click();
+            }
+          }}
+          role="button"
+          tabIndex={0}
+          className="group border border-dashed border-border hover:border-primary-500/50 bg-surface-hover/30 hover:bg-primary-500/5 p-4 rounded-xl flex flex-col items-center justify-center cursor-pointer transition-all duration-200 outline-none focus-visible:ring-2 focus-visible:ring-primary-500/30"
         >
           <input
             ref={fileInputRef}
@@ -47,10 +55,10 @@ export const TaskAttachmentsSection = ({ taskId, attachments, canManage }: TaskA
             className="hidden"
             onChange={(e) => { handleUpload(e.target.files); e.target.value = ''; }}
           />
-          <div className="p-2 rounded-full bg-surface group-hover:bg-blue-500/10 text-text-muted group-hover:text-blue-500 transition-colors mb-1.5">
+          <div className="p-2 rounded-full bg-surface group-hover:bg-primary-500/10 text-text-muted group-hover:text-primary-500 transition-colors mb-1.5">
             {uploadMutation.isPending ? <Loader2 size={18} className="animate-spin" /> : <UploadCloud size={18} />}
           </div>
-          <p className="text-xs font-medium text-text group-hover:text-blue-500 transition-colors">
+          <p className="text-xs font-medium text-text group-hover:text-primary-500 transition-colors">
             {uploadMutation.isPending ? 'Uploading...' : 'Click or drop files here'}
           </p>
           <p className="text-[10px] text-text-muted mt-0.5">PDF, CSV, photos, or videos — up to 25MB each</p>

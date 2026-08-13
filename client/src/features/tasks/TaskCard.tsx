@@ -2,185 +2,228 @@ import {
   Loader2,
   Trash2,
   User,
-  ArrowLeft,
-  ArrowRight,
   CheckCircle2,
-  Clock,
   ShieldQuestion,
-  AlertCircle,
+  Clock,
+  SquarePen,
+  ListChecks,
+  CalendarPlus,
+  History,
 } from "lucide-react";
-import { useUpdateTaskMutation, useDeleteTaskMutation } from "./hook";
+import { useDeleteTaskMutation } from "./hook";
 import { TaskVerifyActions } from "./TaskVerifyActions";
-import { PRIORITY_MAP, STATUS_LABEL, NEXT_STATUS, PREV_STATUS } from "./taskDisplay";
+import { PRIORITY_MAP } from "./taskDisplay";
 import { departmentTagClass } from "./departmentTagColors";
 import { TaskSourceBadge } from "./TaskSourceBadge";
+import { coverPhotoFor } from "./taskAttachmentDisplay";
+import { UPLOADS_BASE } from "../../lib/uploadsBase";
+import { avatarColorClass } from "./avatarColors";
 import { getInitials } from "../../lib/getInitials";
+import { CATEGORY_CONFIG, subtaskProgress, formatShortDate, type CardFieldVisibility } from "./cardFields";
 import type { Task } from "../../api/task";
+
 interface TaskCardProps {
   task: Task;
-  assigneeName?: string;
+  assigneeNames?: string[];
   departmentName?: string;
-  isAdmin: boolean;
   isVerifier: boolean;
   onOpen: (task: Task) => void;
   index?: number;
+  fields: CardFieldVisibility;
 }
 
-export const TaskCard = ({ task, assigneeName, departmentName, isAdmin, isVerifier, onOpen }: TaskCardProps) => {
-  const updateMutation = useUpdateTaskMutation();
+const MAX_VISIBLE_AVATARS = 3;
+
+const daysLeftLabel = (dueDate: string) => {
+  const diffMs = new Date(dueDate).setHours(0, 0, 0, 0) - new Date().setHours(0, 0, 0, 0);
+  const days = Math.round(diffMs / 86_400_000);
+  if (days < 0) return `${Math.abs(days)}d overdue`;
+  if (days === 0) return 'Due today';
+  return `${days} day${days === 1 ? '' : 's'} left`;
+};
+
+export const TaskCard = ({ task, assigneeNames = [], departmentName, isVerifier, onOpen, fields }: TaskCardProps) => {
   const deleteMutation = useDeleteTaskMutation();
   const priority = PRIORITY_MAP[task.priority];
-  const next = NEXT_STATUS[task.status];
-  const prev = PREV_STATUS[task.status];
-
+  const coverPhoto = coverPhotoFor(task.attachments);
   const isOverdue = task.dueDate && new Date(task.dueDate) < new Date() && task.status !== 'done';
+  const subtasks = subtaskProgress(task);
 
-  const advance = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (next) {
-      updateMutation.mutate({ id: task.id, payload: { status: next } });
-    }
-  };
-
-  const goBack = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (prev) {
-      updateMutation.mutate({ id: task.id, payload: { status: prev } });
-    }
-  };
+  const showDoneBadge = fields.status && task.status === 'done';
+  const showReviewBadge = fields.status && task.status === 'pending_verification' && !isVerifier;
+  const showVerifyActions = task.status === 'pending_verification' && isVerifier;
+  const showDuePill = fields.dueDate && task.dueDate && task.status !== 'done' && task.status !== 'pending_verification';
 
   return (
     <div
       onClick={() => onOpen(task)}
-      className="group relative flex flex-col p-2.5 rounded-lg border border-border bg-surface shadow-xs hover:border-border-hover hover:shadow-sm transition-all duration-150 cursor-pointer select-none"
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onOpen(task);
+        }
+      }}
+      role="button"
+      tabIndex={0}
+      className="group relative flex flex-col gap-2.5 p-3 rounded-xl bg-surface shadow-xs hover:shadow-md transition-shadow duration-150 cursor-pointer select-none outline-none focus-visible:ring-2 focus-visible:ring-primary-500/30"
     >
-      <div className="flex items-start justify-between gap-2 mb-2">
-        <div className="flex items-center gap-1.5 min-w-0">
-          <div className="flex items-center justify-center size-5 rounded bg-surface-hover text-text-secondary font-bold text-[10px] shrink-0 border border-border">
-            {task.title.charAt(0).toUpperCase()}
-          </div>
-          <h4 className="text-xs font-semibold text-text group-hover:text-blue-600 transition-colors truncate leading-tight">
-            {task.title}
-          </h4>
-        </div>
-        <TaskSourceBadge aiMeta={task.aiMeta} />
-
-        {isAdmin && (
+      <div className="flex items-start justify-between gap-2">
+        <h4 className="text-sm font-semibold text-text truncate leading-snug">
+          {task.title}
+        </h4>
+        <div className="flex items-center gap-1 shrink-0">
+          <TaskSourceBadge aiMeta={task.aiMeta} />
           <button
             type="button"
             onClick={(e) => {
               e.stopPropagation();
-              deleteMutation.mutate(task.id);
+              onOpen(task);
             }}
-            disabled={deleteMutation.isPending}
-            className="shrink-0 p-0.5 rounded text-text-light hover:text-danger hover:bg-danger/10 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
-            title="Delete task"
+            aria-label="Open task"
+            title="Open task"
+            className="flex items-center justify-center size-7 rounded-md text-text-light bg-surface-hover hover:text-primary-600 hover:bg-primary-500/10 transition-colors cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-primary-500/30"
           >
-            {deleteMutation.isPending ? (
-              <Loader2 size={12} className="animate-spin text-danger" />
-            ) : (
-              <Trash2 size={12} />
-            )}
+            <SquarePen size={15} strokeWidth={2.5} />
           </button>
-        )}
-      </div>
-
-      <div className="space-y-1 my-1 text-[11px] text-text-muted">
-        {departmentName && (
-          <div className="flex items-center justify-between">
-            <span>Dept:</span>
-            <span className={`font-medium px-1.5 py-0.2 rounded text-[10px] ${departmentTagClass(departmentName)}`}>
-              {departmentName}
-            </span>
-          </div>
-        )}
-
-        {priority && (
-          <div className="flex items-center justify-between">
-            <span>Priority:</span>
-            <span className={`font-semibold text-[10px] ${priority.className}`}>
-              {priority.label}
-            </span>
-          </div>
-        )}
-
-        {task.dueDate && (
-          <div className="flex items-center justify-between">
-            <span>Due:</span>
-            <span className={`flex items-center gap-1 font-medium ${isOverdue ? 'text-danger font-semibold' : 'text-text-secondary'}`}>
-              <Clock size={10} className={isOverdue ? 'text-danger' : 'text-text-light'} />
-              {new Date(task.dueDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
-            </span>
-          </div>
-        )}
-      </div>
-
-      <div className="flex items-center justify-between pt-2 mt-1 border-t border-border/60">
-        <div className="flex items-center gap-1.5 min-w-0">
-          {assigneeName ? (
-            <div
-              className="flex items-center justify-center size-5 rounded-full bg-slate-700 text-white text-[9px] font-bold shrink-0"
-              title={`Assigned to ${assigneeName}`}
-            >
-              {getInitials(assigneeName)}
-            </div>
-          ) : (
-            <div className="flex items-center justify-center size-5 rounded-full border border-dashed border-border-hover text-text-light shrink-0 bg-surface-hover" title="Unassigned">
-              <User size={10} />
-            </div>
-          )}
-          <span className="text-[11px] text-text-secondary font-medium truncate">
-            {assigneeName || "Unassigned"}
-          </span>
-        </div>
-
-        {next ? (
-          <div className="flex items-center">
-            {/* Revealed on card hover with a slide-in, instead of always sitting next to the
-                forward arrow — it's the less-common action, so it stays out of the way until
-                the user is already interacting with this card. */}
-            {prev && (
-              <button
-                type="button"
-                onClick={goBack}
-                disabled={updateMutation.isPending}
-                className="p-1 rounded text-text-light hover:text-blue-600 hover:bg-blue-500/10 opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-200 ease-out"
-                title={`Move back to ${STATUS_LABEL[prev]}`}
-              >
-                <ArrowLeft size={12} />
-              </button>
-            )}
+          {isVerifier && (
             <button
               type="button"
-              onClick={advance}
-              disabled={updateMutation.isPending}
-              className="p-1 rounded text-text-light hover:text-blue-600 hover:bg-blue-500/10 transition-colors"
-              title={`Move to ${STATUS_LABEL[next]}`}
+              onClick={(e) => {
+                e.stopPropagation();
+                deleteMutation.mutate(task.id);
+              }}
+              disabled={deleteMutation.isPending}
+              aria-label="Delete task"
+              title="Delete task"
+              className="flex items-center justify-center size-7 rounded-md text-text-light hover:text-danger hover:bg-danger/10 transition-colors cursor-pointer disabled:opacity-50 outline-none focus-visible:ring-2 focus-visible:ring-danger/40"
             >
-              {updateMutation.isPending ? <Loader2 size={12} className="animate-spin text-blue-600" /> : <ArrowRight size={12} />}
+              {deleteMutation.isPending ? (
+                <Loader2 size={15} strokeWidth={2.5} className="animate-spin text-danger" />
+              ) : (
+                <Trash2 size={15} strokeWidth={2.5} />
+              )}
             </button>
-          </div>
-        ) : task.status === 'pending_verification' ? (
-          isVerifier ? (
-            <TaskVerifyActions task={task} />
-          ) : (
-            <span title="Awaiting verification">
-              <ShieldQuestion size={12} className="text-warning" />
+          )}
+        </div>
+      </div>
+
+      {coverPhoto && (
+        <img
+          src={`${UPLOADS_BASE}${coverPhoto.url}`}
+          alt=""
+          className="w-full aspect-video rounded-lg object-cover"
+        />
+      )}
+
+      {task.description && (
+        <p className="text-xs text-text-muted leading-relaxed line-clamp-2">
+          {task.description}
+        </p>
+      )}
+
+      <div className="flex flex-wrap items-center gap-1.5">
+        {fields.department && departmentName && (
+          <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold ${departmentTagClass(departmentName)}`}>
+            {departmentName}
+          </span>
+        )}
+
+        {fields.priority && priority && (
+          <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold ${priority.className}`}>
+            <span className={`size-1.5 rounded-full shrink-0 ${priority.accent}`} />
+            {priority.label}
+          </span>
+        )}
+
+        {fields.category && (() => {
+          const cat = CATEGORY_CONFIG[task.category];
+          return (
+            <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold ${cat.className}`}>
+              <cat.icon size={12} strokeWidth={2.5} />
+              {cat.label}
             </span>
-          )
-        ) : (
-          <span title="Task Completed">
-            <CheckCircle2 size={12} className="text-success" />
+          );
+        })()}
+
+        {fields.subtasks && subtasks && (
+          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-surface-hover text-text-secondary">
+            <ListChecks size={12} strokeWidth={2.5} />
+            {subtasks.done}/{subtasks.total}
+          </span>
+        )}
+
+        {fields.created && (
+          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium text-text-light">
+            <CalendarPlus size={12} strokeWidth={2.5} />
+            {formatShortDate(task.createdAt)}
+          </span>
+        )}
+
+        {fields.updated && (
+          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium text-text-light">
+            <History size={12} strokeWidth={2.5} />
+            {formatShortDate(task.updatedAt)}
           </span>
         )}
       </div>
 
-      {updateMutation.isError && (
-        <div className="flex items-center gap-1 mt-1.5 p-1 bg-danger/10 rounded text-[10px] text-danger font-medium border border-danger/20">
-          <AlertCircle size={10} className="shrink-0 text-danger" />
-          <span className="truncate">{updateMutation.error instanceof Error ? updateMutation.error.message : 'Error updating.'}</span>
-        </div>
-      )}
+      <div className="flex items-center justify-between pt-1">
+        {fields.assignee ? (
+          assigneeNames.length > 0 ? (
+            <div className="flex items-center -space-x-1.5">
+              {assigneeNames.slice(0, MAX_VISIBLE_AVATARS).map((name, i) => (
+                <div
+                  key={name + i}
+                  className={`flex items-center justify-center size-6 rounded-full text-white text-[10px] font-bold ring-2 ring-surface shrink-0 ${avatarColorClass(name)}`}
+                  title={`Assigned to ${name}`}
+                >
+                  {getInitials(name)}
+                </div>
+              ))}
+              {assigneeNames.length > MAX_VISIBLE_AVATARS && (
+                <div
+                  className="flex items-center justify-center size-6 rounded-full bg-surface-hover text-text-secondary text-[10px] font-bold ring-2 ring-surface shrink-0"
+                  title={assigneeNames.slice(MAX_VISIBLE_AVATARS).join(', ')}
+                >
+                  +{assigneeNames.length - MAX_VISIBLE_AVATARS}
+                </div>
+              )}
+            </div>
+          ) : (
+            <div
+              className="flex items-center justify-center size-6 rounded-full bg-surface-hover text-text-light ring-2 ring-surface shrink-0"
+              title="Unassigned"
+            >
+              <User size={13} strokeWidth={2.5} />
+            </div>
+          )
+        ) : (
+          <span />
+        )}
+
+        {showVerifyActions ? (
+          <TaskVerifyActions task={task} compact />
+        ) : showDoneBadge ? (
+          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-success/10 text-success">
+            <CheckCircle2 size={15} strokeWidth={2.5} />
+            Done
+          </span>
+        ) : showReviewBadge ? (
+          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-warning/10 text-warning">
+            <ShieldQuestion size={15} strokeWidth={2.5} />
+            In review
+          </span>
+        ) : showDuePill ? (
+          <span
+            className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold ${
+              isOverdue ? 'bg-danger/10 text-danger' : 'bg-surface-hover text-text-secondary'
+            }`}
+          >
+            <Clock size={15} strokeWidth={2.5} />
+            {daysLeftLabel(task.dueDate!)}
+          </span>
+        ) : null}
+      </div>
     </div>
   );
 };

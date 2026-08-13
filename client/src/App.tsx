@@ -90,6 +90,10 @@ const router = createBrowserRouter([
             element: <PCRoute />,
             children: [
               { path: '/verify', element: <VerificationQueue /> },
+              // Org-wide task browser (department/person/day/status filters) — PC and ADMIN
+              // both need this, so it lives here instead of under AdminRoute/AdminLayout,
+              // which is gated to ADMIN only.
+              { path: '/tasks/team', element: <AdminTaskList /> },
             ],
           },
         ],
@@ -110,7 +114,6 @@ const router = createBrowserRouter([
               { path: '/admin/scheduled-checklists/builder/:definitionId', element: <ChecklistBuilder /> },
               { path: '/admin/scheduled-checklists/:definitionId', element: <ChecklistDefinitionDetail /> },
               { path: '/admin/tickets', element: <TicketList /> },
-              { path: '/admin/tasks', element: <AdminTaskList /> },
               { path: '/admin/analytics', element: <AdminAnalytics /> },
               { path: '/admin/reports', element: <ReportsPage /> },
               { path: '/admin/settings', element: <SettingsPage /> },

@@ -9,7 +9,6 @@ import { twMerge } from 'tailwind-merge';
 import { useUsersQuery } from "../hook";
 import { TaskList } from "../../tasks";
 import { ExportDialog } from "../../reports";
-import { DateRangePicker, type DateRangeValue } from "../../../components";
 import {
   Select,
   SelectTrigger,
@@ -27,7 +26,6 @@ const ALL_USERS = "__all__";
 export const TatReport = () => {
   const { data: users = [] } = useUsersQuery();
   const [userId, setUserId] = useState("");
-  const [dateRange, setDateRange] = useState<DateRangeValue>({ from: null, to: null });
   const [showExport, setShowExport] = useState(false);
 
   return (
@@ -67,13 +65,6 @@ export const TatReport = () => {
               </SelectContent>
             </Select>
 
-            <DateRangePicker
-              value={dateRange}
-              onChange={setDateRange}
-              placeholder="Filter by date"
-              className="w-full sm:w-64"
-            />
-
             <button
               type="button"
               onClick={() => setShowExport(true)}
@@ -94,7 +85,7 @@ export const TatReport = () => {
         </header>
 
         <section aria-label="Task List Content" className="flex flex-col flex-1">
-          <TaskList userId={userId || undefined} dateRange={dateRange} hideHeader />
+          <TaskList userId={userId || undefined} hideHeader />
         </section>
 
         {showExport && (

@@ -47,18 +47,18 @@ export const TaskTimeline = ({ tasks, assigneeNames, onOpen }: TaskTimelineProps
   const today = new Date();
 
   return (
-    <div className="rounded border border-border overflow-hidden bg-surface">
+    <div className="rounded border border-border overflow-hidden bg-background">
       <div className="overflow-x-auto">
         <div style={{ minWidth: LABEL_WIDTH + totalDays * DAY_WIDTH }}>
           {/* Date scale header */}
           <div className="flex border-b border-border">
-            <div className="sticky left-0 z-20 shrink-0 bg-surface border-r border-border" style={{ width: LABEL_WIDTH }} />
+            <div className="sticky left-0 z-20 shrink-0 bg-background border-r border-border" style={{ width: LABEL_WIDTH }} />
             {days.map((d, i) => (
               <div
                 key={i}
                 style={{ width: DAY_WIDTH }}
                 className={`shrink-0 text-center text-[11px] font-medium py-2 border-r border-border/40 ${
-                  isSameDay(d, today) ? 'text-blue-600 bg-blue-50/60' : 'text-text-muted'
+                  isSameDay(d, today) ? 'text-primary-600 bg-primary-50/60' : 'text-text-muted'
                 }`}
               >
                 {i === 0 || d.getDate() === 1
@@ -81,10 +81,18 @@ export const TaskTimeline = ({ tasks, assigneeNames, onOpen }: TaskTimelineProps
               <div
                 key={task.id}
                 onClick={() => onOpen(task)}
-                className="flex border-b border-border/60 hover:bg-surface-hover/40 transition-colors cursor-pointer"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    onOpen(task);
+                  }
+                }}
+                role="button"
+                tabIndex={0}
+                className="flex border-b border-border/60 hover:bg-surface-hover/40 transition-colors cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-primary-500/30 focus-visible:ring-inset"
               >
                 <div
-                  className="sticky left-0 z-10 shrink-0 bg-surface border-r border-border px-3 py-2.5 min-w-0"
+                  className="sticky left-0 z-10 shrink-0 bg-background border-r border-border px-3 py-2.5 min-w-0"
                   style={{ width: LABEL_WIDTH }}
                 >
                   <p className={`text-sm font-semibold truncate ${task.status === 'done' ? 'line-through text-text-light' : 'text-text'}`}>
@@ -99,7 +107,7 @@ export const TaskTimeline = ({ tasks, assigneeNames, onOpen }: TaskTimelineProps
                       <div
                         key={i}
                         style={{ width: DAY_WIDTH }}
-                        className={`h-full shrink-0 border-r border-border/30 ${isSameDay(d, today) ? 'bg-blue-50/40' : ''}`}
+                        className={`h-full shrink-0 border-r border-border/30 ${isSameDay(d, today) ? 'bg-primary-50/40' : ''}`}
                       />
                     ))}
                   </div>

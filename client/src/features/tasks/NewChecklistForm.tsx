@@ -59,7 +59,7 @@ export const NewChecklistForm = ({ taskId, onDone }: NewChecklistFormProps) => {
 
       {/* Header Section */}
       <div className="flex items-center gap-3 pb-4 border-b border-border/60">
-        <div className="flex items-center justify-center w-10 h-10 bg-blue-50 text-blue-600 rounded-lg shrink-0">
+        <div className="flex items-center justify-center w-10 h-10 bg-primary-50 text-primary-600 rounded-lg shrink-0">
           <CheckSquare size={20} />
         </div>
         <div className="min-w-0">
@@ -80,7 +80,7 @@ export const NewChecklistForm = ({ taskId, onDone }: NewChecklistFormProps) => {
               <select
                 value={templateId}
                 onChange={e => setTemplateId(e.target.value)}
-                className="w-full px-3 py-2 text-sm text-text-secondary bg-surface rounded-lg border border-border shadow-xs focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all appearance-none cursor-pointer"
+                className="w-full px-3 py-2 text-sm text-text-secondary bg-surface rounded-lg border border-border shadow-xs focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 outline-none transition-all appearance-none cursor-pointer"
               >
                 <option value="">Select a template...</option>
                 {templates.map(t => (
@@ -159,9 +159,9 @@ export const NewChecklistForm = ({ taskId, onDone }: NewChecklistFormProps) => {
           <button
             type="button"
             onClick={() => setItemDrafts(d => [...d, emptyItemDraft()])}
-            className="group flex items-center justify-center gap-2 py-4 mt-2 text-sm font-semibold text-blue-600 bg-blue-500/5 hover:bg-blue-500/10 border-2 border-blue-200 hover:border-blue-300 rounded-xl border-dashed transition-all w-full cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+            className="group flex items-center justify-center gap-2 py-4 mt-2 text-sm font-semibold text-primary-600 bg-primary-500/5 hover:bg-primary-500/10 border-2 border-primary-200 hover:border-primary-300 rounded-xl border-dashed transition-all w-full cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2"
           >
-            <div className="flex items-center justify-center w-6 h-6 rounded-full bg-blue-100 text-blue-600 group-hover:scale-110 transition-transform">
+            <div className="flex items-center justify-center w-6 h-6 rounded-full bg-primary-100 text-primary-600 group-hover:scale-110 transition-transform">
               <Plus size={14} strokeWidth={2.5} />
             </div>
             Add Another Task

@@ -1,3 +1,4 @@
+import { Plus } from 'lucide-react';
 import { Button } from '../../components';
 
 interface TaskFormFooterProps {
@@ -26,7 +27,8 @@ export const TaskFormFooter = ({ onClose, isPending, isSubmitting }: TaskFormFoo
       isLoading={isPending || isSubmitting}
       className="w-full sm:w-auto gap-1.5"
     >
-      <span>Create Task</span>
+      <Plus size={16} strokeWidth={2.5} />
+      <span>Add new task</span>
     </Button>
   </div>
 );

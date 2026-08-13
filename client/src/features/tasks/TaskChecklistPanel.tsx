@@ -46,16 +46,18 @@ export const TaskChecklistPanel = ({ taskId, checklists, isAdmin, currentUserId 
 
       {/* Empty State */}
       {checklists.length === 0 && !adding && (
-        <div className="flex flex-col items-center justify-center p-8 sm:p-10 text-center bg-surface-hover/40 rounded-2xl border-2 border-dashed border-border">
-          <div className="flex items-center justify-center w-12 h-12 bg-surface rounded-xl border border-border shadow-sm mb-4">
+        <div className="flex flex-col items-center justify-center gap-4 p-8 sm:p-10 text-center bg-surface-hover/40 rounded-2xl border-2 border-dashed border-border">
+          <div className="flex items-center justify-center w-12 h-12 bg-surface rounded-xl border border-border shadow-sm">
              <CheckSquare size={24} className="text-text-light" />
           </div>
-          <h4 className="text-base font-semibold text-text">No Checklists Active</h4>
-          <p className="text-sm text-text-muted mt-1 max-w-sm">
-            Break down this task into smaller, trackable items. Add a checklist to get started.
-          </p>
+          <div className="flex flex-col gap-1">
+            <h4 className="text-base font-semibold text-text">No Checklists Active</h4>
+            <p className="text-sm text-text-muted max-w-sm">
+              Break down this task into smaller, trackable items. Add a checklist to get started.
+            </p>
+          </div>
           {isAdmin && (
-            <Button size="sm" variant="primary" onClick={() => setAdding(true)} className="gap-2 mt-5 shadow-sm">
+            <Button size="sm" variant="primary" onClick={() => setAdding(true)} className="gap-2 shadow-sm">
               <Plus size={14} strokeWidth={2.5} />
               Create Checklist
             </Button>

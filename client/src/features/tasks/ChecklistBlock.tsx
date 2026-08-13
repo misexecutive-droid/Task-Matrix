@@ -31,7 +31,7 @@ export const ChecklistBlock = ({
       isComplete ? 'bg-surface-hover/40 border-border/60' : 'bg-surface border-border'
     }`}>
       <div
-        className={`group flex items-center justify-between gap-3 px-4 sm:px-5 py-3.5 sm:py-4 cursor-pointer transition-colors hover:bg-surface-hover/60 outline-none focus-visible:ring-2 focus-visible:ring-blue-500/30 focus-visible:ring-inset ${open ? 'border-b border-border/60' : ''}`}
+        className={`group flex items-center justify-between gap-3 px-4 sm:px-5 py-3.5 sm:py-4 cursor-pointer transition-colors hover:bg-surface-hover/60 outline-none focus-visible:ring-2 focus-visible:ring-primary-500/30 focus-visible:ring-inset ${open ? 'border-b border-border/60' : ''}`}
         onClick={toggle}
         onKeyDown={onToggleKeyDown}
         role="button"
@@ -52,13 +52,13 @@ export const ChecklistBlock = ({
               <div className="h-2 flex-1 bg-surface-hover rounded-full overflow-hidden border border-border/50">
                 <div
                   className={`h-full rounded-full transition-all duration-700 ease-out ${
-                    isComplete ? 'bg-blue-500' : 'bg-info'
+                    isComplete ? 'bg-primary-500' : 'bg-info'
                   }`}
                   style={{ width: `${progress}%` }}
                 />
               </div>
               <span className={`text-[11px] font-bold uppercase tracking-wider w-8 shrink-0 ${
-                isComplete ? 'text-blue-600' : 'text-text-muted'
+                isComplete ? 'text-primary-600' : 'text-text-muted'
               }`}>
                 {doneCount}/{checklist.items.length}
               </span>

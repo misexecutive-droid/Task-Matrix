@@ -425,7 +425,7 @@ export const SmartTaskModal = ({ onClose }: SmartTaskModalProps) => {
             onClose={onClose}
             size="xl"
             contentClassName="accent-blue"
-            icon={<Sparkles className="w-5 h-5 text-blue-600" />}
+            icon={<Sparkles className="w-5 h-5 text-primary-600" />}
             title="Smart Add"
             description={review ? "Review extracted details below before creating." : "Type in English or Hinglish — I'll parse the details."}
             footer={
@@ -441,10 +441,10 @@ export const SmartTaskModal = ({ onClose }: SmartTaskModalProps) => {
                 <div ref={scrollRef} className="flex flex-col gap-3 max-h-64 overflow-y-auto pr-1">
                     {messages.map((m) => (
                         <div key={m.id} className={`flex items-start gap-2 ${m.from === "user" ? "flex-row-reverse" : ""}`}>
-                            <div className={`flex items-center justify-center size-6 rounded-full shrink-0 ${m.from === "bot" ? "bg-blue-100 text-blue-700" : "bg-surface-hover text-text-secondary"}`}>
+                            <div className={`flex items-center justify-center size-6 rounded-full shrink-0 ${m.from === "bot" ? "bg-primary-100 text-primary-700" : "bg-surface-hover text-text-secondary"}`}>
                                 {m.from === "bot" ? <Sparkles size={12} /> : <UserIcon size={12} />}
                             </div>
-                            <div className={`max-w-[80%] text-sm rounded-lg px-3 py-2 ${m.from === "bot" ? "bg-blue-50 text-blue-900" : "bg-surface-hover text-text"}`}>
+                            <div className={`max-w-[80%] text-sm rounded-lg px-3 py-2 ${m.from === "bot" ? "bg-primary-50 text-primary-900" : "bg-surface-hover text-text"}`}>
                                 {m.text}
                             </div>
                         </div>
@@ -462,7 +462,7 @@ export const SmartTaskModal = ({ onClose }: SmartTaskModalProps) => {
                     <div className="flex items-center gap-2 pt-3 border-t border-border/60">
                         <input
                             type="text"
-                            className="flex-1 h-10 px-3 text-sm rounded border border-border bg-surface text-text focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 disabled:bg-surface-hover disabled:cursor-not-allowed"
+                            className="flex-1 h-10 px-3 text-sm rounded border border-border bg-surface text-text focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-400 disabled:bg-surface-hover disabled:cursor-not-allowed"
                             placeholder={pendingSlot ? `Provide ${pendingSlot}...` : "Type in English or Hinglish, or record a voice note..."}
                             value={input}
                             disabled={parseMutation.isPending || voiceRecorderBusy}
@@ -487,6 +487,7 @@ export const SmartTaskModal = ({ onClose }: SmartTaskModalProps) => {
                             variant="primary"
                             onClick={() => handleSend()}
                             disabled={!input.trim() || parseMutation.isPending || voiceRecorderBusy}
+                            aria-label="Send"
                             className="shrink-0"
                         >
                             <Send size={14} />

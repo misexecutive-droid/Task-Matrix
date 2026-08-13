@@ -10,7 +10,8 @@ import { useDepartmentsQuery } from '../tickets/hook';
 import { taskApi } from '../../api/task';
 import { TaskFormPrioritySelector } from './TaskFormPrioritySelector';
 import { TaskFormDepartmentField } from './TaskFormDepartmentField';
-import { TaskFormAssigneeField } from './TaskFormAssigneeField';
+import { TaskAssigneesField } from './TaskAssigneesField';
+import { TaskFormReminderField } from './TaskFormReminderField';
 import { TaskAttachmentPicker } from './TaskAttachmentPicker';
 import { TaskFormFooter } from './TaskFormFooter';
 import { TaskFormErrorBanner } from './TaskFormErrorBanner';
@@ -20,8 +21,8 @@ const taskSchema = z.object({
   title:        z.string().trim().min(1, 'Title is required'),
   description:  z.string().optional(),
   priority:     z.enum(['low', 'medium', 'high']),
+  startDate:    z.string().optional().or(z.literal('')),
   dueDate:      z.string().optional().or(z.literal('')),
-  assigneeId:   z.string().optional().or(z.literal('')),
   departmentId: z.string().optional().or(z.literal('')),
 });
 
@@ -36,6 +37,8 @@ export const TaskForm = ({ onClose }: TaskFormProps) => {
   const { data: assignableUsers, isLoading: isLoadingUsers } = useAssignableUsersQuery();
   const { data: departments, isLoading: isLoadingDepts } = useDepartmentsQuery();
   const [attachmentFiles, setAttachmentFiles] = useState<File[]>([]);
+  const [reminderMinutes, setReminderMinutes] = useState<number | null>(null);
+  const [assigneeIds, setAssigneeIds] = useState<string[]>([]);
 
   const {
     register,
@@ -47,13 +50,11 @@ export const TaskForm = ({ onClose }: TaskFormProps) => {
     resolver: zodResolver(taskSchema),
     defaultValues: {
       priority: 'medium',
-      assigneeId: '',
       departmentId: '',
     },
   });
 
   const priority     = watch('priority');
-  const assigneeId   = watch('assigneeId');
   const departmentId = watch('departmentId');
 
   const onSubmit = (data: TaskFields) => {
@@ -62,8 +63,11 @@ export const TaskForm = ({ onClose }: TaskFormProps) => {
         title:        data.title,
         description:  data.description,
         priority:     data.priority,
+        startDate:    data.startDate ? new Date(data.startDate).toISOString() : undefined,
         dueDate:      data.dueDate ? new Date(data.dueDate).toISOString() : undefined,
-        assigneeId:   data.assigneeId !== '' ? data.assigneeId : undefined,
+        reminderMinutesBefore: reminderMinutes ?? undefined,
+        assigneeId:   assigneeIds[0],
+        additionalAssigneeIds: assigneeIds.slice(1),
         departmentId: data.departmentId !== '' ? data.departmentId : undefined,
       },
       {
@@ -86,22 +90,16 @@ export const TaskForm = ({ onClose }: TaskFormProps) => {
     <Modal
       open
       onClose={onClose}
-      size="xl"
-      contentClassName="accent-blue"
-      icon={<CheckSquare className="w-5 h-5 text-blue-600" />}
-      title={
-        <div className="flex items-center gap-2 truncate">
-          <span className="text-xl font-bold text-text">Create New Task</span>
-          <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 border border-blue-200 shrink-0">
-            Draft
-          </span>
-        </div>
-      }
+      size="2xl"
+      icon={<CheckSquare className="w-5 h-5 text-primary-600" />}
+      title="Add new task"
       description="Define objectives, set priorities, and assign responsible members."
+      bodyClassName="p-0"
       footer={<TaskFormFooter onClose={onClose} isPending={mutation.isPending} isSubmitting={isSubmitting} />}
     >
-      <form id="task-form" onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-6" noValidate>
-        <div>
+      <form id="task-form" onSubmit={handleSubmit(onSubmit)} className="grid grid-cols-1 lg:grid-cols-[1fr_20rem]" noValidate>
+        {/* Left column — content */}
+        <div className="flex flex-col gap-5 p-5 border-b lg:border-b-0 lg:border-r border-border/60">
           <Input
             id="title"
             label={<>Task Title <span className="text-danger">*</span></>}
@@ -109,31 +107,55 @@ export const TaskForm = ({ onClose }: TaskFormProps) => {
             iconClassName={FIELD_LABEL_ICON_CLASS}
             placeholder="e.g. Redesign the landing page hero section"
             error={errors.title?.message}
-            className="focus:border-blue-500 focus:ring-blue-500/20"
+            className="focus:border-primary-500 focus:ring-primary-500/20"
             labelClassName={FIELD_LABEL_CLASS}
             {...register('title')}
             autoFocus
           />
-        </div>
 
-        <div>
           <Textarea
             id="description"
             label="Description"
             icon={FileText}
             iconClassName={FIELD_LABEL_ICON_CLASS}
-            rows={3}
+            rows={6}
             placeholder="Provide task context, constraints, acceptance criteria, or relevant links…"
-            className="focus:border-blue-500 focus:ring-blue-500/20"
+            className="focus:border-primary-500 focus:ring-primary-500/20"
             labelClassName={FIELD_LABEL_CLASS}
             {...register('description')}
           />
+
+          <TaskAttachmentPicker files={attachmentFiles} onChange={setAttachmentFiles} />
+
+          {mutation.isError && (
+            <TaskFormErrorBanner error={mutation.error} fallback="Failed to create task. Please verify your inputs and try again." />
+          )}
         </div>
 
-        <TaskFormPrioritySelector value={priority} onChange={(v) => setValue('priority', v)} />
+        {/* Right column — fields */}
+        <div className="flex flex-col gap-5 p-5">
+          <TaskAssigneesField
+            selectedIds={assigneeIds}
+            onChange={setAssigneeIds}
+            users={assignableUsers}
+            isLoading={isLoadingUsers}
+          />
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-          <div className="flex flex-col justify-end">
+          <TaskFormPrioritySelector value={priority} onChange={(v) => setValue('priority', v)} />
+
+          <div className="grid grid-cols-2 gap-3">
+            <Input
+              id="startDate"
+              type="date"
+              label="Start Date"
+              icon={Calendar}
+              iconClassName={FIELD_LABEL_ICON_CLASS}
+              error={errors.startDate?.message}
+              className="focus:border-primary-500 focus:ring-primary-500/20"
+              labelClassName={FIELD_LABEL_CLASS}
+              {...register('startDate')}
+            />
+
             <Input
               id="dueDate"
               type="date"
@@ -141,7 +163,7 @@ export const TaskForm = ({ onClose }: TaskFormProps) => {
               icon={Calendar}
               iconClassName={FIELD_LABEL_ICON_CLASS}
               error={errors.dueDate?.message}
-              className="focus:border-blue-500 focus:ring-blue-500/20"
+              className="focus:border-primary-500 focus:ring-primary-500/20"
               labelClassName={FIELD_LABEL_CLASS}
               {...register('dueDate')}
             />
@@ -153,20 +175,9 @@ export const TaskForm = ({ onClose }: TaskFormProps) => {
             departments={departments}
             isLoading={isLoadingDepts}
           />
+
+          <TaskFormReminderField minutes={reminderMinutes} onChange={setReminderMinutes} />
         </div>
-
-        <TaskFormAssigneeField
-          value={assigneeId ?? ''}
-          onChange={(v) => setValue('assigneeId', v)}
-          users={assignableUsers}
-          isLoading={isLoadingUsers}
-        />
-
-        <TaskAttachmentPicker files={attachmentFiles} onChange={setAttachmentFiles} />
-
-        {mutation.isError && (
-          <TaskFormErrorBanner error={mutation.error} fallback="Failed to create task. Please verify your inputs and try again." />
-        )}
       </form>
     </Modal>
   );

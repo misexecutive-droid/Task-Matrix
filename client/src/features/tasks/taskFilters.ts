@@ -1,3 +1,4 @@
+import { CalendarClock, Flag, Clock, ArrowDownAZ, type LucideIcon } from 'lucide-react';
 import type { Task } from '../../api/task';
 
 // "Issue" and "Delegation" are the two real category values on Task, but a plain task typed
@@ -21,6 +22,13 @@ export const SORT_LABEL: Record<TaskSortKey, string> = {
   priority: 'Priority',
   createdAt: 'Created date',
   title: 'Title',
+};
+
+export const SORT_ICON: Record<TaskSortKey, LucideIcon> = {
+  dueDate: CalendarClock,
+  priority: Flag,
+  createdAt: Clock,
+  title: ArrowDownAZ,
 };
 
 const PRIORITY_RANK: Record<Task['priority'], number> = { low: 0, medium: 1, high: 2 };

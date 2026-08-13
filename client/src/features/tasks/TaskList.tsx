@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { useSearchParams } from "react-router";
 import { toast } from "sonner";
-import { Sparkles, CheckCheck, AlertCircle, LayoutList, Kanban, Table2, GanttChartSquare, ArrowUpDown, Save, Inbox, X, Plus } from "lucide-react";
-import { Button, Skeleton } from "../../components";
-import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
+import { Wand2, CheckCheck, AlertCircle, LayoutList, Kanban, Table2, GanttChartSquare, Check, Save, Inbox, X, Plus, Settings2 } from "lucide-react";
+import { Button, Skeleton, DateRangePicker, type DateRangeValue } from "../../components";
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuCheckboxItem, DropdownMenuLabel } from "@/components/ui/dropdown-menu";
 import { useTasksQuery, useAssignableUsersQuery } from "./hook";
 import { useDepartmentsQuery } from "../tickets/hook";
 import type { Task } from '../../api/task';
@@ -15,38 +15,40 @@ import { TaskTimeline } from "./TaskTimeline";
 import { TaskRow } from "./TaskRow";
 import { SmartTaskModal } from "./SmartTaskModal";
 import { TaskFiltersPopover, type TaskFilters } from "./TaskFiltersPopover";
-import { CATEGORY_PREDICATES, SORT_LABEL, SORT_COMPARATORS, type CategoryFilterKey, type TaskSortKey } from "./taskFilters";
+import { CATEGORY_PREDICATES, SORT_LABEL, SORT_ICON, SORT_COMPARATORS, type CategoryFilterKey, type TaskSortKey } from "./taskFilters";
 import { STATUS_LABEL, PRIORITY_MAP } from "./taskDisplay";
+import { useCardFieldVisibility, CARD_FIELD_CONFIG, taskAssigneeIds } from "./cardFields";
 import { useAuth } from "../../context/AuthContext"
 
-// Groups tasks by departmentId, sorted alphabetically by department name with "No department"
-// always last. Used by the list view below — the board view keeps its own status-column grouping.
-const groupByDepartment = (tasks: Task[], departmentNames: Map<string, string>) => {
-    const groups = new Map<string, { departmentId: string | null; departmentName: string; tasks: Task[] }>();
+// Groups tasks by due date (day granularity), earliest first, with undated tasks in one
+// trailing bucket. Used by the list view below — the board view keeps its own status-column
+// grouping. Department is still visible per-row (via Customize Cards), just no longer the
+// grouping key.
+const groupByDueDate = (tasks: Task[]) => {
+    const groups = new Map<string, { key: string; label: string; sortValue: number; tasks: Task[] }>();
 
     for (const task of tasks) {
-        const key = task.departmentId ?? '__none__';
+        const due = task.dueDate ? new Date(task.dueDate) : null;
+        const key = due ? due.toDateString() : '__none__';
         if (!groups.has(key)) {
             groups.set(key, {
-                departmentId: task.departmentId,
-                departmentName: task.departmentId ? (departmentNames.get(task.departmentId) ?? 'Unknown department') : 'No department',
+                key,
+                label: due
+                    ? due.toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' })
+                    : 'No due date',
+                sortValue: due ? due.setHours(0, 0, 0, 0) : Number.MAX_SAFE_INTEGER,
                 tasks: [],
             });
         }
         groups.get(key)!.tasks.push(task);
     }
 
-    return [...groups.values()].sort((a, b) => {
-        if (a.departmentId === null) return 1;
-        if (b.departmentId === null) return -1;
-        return a.departmentName.localeCompare(b.departmentName);
-    });
+    return [...groups.values()].sort((a, b) => a.sortValue - b.sortValue);
 };
 
 interface TaskListProps {
     userId?: string;
     hideHeader?: boolean;
-    dateRange?: { from: Date | null; to: Date | null };
 }
 
 type TaskView = 'list' | 'board' | 'table' | 'timeline';
@@ -58,11 +60,11 @@ const VIEW_TABS: { key: TaskView; label: string; icon: typeof LayoutList }[] = [
     { key: 'timeline', label: 'Timeline', icon: GanttChartSquare },
 ];
 
-const DEFAULT_FILTERS: TaskFilters = { category: 'all', status: 'all', priority: 'all', departmentId: '' };
+const DEFAULT_FILTERS: TaskFilters = { category: 'all', status: 'all', priority: [], departmentId: '', assigneeIds: [] };
 
 const filtersStorageKey = (userId?: string) => `task-filters:${userId ?? 'anon'}`;
 
-export const TaskList = ({ userId, hideHeader = false, dateRange }: TaskListProps = {}) => {
+export const TaskList = ({ userId, hideHeader = false }: TaskListProps = {}) => {
     const { user } = useAuth();
     const isAdmin = user?.role === "ADMIN";
     const isVerifier = user?.role === "PC" || user?.role === "ADMIN";
@@ -87,7 +89,14 @@ export const TaskList = ({ userId, hideHeader = false, dateRange }: TaskListProp
 
         try {
             const raw = localStorage.getItem(filtersStorageKey(user?.id));
-            if (raw) return { ...DEFAULT_FILTERS, ...JSON.parse(raw) };
+            if (raw) {
+                const saved = JSON.parse(raw);
+                // priority/assigneeIds used to be single values before multi-select — drop an
+                // old-shaped saved filter's value for those two fields rather than crash on it.
+                if (!Array.isArray(saved.priority)) delete saved.priority;
+                if (!Array.isArray(saved.assigneeIds)) delete saved.assigneeIds;
+                return { ...DEFAULT_FILTERS, ...saved };
+            }
         } catch {
             // Corrupt/unavailable localStorage — fall through to defaults.
         }
@@ -95,6 +104,10 @@ export const TaskList = ({ userId, hideHeader = false, dateRange }: TaskListProp
     });
     const [sort, setSort] = useState<TaskSortKey>('dueDate');
     const [view, setView] = useState<TaskView>('board');
+    const { visibility: fieldVisibility, toggle: toggleField } = useCardFieldVisibility();
+    // Built into the toolbar for everyone — admin/PC get it org-wide same as their other
+    // filters, a regular user gets it scoped to their own tasks same as everything else here.
+    const [dueDateRange, setDueDateRange] = useState<DateRangeValue>({ from: null, to: null });
 
     const updateFilters = (patch: Partial<TaskFilters>) => setFilters(f => ({ ...f, ...patch }));
     const clearFilters = () => setFilters(DEFAULT_FILTERS);
@@ -112,34 +125,56 @@ export const TaskList = ({ userId, hideHeader = false, dateRange }: TaskListProp
     );
     const departmentNames = new Map((departments ?? []).map(d => [d.id, d.name]));
 
-    // Optional client-side date filter (createdAt) — only active when a range is passed in,
-    // so every other caller of TaskList that doesn't pass dateRange is unaffected.
-    const dateFiltered = !dateRange?.from
+    // Due-date range filter — tasks with no due date drop out once a range is set, since
+    // "due between this date and that date" can't match a task that has no due date at all.
+    const dateFiltered = !dueDateRange.from
         ? (tasks ?? [])
         : (tasks ?? []).filter(t => {
-            const created = new Date(t.createdAt);
-            const from = new Date(dateRange.from!.getFullYear(), dateRange.from!.getMonth(), dateRange.from!.getDate());
-            if (created < from) return false;
-            if (dateRange.to) {
-                const to = new Date(dateRange.to.getFullYear(), dateRange.to.getMonth(), dateRange.to.getDate(), 23, 59, 59, 999);
-                if (created > to) return false;
+            if (!t.dueDate) return false;
+            const due = new Date(t.dueDate);
+            const from = new Date(dueDateRange.from!.getFullYear(), dueDateRange.from!.getMonth(), dueDateRange.from!.getDate());
+            if (due < from) return false;
+            if (dueDateRange.to) {
+                const to = new Date(dueDateRange.to.getFullYear(), dueDateRange.to.getMonth(), dueDateRange.to.getDate(), 23, 59, 59, 999);
+                if (due > to) return false;
             }
             return true;
         });
 
     const categoryFiltered = dateFiltered.filter(CATEGORY_PREDICATES[filters.category]);
-    const priorityFiltered = filters.priority === 'all' ? categoryFiltered : categoryFiltered.filter(t => t.priority === filters.priority);
+    const priorityFiltered = filters.priority.length === 0 ? categoryFiltered : categoryFiltered.filter(t => filters.priority.includes(t.priority));
     const departmentFiltered = filters.departmentId ? priorityFiltered.filter(t => t.departmentId === filters.departmentId) : priorityFiltered;
-    const filtered = filters.status === 'all' ? departmentFiltered : departmentFiltered.filter(t => t.status === filters.status);
+    const assigneeFiltered = filters.assigneeIds.length === 0
+        ? departmentFiltered
+        : departmentFiltered.filter(t => taskAssigneeIds(t).some(id => filters.assigneeIds.includes(id)));
+    const filtered = filters.status === 'all' ? assigneeFiltered : assigneeFiltered.filter(t => t.status === filters.status);
 
     const sorted = [...filtered].sort(SORT_COMPARATORS[sort]);
-    const departmentGroups = groupByDepartment(sorted, departmentNames);
+    const dateGroups = groupByDueDate(sorted);
 
-    const activeChips: { key: keyof TaskFilters; label: string; onClear: () => void }[] = [
-        ...(filters.status !== 'all' ? [{ key: 'status' as const, label: `Status: ${STATUS_LABEL[filters.status]}`, onClear: () => updateFilters({ status: 'all' }) }] : []),
-        ...(filters.category !== 'all' ? [{ key: 'category' as const, label: `Category: ${filters.category === 'task' ? 'Tasks' : filters.category === 'issue' ? 'Issues' : 'Delegations'}`, onClear: () => updateFilters({ category: 'all' }) }] : []),
-        ...(filters.priority !== 'all' ? [{ key: 'priority' as const, label: `Priority: ${PRIORITY_MAP[filters.priority].label}`, onClear: () => updateFilters({ priority: 'all' }) }] : []),
-        ...(filters.departmentId ? [{ key: 'departmentId' as const, label: `Dept: ${departmentNames.get(filters.departmentId) ?? 'Unknown'}`, onClear: () => updateFilters({ departmentId: '' }) }] : []),
+    const formatShortDate = (d: Date) => d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+
+    const activeChips: { key: string; label: string; onClear: () => void }[] = [
+        ...(filters.status !== 'all' ? [{ key: 'status', label: `Status: ${STATUS_LABEL[filters.status]}`, onClear: () => updateFilters({ status: 'all' }) }] : []),
+        ...(filters.category !== 'all' ? [{ key: 'category', label: `Category: ${filters.category === 'task' ? 'Tasks' : filters.category === 'issue' ? 'Issues' : 'Delegations'}`, onClear: () => updateFilters({ category: 'all' }) }] : []),
+        ...(filters.priority.length > 0 ? [{
+            key: 'priority',
+            label: `Priority: ${filters.priority.map(p => PRIORITY_MAP[p].label).join(', ')}`,
+            onClear: () => updateFilters({ priority: [] }),
+        }] : []),
+        ...(filters.departmentId ? [{ key: 'departmentId', label: `Dept: ${departmentNames.get(filters.departmentId) ?? 'Unknown'}`, onClear: () => updateFilters({ departmentId: '' }) }] : []),
+        ...(filters.assigneeIds.length > 0 ? [{
+            key: 'assigneeIds',
+            label: filters.assigneeIds.length === 1
+                ? `Assignee: ${assigneeNames.get(filters.assigneeIds[0]) ?? 'Unknown'}`
+                : `Assignees: ${filters.assigneeIds.length}`,
+            onClear: () => updateFilters({ assigneeIds: [] }),
+        }] : []),
+        ...(dueDateRange.from ? [{
+            key: 'dueDateRange',
+            label: `Due: ${formatShortDate(dueDateRange.from)}${dueDateRange.to ? ` – ${formatShortDate(dueDateRange.to)}` : ''}`,
+            onClear: () => setDueDateRange({ from: null, to: null }),
+        }] : []),
     ];
 
     const isEmpty = sorted.length === 0;
@@ -150,22 +185,22 @@ export const TaskList = ({ userId, hideHeader = false, dateRange }: TaskListProp
             {/* Header & Controls Section */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 flex-wrap">
                 {!hideHeader && (
-                    <div className="flex items-center gap-4">
-                        <div className="flex items-center justify-center w-12 h-12 rounded bg-gradient-to-br from-blue-600 to-blue-500 text-white shadow-lg shadow-blue-500/20 shrink-0">
-                            <CheckCheck size={24} strokeWidth={2.5} />
+                    <div className="flex items-center gap-3">
+                        <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary-50 text-primary-700 border border-primary-100 shrink-0">
+                            <CheckCheck size={20} strokeWidth={2} />
                         </div>
                         <div>
-                            <h1 className="text-2xl font-bold text-text tracking-tight">Tasks</h1>
-                            <p className="text-sm font-medium text-text-muted mt-0.5">
+                            <h1 className="text-xl font-bold text-text tracking-tight">Tasks</h1>
+                            <p className="text-sm text-text-muted mt-0.5">
                                 {tasks?.length ?? 0} total task{tasks?.length !== 1 ? 's' : ''}
                             </p>
                         </div>
                     </div>
                 )}
 
-                <div className={`flex items-center gap-3 ${hideHeader ? 'ml-auto' : ''}`}>
+                <div className={`flex items-center gap-2 flex-wrap ${hideHeader ? 'ml-auto' : ''}`}>
                     {/* View Toggle (Segmented Control) */}
-                    <div className="flex items-center gap-0.5 p-1 bg-surface-hover/60 border border-border rounded-md">
+                    <div className="flex items-center gap-0.5 p-1 rounded-full">
                         {VIEW_TABS.map(tab => (
                             <button
                                 key={tab.key}
@@ -174,10 +209,10 @@ export const TaskList = ({ userId, hideHeader = false, dateRange }: TaskListProp
                                 title={`${tab.label} view`}
                                 aria-label={`${tab.label} view`}
                                 aria-pressed={view === tab.key}
-                                className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-semibold transition-all duration-200 cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 ${
+                                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all duration-200 cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50 ${
                                     view === tab.key
-                                        ? 'bg-surface text-text shadow-xs border border-border-hover'
-                                        : 'text-text-muted hover:text-text-secondary hover:bg-surface-active/50 border border-transparent'
+                                        ? 'bg-surface text-text shadow-xs'
+                                        : 'text-text-muted hover:text-text-secondary hover:bg-surface-active/50'
                                 }`}
                             >
                                 <tab.icon size={14} />
@@ -190,11 +225,12 @@ export const TaskList = ({ userId, hideHeader = false, dateRange }: TaskListProp
                         <Button
                             size="sm"
                             variant="secondary"
-                            className="gap-2 font-semibold shadow-sm"
+                            className="px-2.5 border-0 shadow-none rounded-full"
                             onClick={() => setShowSmartModal(true)}
+                            aria-label="Smart Task"
+                            title="Smart Task"
                         >
-                            <Sparkles size={16} strokeWidth={2.5} />
-                            Smart Task
+                            <Wand2 size={16} strokeWidth={2} />
                         </Button>
                     )}
 
@@ -202,76 +238,134 @@ export const TaskList = ({ userId, hideHeader = false, dateRange }: TaskListProp
                         <Button
                             size="sm"
                             variant="primary"
-                            className="gap-2 font-semibold shadow-sm"
+                            className="group gap-2 font-semibold shadow-sm rounded-full"
                             onClick={() => setShowForm(true)}
                         >
-                            <Plus size={16} strokeWidth={2.5} />
+                            <Plus size={16} strokeWidth={2.5} className="transition-transform duration-300 group-hover:rotate-90" />
                             New Task
                         </Button>
                     )}
-                </div>
-            </div>
 
-            {/* Filter Bar — Filters popover + active-filter chips on the left, count + sort on the right */}
-            <div className="flex items-center gap-2 flex-wrap">
-                <TaskFiltersPopover
-                    filters={filters}
-                    onChange={updateFilters}
-                    onClearAll={clearFilters}
-                    departments={departments}
-                    activeCount={activeChips.length}
-                />
+                    <TaskFiltersPopover
+                        filters={filters}
+                        onChange={updateFilters}
+                        onClearAll={clearFilters}
+                        departments={departments}
+                        assignableUsers={assignableUsers}
+                        currentUserId={user?.id}
+                        isAdmin={isAdmin}
+                        activeCount={activeChips.length}
+                    />
 
-                {activeChips.map(chip => (
-                    <span
-                        key={chip.key}
-                        className="flex items-center gap-1.5 pl-3 pr-1.5 py-1 text-xs font-semibold rounded-full bg-blue-50 text-blue-700 border border-blue-200"
-                    >
-                        {chip.label}
-                        <button
-                            type="button"
-                            onClick={chip.onClear}
-                            aria-label={`Clear ${chip.label} filter`}
-                            className="p-0.5 rounded-full hover:bg-blue-100 transition-colors cursor-pointer"
-                        >
-                            <X size={12} />
-                        </button>
-                    </span>
-                ))}
+                    <DateRangePicker
+                        value={dueDateRange}
+                        onChange={setDueDateRange}
+                        placeholder="Due date"
+                        className="w-auto"
+                        triggerClassName="h-8 w-auto rounded-full text-xs px-3"
+                    />
 
-                <button
-                    type="button"
-                    onClick={saveFilters}
-                    disabled={activeChips.length === 0}
-                    title={activeChips.length === 0 ? 'Set a filter first to save it' : 'Save this filter combination as your default'}
-                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-full border border-dashed border-border text-text-muted hover:text-text hover:border-border-hover hover:bg-surface-hover transition-all duration-200 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-text-muted disabled:hover:border-border"
-                >
-                    <Save size={13} />
-                    Save this filter
-                </button>
-
-                <div className="ml-auto flex items-center gap-3">
                     <span className="text-xs font-medium text-text-muted whitespace-nowrap">
                         {sorted.length} task{sorted.length !== 1 ? 's' : ''}
                     </span>
-                    <Select value={sort} onValueChange={(v) => setSort(v as TaskSortKey)}>
-                        <SelectTrigger className="h-8 text-xs w-44 rounded bg-surface" aria-label="Sort tasks by">
-                            <ArrowUpDown size={13} className="text-text-light shrink-0" />
-                            <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                            {(Object.keys(SORT_LABEL) as TaskSortKey[]).map(key => (
-                                <SelectItem key={key} value={key}>Sort: {SORT_LABEL[key]}</SelectItem>
+
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button
+                                variant="secondary"
+                                size="sm"
+                                className="px-2.5 border-0 shadow-none rounded-full"
+                                aria-label={`Sort: ${SORT_LABEL[sort]}`}
+                                title={`Sort: ${SORT_LABEL[sort]}`}
+                            >
+                                {(() => {
+                                    const SortIcon = SORT_ICON[sort];
+                                    return <SortIcon size={14} />;
+                                })()}
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-44">
+                            {(Object.keys(SORT_LABEL) as TaskSortKey[]).map(key => {
+                                const Icon = SORT_ICON[key];
+                                return (
+                                    <DropdownMenuItem key={key} onClick={() => setSort(key)} className="gap-2">
+                                        <Icon size={14} className="text-text-light" />
+                                        {SORT_LABEL[key]}
+                                        {sort === key && <Check size={14} className="ml-auto text-primary-600" />}
+                                    </DropdownMenuItem>
+                                );
+                            })}
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button
+                                variant="secondary"
+                                size="sm"
+                                className="gap-1.5 border-0 shadow-none rounded-full"
+                                aria-label="Customize cards"
+                                title="Customize cards"
+                            >
+                                <Settings2 size={14} />
+                                Customize cards
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-52">
+                            <DropdownMenuLabel>Show only</DropdownMenuLabel>
+                            {CARD_FIELD_CONFIG.map(({ key, label, icon: Icon }) => (
+                                <DropdownMenuCheckboxItem
+                                    key={key}
+                                    checked={fieldVisibility[key]}
+                                    onCheckedChange={() => toggleField(key)}
+                                    onSelect={(e) => e.preventDefault()}
+                                    className="gap-2"
+                                >
+                                    <Icon size={14} className="text-text-light" />
+                                    {label}
+                                </DropdownMenuCheckboxItem>
                             ))}
-                        </SelectContent>
-                    </Select>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
                 </div>
             </div>
 
+            {/* Active filter chips — only takes up space once something is actually filtered */}
+            {activeChips.length > 0 && (
+                <div className="flex items-center gap-2 flex-wrap">
+                    {activeChips.map(chip => (
+                        <span
+                            key={chip.key}
+                            className="flex items-center gap-1.5 pl-3 pr-1.5 py-1 text-xs font-semibold rounded-full bg-primary-50 text-primary-700 border border-primary-200"
+                        >
+                            {chip.label}
+                            <button
+                                type="button"
+                                onClick={chip.onClear}
+                                aria-label={`Clear ${chip.label} filter`}
+                                className="p-0.5 rounded-full hover:bg-primary-100 transition-colors cursor-pointer"
+                            >
+                                <X size={12} />
+                            </button>
+                        </span>
+                    ))}
+
+                    <button
+                        type="button"
+                        onClick={saveFilters}
+                        title="Save this filter combination as your default"
+                        className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-full text-text-muted hover:text-text hover:bg-surface-hover transition-colors duration-200 cursor-pointer"
+                    >
+                        <Save size={13} />
+                        Save this filter
+                    </button>
+                </div>
+            )}
+
             {/* Loading States */}
             {isPending && view === 'list' && (
-                <div className="flex flex-col gap-3">
-                    {Array.from({ length: 5 }).map((_, i) => (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {Array.from({ length: 6 }).map((_, i) => (
                         <div key={i} className="flex items-center gap-4 px-5 py-4 rounded border border-border bg-surface">
                             <Skeleton className="w-5 h-5 rounded-md shrink-0" />
                             <Skeleton className="h-5 flex-1 max-w-md" />
@@ -318,7 +412,7 @@ export const TaskList = ({ userId, hideHeader = false, dateRange }: TaskListProp
                                 <div key={i} className="flex flex-col gap-3 p-4 rounded border border-border bg-surface">
                                     <Skeleton className="h-5 w-3/4 rounded-md" />
                                     <Skeleton className="h-4 w-1/2 rounded-md" />
-                                    <div className="flex justify-between items-center mt-2">
+                                    <div className="flex justify-between items-center">
                                         <Skeleton className="h-5 w-16 rounded-md" />
                                         <Skeleton className="w-7 h-7 rounded-full" />
                                     </div>
@@ -358,12 +452,12 @@ export const TaskList = ({ userId, hideHeader = false, dateRange }: TaskListProp
                 let rowIndex = 0;
                 return (
                     <div className="flex flex-col gap-6 pb-10">
-                        {departmentGroups.map(group => (
-                            <div key={group.departmentId ?? '__none__'} className="flex flex-col gap-3">
-                                {/* Department Header */}
-                                <div className="flex items-center gap-3 mt-2 mb-1">
-                                    <h3 className="text-xs font-bold text-text-muted uppercase tracking-wider">
-                                        {group.departmentName}
+                        {dateGroups.map(group => (
+                            <div key={group.key} className="flex flex-col gap-3">
+                                {/* Date Header */}
+                                <div className="flex items-center gap-3">
+                                    <h3 className="text-sm font-bold text-text tracking-tight">
+                                        {group.label}
                                     </h3>
                                     <span className="flex items-center justify-center min-w-[1.5rem] h-5 px-1.5 text-[10px] font-bold text-text-muted bg-surface-hover rounded-full border border-border shadow-xs">
                                         {group.tasks.length}
@@ -371,16 +465,18 @@ export const TaskList = ({ userId, hideHeader = false, dateRange }: TaskListProp
                                     <div className="flex-1 h-px bg-border/60" /> {/* Clean divider line */}
                                 </div>
                                 
-                                {/* Tasks Stack */}
-                                <div className="flex flex-col gap-2.5">
+                                {/* Tasks Grid */}
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
                                     {group.tasks.map(task => (
                                         <TaskRow
                                             key={task.id}
                                             task={task}
-                                            isAdmin={isAdmin}
+                                            isVerifier={isVerifier}
                                             onOpen={setSelected}
                                             index={rowIndex++}
                                             assigneeName={task.assigneeId ? assigneeNames.get(task.assigneeId) : undefined}
+                                            departmentName={task.departmentId ? departmentNames.get(task.departmentId) : undefined}
+                                            fields={fieldVisibility}
                                         />
                                     ))}
                                 </div>
@@ -397,9 +493,10 @@ export const TaskList = ({ userId, hideHeader = false, dateRange }: TaskListProp
                         tasks={sorted}
                         assigneeNames={assigneeNames}
                         departmentNames={departmentNames}
-                        isAdmin={isAdmin}
                         isVerifier={isVerifier}
                         onOpen={setSelected}
+                        onAddTask={() => setShowForm(true)}
+                        fields={fieldVisibility}
                     />
                 </div>
             )}
@@ -412,6 +509,7 @@ export const TaskList = ({ userId, hideHeader = false, dateRange }: TaskListProp
                         assigneeNames={assigneeNames}
                         departmentNames={departmentNames}
                         onOpen={setSelected}
+                        fields={fieldVisibility}
                     />
                 </div>
             )}
@@ -428,9 +526,8 @@ export const TaskList = ({ userId, hideHeader = false, dateRange }: TaskListProp
             {showSmartModal && <SmartTaskModal onClose={() => setShowSmartModal(false)} />}
             {selected && (
                 <TaskDetail
+                    key={selected.id}
                     task={selected}
-                    assigneeName={selected.assigneeId ? assigneeNames.get(selected.assigneeId) : undefined}
-                    departmentName={selected.departmentId ? departmentNames.get(selected.departmentId) : undefined}
                     onClose={() => setSelected(null)}
                 />
             )}

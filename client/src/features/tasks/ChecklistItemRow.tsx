@@ -55,7 +55,7 @@ export const ChecklistItemRow = ({
         <span
           className={`mt-0.5 flex items-center justify-center w-6 h-6 rounded-md shrink-0 transition-all ${
             item.isDone
-              ? 'bg-blue-500 text-white shadow-xs'
+              ? 'bg-primary-500 text-white shadow-xs'
               : 'bg-surface text-text-light border-[1.5px] border-border-hover shadow-xs'
           }`}
         >
@@ -81,7 +81,7 @@ export const ChecklistItemRow = ({
             {item.requiredImageCount > 0 && (
               <span className={`inline-flex items-center gap-1.5 text-xs font-bold px-2 py-0.5 rounded-md border ${
                 photosSatisfied
-                  ? 'bg-blue-50 text-blue-700 border-blue-200'
+                  ? 'bg-primary-50 text-primary-700 border-primary-200'
                   : 'bg-warning/10 text-warning border-warning/30'
               }`}>
                 <Camera size={12} strokeWidth={2.5} />
@@ -133,7 +133,7 @@ export const ChecklistItemRow = ({
               <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover/img:opacity-100 transition-opacity" />
 
               <span className={`absolute top-1 left-1 text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded shadow-xs text-white backdrop-blur-md ${
-                img.captureMethod === 'LIVE' ? 'bg-blue-600/90' : 'bg-black/70'
+                img.captureMethod === 'LIVE' ? 'bg-primary-600/90' : 'bg-black/70'
               }`}>
                 {img.captureMethod === 'LIVE' ? 'Live' : 'Gallery'}
               </span>
@@ -169,7 +169,7 @@ export const ChecklistItemRow = ({
               onChange={e => setRemarks(e.target.value)}
               placeholder="Add remarks or notes..."
               rows={2}
-              className="w-full px-3 py-2 text-sm text-text bg-surface rounded-lg border border-border focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 placeholder:text-text-light resize-none transition-all outline-none"
+              className="w-full px-3 py-2 text-sm text-text bg-surface rounded-lg border border-border focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 placeholder:text-text-light resize-none transition-all outline-none"
             />
 
             {(uploadImages.isError || completeItem.isError) && (
@@ -219,7 +219,7 @@ export const ChecklistItemRow = ({
                   type="button"
                   onClick={() => completeItem.mutate(item.id)}
                   disabled={completeItem.isPending}
-                  className="flex items-center justify-center gap-2 text-sm font-semibold px-5 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 cursor-pointer transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 active:scale-95"
+                  className="flex items-center justify-center gap-2 text-sm font-semibold px-5 py-2 rounded-lg bg-primary-600 text-white hover:bg-primary-700 cursor-pointer transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-xs outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50 active:scale-95"
                 >
                   {completeItem.isPending ? <Loader2 size={16} className="animate-spin" /> : <CheckSquare size={16} />}
                   Complete Item

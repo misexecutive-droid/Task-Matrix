@@ -19,6 +19,10 @@ interface DateRangePickerProps {
   showTime?: boolean;
   placeholder?: string;
   className?: string;
+  /** Extra classes merged onto the trigger button itself — className above only sizes the
+   *  outer wrapper. For call sites (e.g. a pill-shaped toolbar) that need to override the
+   *  trigger's own shape/height rather than just its width. */
+  triggerClassName?: string;
 }
 
 const WEEKDAY_LABELS = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'];
@@ -52,6 +56,7 @@ export function DateRangePicker({
   showTime = false,
   placeholder = 'Select date range',
   className = '',
+  triggerClassName = '',
 }: DateRangePickerProps) {
   const [open, setOpen] = useState(false);
   const [viewMonth, setViewMonth] = useState(() => startOfDay(value.from ?? new Date()));
@@ -116,7 +121,8 @@ export function DateRangePicker({
         onClick={() => setOpen((v) => !v)}
         className={cn(
           "flex items-center gap-2 w-full h-10 px-3 rounded-md border bg-surface text-sm transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-coral-400",
-          open ? "border-primary-400" : "border-border hover:border-primary-400"
+          open ? "border-primary-400" : "border-border hover:border-primary-400",
+          triggerClassName
         )}
       >
         <CalendarIcon size={16} className="text-text-light shrink-0" />

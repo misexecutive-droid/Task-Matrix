@@ -58,7 +58,7 @@ const NAV: AdminNavItem[] = [
     ],
   },
   { to: '/admin/tickets', icon: TicketCheck, label: 'Tickets', end: false },
-  { to: '/admin/tasks', icon: ClipboardList, label: 'Tasks', end: false },
+  { to: '/tasks/team', icon: ClipboardList, label: 'Tasks', end: false },
   { to: '/admin/reports', icon: FileDown, label: 'Reports', end: false },
   { to: '/admin/settings', icon: Settings, label: 'Settings', end: false },
 ];

@@ -19,12 +19,17 @@ export type Task = {
     status:       'todo' | 'in_progress' | 'pending_verification' | 'done';
     category :    'issue' | 'delegation';
     priority:     'low' | 'medium' | 'high';
+    startDate:    string | null;
     dueDate:      string | null;
+    reminderMinutesBefore: number | null;
     projectId:    string | null;
     assigneeId:   string | null;
+    // Extra people beyond the primary assigneeId — see Task.ts model for why they're separate.
+    additionalAssigneeIds: string[];
     departmentId: string | null;
     userId:       string;
     createdAt:    string;
+    updatedAt:    string;
     verifiedBy:       string | null;
     verifiedAt:       string | null;
     verificationNote: string | null;
@@ -46,9 +51,12 @@ export type CreateTaskPayload = {
     description?:  string;
     status?:       Task['status'];
     priority?:     Task['priority'];
+    startDate?:    string;
     dueDate?:      string;
+    reminderMinutesBefore?: number;
     projectId?:    string;
     assigneeId?:   string;
+    additionalAssigneeIds?: string[];
     departmentId?: string;
 };
 
@@ -84,9 +92,10 @@ export type ConfirmSmartTaskPayload = {
     channel: "whatsapp" | "web";
 }
 
-export type UpdateTaskPayload = Partial<Omit<CreateTaskPayload, 'assigneeId' | 'departmentId'>> & {
+export type UpdateTaskPayload = Partial<Omit<CreateTaskPayload, 'assigneeId' | 'departmentId' | 'reminderMinutesBefore'>> & {
     assigneeId?: string | null;
     departmentId?: string | null;
+    reminderMinutesBefore?: number | null;
 };
 
 export type VerifyTaskPayload = { action: 'APPROVE' | 'REJECT'; note?: string };

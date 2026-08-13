@@ -64,7 +64,7 @@ export const ItemDraftRow = ({ index, draft, assignableUsers, onChange, onRemove
             value={draft.label}
             onChange={e => onChange(index, { label: e.target.value })}
             placeholder="e.g., Audit frontend performance metrics..."
-            className="w-full bg-transparent text-text placeholder:text-text-light text-lg font-medium outline-none border-b border-transparent focus:border-blue-500 focus:ring-0 transition-colors pb-1"
+            className="w-full bg-transparent text-text placeholder:text-text-light text-lg font-medium outline-none border-b border-transparent focus:border-primary-500 focus:ring-0 transition-colors pb-1"
           />
         </div>
       </div>
@@ -80,7 +80,7 @@ export const ItemDraftRow = ({ index, draft, assignableUsers, onChange, onRemove
           <select
             value={draft.assigneeId}
             onChange={e => onChange(index, { assigneeId: e.target.value })}
-            className="w-full px-3 py-2 text-sm text-text-secondary bg-surface-hover rounded-lg border border-border focus:bg-surface focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all appearance-none"
+            className="w-full px-3 py-2 text-sm text-text-secondary bg-surface-hover rounded-lg border border-border focus:bg-surface focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 outline-none transition-all appearance-none"
           >
             <option value="">Unassigned</option>
             {assignableUsers?.map(u => (
@@ -98,7 +98,7 @@ export const ItemDraftRow = ({ index, draft, assignableUsers, onChange, onRemove
             type="date"
             value={draft.dueAt}
             onChange={e => onChange(index, { dueAt: e.target.value })}
-            className="w-full px-3 py-2 text-sm text-text-secondary bg-surface-hover rounded-lg border border-border focus:bg-surface focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all"
+            className="w-full px-3 py-2 text-sm text-text-secondary bg-surface-hover rounded-lg border border-border focus:bg-surface focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 outline-none transition-all"
           />
         </div>
 
@@ -111,7 +111,7 @@ export const ItemDraftRow = ({ index, draft, assignableUsers, onChange, onRemove
             type="number" min={0}
             value={draft.requiredImageCount}
             onChange={e => onChange(index, { requiredImageCount: e.target.value })}
-            className="w-full px-3 py-2 text-sm text-text-secondary bg-surface-hover rounded-lg border border-border focus:bg-surface focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all"
+            className="w-full px-3 py-2 text-sm text-text-secondary bg-surface-hover rounded-lg border border-border focus:bg-surface focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 outline-none transition-all"
           />
         </div>
 
@@ -125,7 +125,7 @@ export const ItemDraftRow = ({ index, draft, assignableUsers, onChange, onRemove
             value={draft.maxImageCount}
             onChange={e => onChange(index, { maxImageCount: e.target.value })}
             placeholder="No limit"
-            className="w-full px-3 py-2 text-sm text-text-secondary bg-surface-hover rounded-lg border border-border placeholder:text-text-light focus:bg-surface focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all"
+            className="w-full px-3 py-2 text-sm text-text-secondary bg-surface-hover rounded-lg border border-border placeholder:text-text-light focus:bg-surface focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 outline-none transition-all"
           />
         </div>
       </div>
@@ -141,9 +141,9 @@ export const ItemDraftRow = ({ index, draft, assignableUsers, onChange, onRemove
               checked={draft.requiresLivePhoto}
               onChange={e => onChange(index, { requiresLivePhoto: e.target.checked })}
             />
-            <div className={`w-5 h-5 rounded border flex items-center justify-center transition-all duration-200 peer-focus-visible:ring-2 peer-focus-visible:ring-blue-500 peer-focus-visible:ring-offset-2 ${
+            <div className={`w-5 h-5 rounded border flex items-center justify-center transition-all duration-200 peer-focus-visible:ring-2 peer-focus-visible:ring-primary-500 peer-focus-visible:ring-offset-2 ${
               draft.requiresLivePhoto
-                ? 'bg-blue-600 border-blue-600'
+                ? 'bg-primary-600 border-primary-600'
                 : 'bg-surface border-border-hover group-hover/toggle:border-text-light'
             }`}>
               {draft.requiresLivePhoto && <Check size={14} strokeWidth={3} className="text-white" />}
