@@ -6,11 +6,14 @@ export const createTaskSchema = z.object({
     title : z.string().min(1), 
     description : z.string().optional(),
     status : z.enum(TASK_STATUSES).optional(), 
-    priority : z.enum(TASK_PRIORITIES).optional(), 
-    dueDate : z.string().datetime().optional(), 
+    priority : z.enum(TASK_PRIORITIES).optional(),
+    startDate : z.string().datetime().optional(),
+    dueDate : z.string().datetime().optional(),
+    reminderMinutesBefore : z.number().int().positive().optional(),
     projectId : objectId.optional(),
-    assigneeId : objectId.optional(), 
-    departmentId : objectId.optional() 
+    assigneeId : objectId.optional(),
+    additionalAssigneeIds : z.array(objectId).optional(),
+    departmentId : objectId.optional()
 });
 
 
@@ -49,7 +52,8 @@ export const complianceReportQuerySchema = z.object({
 
 export const updateTaskSchema = createTaskSchema.partial().extend({
     assigneeId : objectId.nullable().optional(),
-    departmentId : objectId.nullable().optional() 
+    departmentId : objectId.nullable().optional(),
+    reminderMinutesBefore : z.number().int().positive().nullable().optional(),
 });
 
 

@@ -9,20 +9,23 @@ import { notificationService } from "../notifications/notification.service.js"
 import { emitTaskEvent } from "../../sockets/taskEvent.js"
 import { DATE_FORMATS, type DateBucket } from "../../utils/index.js"
 
+// ADMIN and PC both get full org-wide visibility — PC's whole job is verification, so capping
+// them to their own department made most of the org invisible to them and left the "filter by
+// department/person" view (AdminTaskList) unusable for anyone but an admin. Safe to broaden here:
+// PC is still blocked from create/delete at the route level (task.routes.ts) and from raw status
+// updates in update() below, so this only actually widens list/getById/verify.
 const visiblityFilter = (user: AccessTokenPayload) => {
-    if (user.role === "ADMIN") return {};
+    if (user.role === "ADMIN" || user.role === "PC") return {};
 
-    const or: Record<string, unknown>[] = [{ userId: user.sub }, { assigneeId: user.sub }];
-    if (user.role === "PC" && user.departmentId) or.push({ departmentId: user.departmentId });
-    return { $or: or };
+    return { $or: [{ userId: user.sub }, { assigneeId: user.sub }, { additionalAssigneeIds: user.sub }] };
 }
 
 export const taskService = {
     async list(user: AccessTokenPayload, filterUserId?: string, status?: string, page = 1, limit = 200) {
         const ATTACHMENT_THUMBNAIL_SELECT = "url mimeType";
 
-        const filter: Record<string, unknown> = user.role === "ADMIN" && filterUserId
-            ? { $or: [{ userId: filterUserId }, { assigneeId: filterUserId }] }
+        const filter: Record<string, unknown> = (user.role === "ADMIN" || user.role === "PC") && filterUserId
+            ? { $or: [{ userId: filterUserId }, { assigneeId: filterUserId }, { additionalAssigneeIds: filterUserId }] }
             : visiblityFilter(user);
         if (status) filter.status = status;
 
@@ -94,9 +97,17 @@ export const taskService = {
             assertChecklistsResolved((existing as any).checklists, "sending this task for review")
         }
 
+        // Moving the deadline (or changing/clearing the reminder lead time) invalidates whatever
+        // reminder was already scheduled for the old dueDate — re-arm it so the sweep can send a
+        // fresh one instead of treating this task as already handled.
+        const update: UpdateTaskInput & { reminderSentAt?: null } = { ...input };
+        if ("dueDate" in input || "reminderMinutesBefore" in input) {
+            update.reminderSentAt = null;
+        }
+
         const task = await Task.findOneAndUpdate(
             { _id: id, ...visiblityFilter(user) },
-            input,
+            update,
             { new: true, runValidators: true },
 
         );
@@ -163,6 +174,7 @@ export const taskService = {
                     $or: [
                         { "task.userId": new Types.ObjectId(userId) },
                         { "task.assigneeId": new Types.ObjectId(userId) },
+                        { "task.additionalAssigneeIds": new Types.ObjectId(userId) },
                     ],
                 },
             }] : []),

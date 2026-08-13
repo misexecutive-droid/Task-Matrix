@@ -12,6 +12,7 @@ const assertCanAttach = (user: AccessTokenPayload, task: any) => {
     if (user.role === "ADMIN") return;
     if (String(task.userId) === user.sub) return;
     if (task.assigneeId && String(task.assigneeId) === user.sub) return;
+    if ((task.additionalAssigneeIds ?? []).some((id: any) => String(id) === user.sub)) return;
     throw AppError.forbidden("You don't have access to this task's attachments");
 };
 

@@ -9,6 +9,7 @@ import { initSocket } from "./src/sockets/socket.js";
 import { createRedisRateLimitStore } from "./src/config/redis.js";
 import { startSlaSweep } from "./src/jobs/slaSweep.job.js";
 import { startChecklistInstanceGenerator } from "./src/jobs/checklistInstanceGenerator.job.js";
+import { startTaskDeadlineReminder } from "./src/jobs/taskDeadlineReminder.job.js";
 import { settingsService } from "./src/modules/settings/settings.service.js";
 
 class ServerBootstrap {
@@ -29,6 +30,7 @@ class ServerBootstrap {
     if (isCronOwner) {
       startSlaSweep();
       startChecklistInstanceGenerator();
+      startTaskDeadlineReminder();
     }
 
     this.httpServer.listen(env.PORT, () => {

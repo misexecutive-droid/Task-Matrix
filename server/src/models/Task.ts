@@ -17,10 +17,20 @@ const taskSchema = new Schema(
         status: { type: String, enum: TASK_STATUSES, default: "todo" },
         category : {type : String, enum: TASK_CATEGORIES, default : "delegation" },
         priority: { type: String, enum: TASK_PRIORITIES, default: "medium" },
+        startDate: { type: Date, default: null },
         dueDate: { type: Date, default: null },
+        // How long before dueDate to send a reminder notification (null = no reminder wanted).
+        reminderMinutesBefore: { type: Number, default: null },
+        // Set once taskDeadlineReminder.job.ts actually fires the reminder, so the sweep never
+        // sends it twice — reset to null whenever dueDate or reminderMinutesBefore changes.
+        reminderSentAt: { type: Date, default: null },
         projectId: { type: Schema.Types.ObjectId, ref: "Project", default: null },
         userId: { type: Schema.Types.ObjectId, ref: "User", required: true },
         assigneeId: { type: Schema.Types.ObjectId, ref: "User", default: null },
+        // Extra people assigned alongside assigneeId (the primary) — kept separate rather than
+        // folding assigneeId into this array so the AI/WhatsApp parsing pipeline, socket room
+        // fanout, and compliance reports (all single-assignee) don't need to change at all.
+        additionalAssigneeIds: [{ type: Schema.Types.ObjectId, ref: "User" }],
         departmentId: { type: Schema.Types.ObjectId, ref: "Department", default: null },
         verifiedBy: { type: Schema.Types.ObjectId, ref: "User", default: null },
         verifiedAt: { type: Date, default: null },
@@ -72,7 +82,8 @@ taskSchema.virtual("attachments", {
 });
 
 taskSchema.index({ userId: 1, createdAt: -1 });
-taskSchema.index({ assigneeId: 1, createdAt: -1 }); 
+taskSchema.index({ assigneeId: 1, createdAt: -1 });
+taskSchema.index({ additionalAssigneeIds: 1, createdAt: -1 });
 taskSchema.index({ departmentId: 1, createdAt: -1 }); 
 taskSchema.index({ status: 1, createdAt: -1 });
 taskSchema.index({ category : 1, status : 1, createdAt : -1}) // board queue filtering (Issues vs Deleagated)

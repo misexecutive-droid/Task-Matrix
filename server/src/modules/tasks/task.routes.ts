@@ -15,7 +15,7 @@ taskRouter.get("/reports/compliance", taskController.complianceReport)
 taskRouter.get("/:id" , taskController.getOne) 
 taskRouter.patch("/:id" , taskController.update)
 taskRouter.patch("/:id/verify", requireRole("PC", "ADMIN"), taskController.verify) 
-taskRouter.delete("/:id" , requireRole("ADMIN"),taskController.remove) 
+taskRouter.delete("/:id" , requireRole("ADMIN", "PC"),taskController.remove)
 
 taskRouter.post("/", requireRole("ADMIN"), taskController.create)
 

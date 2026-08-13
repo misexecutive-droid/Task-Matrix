@@ -25,6 +25,8 @@ type VerifiableChecklistInstance = {
 };
 
 // A ticket or task, reduced to just the fields the PC-verification notifications need.
+// additionalAssigneeIds only exists on Task (extra people beyond the primary assigneeId) — a
+// ticket passed in here just won't have it, so it's undefined and skipped.
 type VerifiableEntity = {
   _id: any;
   title: string;
@@ -32,6 +34,7 @@ type VerifiableEntity = {
   storeId?: any;
   userId?: any;
   assigneeId?: any;
+  additionalAssigneeIds?: any[];
 };
 
 // Sends a notification to one specific user over their personal Socket.IO "room" (user:<id>),
@@ -107,6 +110,7 @@ export const notificationService = {
   async notifyVerificationResult(entity: VerifiableEntity, action: 'APPROVE' | 'REJECT', note: string | undefined, kind: 'TICKET' | 'TASK' = 'TICKET') {
     const recipientIds: string[] = [];
     if (entity.assigneeId) recipientIds.push(entity.assigneeId.toString());
+    recipientIds.push(...(entity.additionalAssigneeIds ?? []).map((a) => a.toString()));
     if (entity.userId && entity.userId.toString() !== entity.assigneeId?.toString()) recipientIds.push(entity.userId.toString());
     if (!recipientIds.length) return [];
 
