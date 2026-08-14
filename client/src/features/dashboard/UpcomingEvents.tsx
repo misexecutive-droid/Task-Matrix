@@ -1,7 +1,7 @@
 import { Link } from 'react-router';
 import { CalendarClock, ArrowRight } from 'lucide-react';
 import { Skeleton } from '../../components';
-import { EVENT_TYPE_COLORS, EVENT_TYPE_LABELS, EVENT_TYPE_ICONS } from '../events/eventDisplay';
+import { EVENT_TYPE_COLORS, EVENT_TYPE_ICON_TINTS, EVENT_TYPE_LABELS, EVENT_TYPE_ICONS } from '../events/eventDisplay';
 import type { Event } from '../../api/events';
 
 interface UpcomingEventsProps {
@@ -70,8 +70,8 @@ export const UpcomingEvents = ({ events, isPending }: UpcomingEventsProps) => (
                 className="group/item flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 px-4 py-3 rounded-xl hover:bg-surface-hover/60 transition-colors"
               >
                 <div className="flex items-center gap-3 flex-1 min-w-0">
-                  {/* Icon Box */}
-                  <div className={`flex items-center justify-center size-8 rounded-lg shrink-0 border border-current/10 shadow-sm transition-colors ${EVENT_TYPE_COLORS[e.type]}`}>
+                  {/* Icon */}
+                  <div className={`flex items-center justify-center shrink-0 ${EVENT_TYPE_ICON_TINTS[e.type]}`}>
                     <Icon size={14} />
                   </div>
                   

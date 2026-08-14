@@ -2,17 +2,16 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { toast } from 'sonner';
-import { CheckSquare, FileText, Heading, Calendar } from 'lucide-react';
-import { Input, Textarea, Modal } from '../../components';
+import { CheckSquare, FileText, Heading, CalendarRange } from 'lucide-react';
+import { Input, Textarea, Modal, DateRangePicker } from '../../components';
+import type { DateRangeValue } from '../../components';
 import { useCreateTaskMutation, useAssignableUsersQuery } from './hook';
 import { useDepartmentsQuery } from '../tickets/hook';
-import { taskApi } from '../../api/task';
+import type { Task } from '../../api/task';
 import { TaskFormPrioritySelector } from './TaskFormPrioritySelector';
 import { TaskFormDepartmentField } from './TaskFormDepartmentField';
 import { TaskAssigneesField } from './TaskAssigneesField';
 import { TaskFormReminderField } from './TaskFormReminderField';
-import { TaskAttachmentPicker } from './TaskAttachmentPicker';
 import { TaskFormFooter } from './TaskFormFooter';
 import { TaskFormErrorBanner } from './TaskFormErrorBanner';
 import { FIELD_LABEL_CLASS, FIELD_LABEL_ICON_CLASS } from './taskFormFieldStyles';
@@ -21,8 +20,6 @@ const taskSchema = z.object({
   title:        z.string().trim().min(1, 'Title is required'),
   description:  z.string().optional(),
   priority:     z.enum(['low', 'medium', 'high']),
-  startDate:    z.string().optional().or(z.literal('')),
-  dueDate:      z.string().optional().or(z.literal('')),
   departmentId: z.string().optional().or(z.literal('')),
 });
 
@@ -30,15 +27,19 @@ type TaskFields = z.infer<typeof taskSchema>;
 
 interface TaskFormProps {
   onClose: () => void;
+  /** Called with the newly-created task right after a successful create, so the caller can
+   *  e.g. open its Edit task view immediately (that's where attachments/comments happen now). */
+  onCreated?: (task: Task) => void;
 }
 
-export const TaskForm = ({ onClose }: TaskFormProps) => {
+export const TaskForm = ({ onClose, onCreated }: TaskFormProps) => {
   const mutation = useCreateTaskMutation();
   const { data: assignableUsers, isLoading: isLoadingUsers } = useAssignableUsersQuery();
   const { data: departments, isLoading: isLoadingDepts } = useDepartmentsQuery();
-  const [attachmentFiles, setAttachmentFiles] = useState<File[]>([]);
   const [reminderMinutes, setReminderMinutes] = useState<number | null>(null);
+  const [reminderChannel, setReminderChannel] = useState<Task['reminderChannel']>('notification');
   const [assigneeIds, setAssigneeIds] = useState<string[]>([]);
+  const [dateRange, setDateRange] = useState<DateRangeValue>({ from: null, to: null });
 
   const {
     register,
@@ -63,23 +64,17 @@ export const TaskForm = ({ onClose }: TaskFormProps) => {
         title:        data.title,
         description:  data.description,
         priority:     data.priority,
-        startDate:    data.startDate ? new Date(data.startDate).toISOString() : undefined,
-        dueDate:      data.dueDate ? new Date(data.dueDate).toISOString() : undefined,
+        startDate:    dateRange.from ? dateRange.from.toISOString() : undefined,
+        dueDate:      dateRange.to ? dateRange.to.toISOString() : undefined,
         reminderMinutesBefore: reminderMinutes ?? undefined,
+        reminderChannel: reminderMinutes ? reminderChannel : undefined,
         assigneeId:   assigneeIds[0],
         additionalAssigneeIds: assigneeIds.slice(1),
         departmentId: data.departmentId !== '' ? data.departmentId : undefined,
       },
       {
         onSuccess: (createdTask) => {
-          // No task id exists until creation succeeds, so staged files couldn't be uploaded
-          // through the normal task-detail flow until now — fire them off in the background
-          // rather than block closing the modal on it.
-          if (attachmentFiles.length) {
-            taskApi.uploadAttachments(createdTask.id, attachmentFiles).catch(() => {
-              toast.error('Task created, but attaching files failed — you can add them from the task detail view.');
-            });
-          }
+          onCreated?.(createdTask);
           onClose();
         },
       },
@@ -97,9 +92,8 @@ export const TaskForm = ({ onClose }: TaskFormProps) => {
       bodyClassName="p-0"
       footer={<TaskFormFooter onClose={onClose} isPending={mutation.isPending} isSubmitting={isSubmitting} />}
     >
-      <form id="task-form" onSubmit={handleSubmit(onSubmit)} className="grid grid-cols-1 lg:grid-cols-[1fr_20rem]" noValidate>
-        {/* Left column — content */}
-        <div className="flex flex-col gap-5 p-5 border-b lg:border-b-0 lg:border-r border-border/60">
+      <form id="task-form" onSubmit={handleSubmit(onSubmit)} className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_20rem]" noValidate>
+        <div className="flex flex-col gap-5 p-5 ">
           <Input
             id="title"
             label={<>Task Title <span className="text-danger">*</span></>}
@@ -118,14 +112,13 @@ export const TaskForm = ({ onClose }: TaskFormProps) => {
             label="Description"
             icon={FileText}
             iconClassName={FIELD_LABEL_ICON_CLASS}
+            containerClassName="flex-1 min-h-0"
             rows={6}
             placeholder="Provide task context, constraints, acceptance criteria, or relevant links…"
-            className="focus:border-primary-500 focus:ring-primary-500/20"
+            className="focus:border-primary-500 focus:ring-primary-500/20 h-full min-h-[100px] resize-none"
             labelClassName={FIELD_LABEL_CLASS}
             {...register('description')}
           />
-
-          <TaskAttachmentPicker files={attachmentFiles} onChange={setAttachmentFiles} />
 
           {mutation.isError && (
             <TaskFormErrorBanner error={mutation.error} fallback="Failed to create task. Please verify your inputs and try again." />
@@ -143,30 +136,11 @@ export const TaskForm = ({ onClose }: TaskFormProps) => {
 
           <TaskFormPrioritySelector value={priority} onChange={(v) => setValue('priority', v)} />
 
-          <div className="grid grid-cols-2 gap-3">
-            <Input
-              id="startDate"
-              type="date"
-              label="Start Date"
-              icon={Calendar}
-              iconClassName={FIELD_LABEL_ICON_CLASS}
-              error={errors.startDate?.message}
-              className="focus:border-primary-500 focus:ring-primary-500/20"
-              labelClassName={FIELD_LABEL_CLASS}
-              {...register('startDate')}
-            />
-
-            <Input
-              id="dueDate"
-              type="date"
-              label="Due Date"
-              icon={Calendar}
-              iconClassName={FIELD_LABEL_ICON_CLASS}
-              error={errors.dueDate?.message}
-              className="focus:border-primary-500 focus:ring-primary-500/20"
-              labelClassName={FIELD_LABEL_CLASS}
-              {...register('dueDate')}
-            />
+          <div className="group/field flex flex-col gap-1.5">
+            <label className={FIELD_LABEL_CLASS}>
+              <CalendarRange className={FIELD_LABEL_ICON_CLASS} /> Start &amp; Due Date
+            </label>
+            <DateRangePicker value={dateRange} onChange={setDateRange} />
           </div>
 
           <TaskFormDepartmentField
@@ -176,7 +150,11 @@ export const TaskForm = ({ onClose }: TaskFormProps) => {
             isLoading={isLoadingDepts}
           />
 
-          <TaskFormReminderField minutes={reminderMinutes} onChange={setReminderMinutes} />
+          <TaskFormReminderField
+            minutes={reminderMinutes}
+            channel={reminderChannel}
+            onChange={(minutes, next) => { setReminderMinutes(minutes); setReminderChannel(next); }}
+          />
         </div>
       </form>
     </Modal>

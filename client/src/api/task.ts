@@ -22,6 +22,7 @@ export type Task = {
     startDate:    string | null;
     dueDate:      string | null;
     reminderMinutesBefore: number | null;
+    reminderChannel: 'notification' | 'alarm' | 'email' | 'sms';
     projectId:    string | null;
     assigneeId:   string | null;
     // Extra people beyond the primary assigneeId — see Task.ts model for why they're separate.
@@ -54,6 +55,7 @@ export type CreateTaskPayload = {
     startDate?:    string;
     dueDate?:      string;
     reminderMinutesBefore?: number;
+    reminderChannel?: Task['reminderChannel'];
     projectId?:    string;
     assigneeId?:   string;
     additionalAssigneeIds?: string[];

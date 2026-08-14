@@ -60,7 +60,7 @@ export const ChecklistTemplatesGrid = () => {
 
       {!isPending && !isError && definitions.length === 0 && (
         <div className="flex flex-col items-center justify-center py-20 px-4 rounded-3xl border-2 border-dashed border-border bg-surface-hover/40 text-center">
-          <div className="p-4 bg-surface border border-border rounded-2xl shadow-sm mb-5 text-text-muted">
+          <div className="mb-5 text-text-muted">
             <ClipboardList className="w-8 h-8" />
           </div>
           <h3 className="text-lg font-display font-bold text-text mb-2">No checklist templates yet</h3>

@@ -94,7 +94,7 @@ export const ChecklistTemplateList = () => {
             aria-label="No templates found"
             className="flex flex-col items-center justify-center py-20 px-4 rounded-3xl border-2 border-dashed border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/20 text-center animate-in fade-in duration-500"
           >
-            <div className="p-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm mb-5 text-slate-400 dark:text-slate-500">
+            <div className="mb-5 text-slate-400 dark:text-slate-500">
               <Inbox className="w-8 h-8" />
             </div>
             <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2">

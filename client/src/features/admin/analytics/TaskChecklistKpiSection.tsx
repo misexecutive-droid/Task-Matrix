@@ -29,14 +29,14 @@ export const TaskChecklistKpiSection = ({ groupBy, from, to }: TaskChecklistKpiS
       cards={[
         {
           icon: ClipboardCheck,
-          iconTint: 'bg-primary-500/10 text-primary-600 dark:text-primary-400',
+          iconTint: 'text-primary-600 dark:text-primary-400',
           label: 'Completion rate',
           value: completion.value != null ? `${completion.value}%` : '—',
           trend: completion.trend,
         },
         {
           icon: Camera,
-          iconTint: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400',
+          iconTint: 'text-emerald-600 dark:text-emerald-400',
           label: 'Photo quality rate',
           value: quality.value != null ? `${quality.value}%` : '—',
           trend: quality.trend,

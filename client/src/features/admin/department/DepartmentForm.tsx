@@ -68,7 +68,7 @@ export const DepartmentForm = ({ onClose, department }: DepartmentFormProps) => 
           </button>
           
           <div className="flex items-start gap-4 pr-8">
-            <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 ring-1 ring-indigo-500/20 shadow-sm shrink-0">
+            <div className="flex items-center justify-center text-indigo-600 dark:text-indigo-400 shrink-0">
               <Building2 className="w-6 h-6" />
             </div>
             <div className="space-y-1">

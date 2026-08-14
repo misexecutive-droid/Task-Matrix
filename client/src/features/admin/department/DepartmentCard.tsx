@@ -40,7 +40,7 @@ export const DepartmentCard = ({
       {/* Header Section */}
       <header className="flex items-start justify-between gap-4 mb-6">
         <div className="flex items-center gap-4 min-w-0">
-          <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-50 to-indigo-100 dark:from-indigo-500/10 dark:to-indigo-500/20 text-indigo-600 dark:text-indigo-400 shrink-0 shadow-sm ring-1 ring-indigo-500/10">
+          <div className="flex items-center justify-center text-indigo-600 dark:text-indigo-400 shrink-0">
             <Building2 className="w-6 h-6" />
           </div>
           <div className="min-w-0 space-y-0.5">

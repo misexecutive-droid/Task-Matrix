@@ -46,7 +46,7 @@ export const ReportTrendChart = ({ data, series, valueSuffix = '', yDomain }: Re
   if (!data.length) {
     return (
       <div className="flex flex-col items-center justify-center h-[260px] gap-3 rounded-xl border-2 border-dashed border-border">
-        <div className="size-12 rounded-full bg-surface-hover flex items-center justify-center text-text-light">
+        <div className="flex items-center justify-center text-text-light">
           <Activity className="w-6 h-6" />
         </div>
         <p className="text-sm font-display font-semibold text-text">No data for this period</p>

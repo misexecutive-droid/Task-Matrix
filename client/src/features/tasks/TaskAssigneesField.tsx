@@ -1,13 +1,18 @@
-import { Plus, Users } from 'lucide-react';
+import { useState } from 'react';
+import { Plus, Users, UserPlus } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuCheckboxItem,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
 import { avatarColorClass } from './avatarColors';
 import { getInitials } from '../../lib/getInitials';
 import { FIELD_LABEL_CLASS, FIELD_LABEL_ICON_CLASS } from './taskFormFieldStyles';
+import { useAuth } from '../../context/AuthContext';
+import { UserForm } from '../admin/users/UserForm';
 import type { AssignableUser } from '../../api/users';
 
 interface TaskAssigneesFieldProps {
@@ -23,6 +28,10 @@ interface TaskAssigneesFieldProps {
 // The caller (TaskForm/TaskDetail) is responsible for splitting the result back into assigneeId
 // (primary) + additionalAssigneeIds (extras) before saving.
 export const TaskAssigneesField = ({ selectedIds, onChange, users, isLoading = false, disabled = false }: TaskAssigneesFieldProps) => {
+  const { user: currentUser } = useAuth();
+  const isAdmin = currentUser?.role === 'ADMIN';
+  const [isCreatingUser, setIsCreatingUser] = useState(false);
+
   const toggle = (id: string) => {
     onChange(selectedIds.includes(id) ? selectedIds.filter((x) => x !== id) : [...selectedIds, id]);
   };
@@ -89,6 +98,19 @@ export const TaskAssigneesField = ({ selectedIds, onChange, users, isLoading = f
                   );
                 })
               )}
+
+              {isAdmin && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onSelect={() => setIsCreatingUser(true)}
+                    className="gap-2 text-primary-600 dark:text-primary-400"
+                  >
+                    <UserPlus size={14} />
+                    Create new user
+                  </DropdownMenuItem>
+                </>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
         )}
@@ -97,6 +119,13 @@ export const TaskAssigneesField = ({ selectedIds, onChange, users, isLoading = f
           <span className="text-xs text-text-light">Unassigned</span>
         )}
       </div>
+
+      {isCreatingUser && (
+        <UserForm
+          onClose={() => setIsCreatingUser(false)}
+          onCreated={(created) => onChange([...selectedIds, created.id])}
+        />
+      )}
     </div>
   );
 };

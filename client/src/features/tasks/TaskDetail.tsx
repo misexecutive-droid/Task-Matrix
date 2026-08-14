@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { CheckSquare, FileText, Calendar, Loader2, ChevronRight, CheckCircle2, ShieldQuestion, Trash2 } from 'lucide-react';
-import { Modal, Input, Textarea, Button } from '../../components';
+import { CheckSquare, Heading, FileText, CalendarRange, Loader2, ChevronRight, CheckCircle2, ShieldQuestion, Trash2 } from 'lucide-react';
+import { Modal, Textarea, Button, DateRangePicker } from '../../components';
+import type { DateRangeValue } from '../../components';
 import { useTaskQuery, useUpdateTaskMutation, useDeleteTaskMutation, useAssignableUsersQuery } from './hook';
 import { useDepartmentsQuery } from '../tickets/hook';
 import { TaskVerifyActions } from './TaskVerifyActions';
@@ -8,7 +9,7 @@ import { TaskFormPrioritySelector } from './TaskFormPrioritySelector';
 import { TaskFormDepartmentField } from './TaskFormDepartmentField';
 import { TaskAssigneesField } from './TaskAssigneesField';
 import { TaskFormReminderField } from './TaskFormReminderField';
-import { TaskAttachmentsSection } from './TaskAttachmentsSection';
+import { TaskActivitySection } from './TaskActivitySection';
 import { TaskVerificationBanner } from './TaskVerificationBanner';
 import { STATUS_LABEL, NEXT_STATUS } from './taskDisplay';
 import { taskAssigneeIds } from './cardFields';
@@ -21,19 +22,14 @@ interface TaskDetailProps {
   onClose: () => void;
 }
 
-const toDateInputValue = (iso: string | null) => (iso ? iso.slice(0, 10) : '');
-
 export const TaskDetail = ({ task: initialTask, onClose }: TaskDetailProps) => {
   const { data: fresh } = useTaskQuery(initialTask.id);
   const task = fresh ?? initialTask;
   const { user } = useAuth();
   const isPC = user?.role === 'PC';
   const isVerifier = isPC || user?.role === 'ADMIN';
-  const canManageAttachments = Boolean(
-    user && (user.role === 'ADMIN' || task.userId === user.id || taskAssigneeIds(task).includes(user.id))
-  );
 
-  const updateMutation = useUpdateTaskMutation();
+  const updateMutation = useUpdateTaskMutation({ silent: true });
   const deleteMutation = useDeleteTaskMutation();
   const { data: assignableUsers, isLoading: isLoadingUsers } = useAssignableUsersQuery();
   const { data: departments, isLoading: isLoadingDepts } = useDepartmentsQuery();
@@ -102,17 +98,22 @@ export const TaskDetail = ({ task: initialTask, onClose }: TaskDetailProps) => {
         </div>
       }
     >
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_20rem]">
+      <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_20rem]">
         {/* Left column — content */}
         <div className="flex flex-col gap-5 p-5 border-b lg:border-b-0 lg:border-r border-border/60">
-          <input
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            onBlur={saveTitle}
-            placeholder="Task title"
-            disabled={isPC}
-            className="text-xl font-bold text-text bg-transparent outline-none rounded-md px-1.5 -mx-1.5 py-1 hover:bg-surface-hover focus:bg-surface-hover transition-colors disabled:cursor-default disabled:hover:bg-transparent"
-          />
+          <div className="group/field flex flex-col gap-1.5">
+            <label className={FIELD_LABEL_CLASS}>
+              <Heading className={FIELD_LABEL_ICON_CLASS} /> Title
+            </label>
+            <input
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              onBlur={saveTitle}
+              placeholder="Task title"
+              disabled={isPC}
+              className="w-full h-10 px-3 rounded-md border border-border bg-surface text-sm font-semibold text-text outline-none transition-colors hover:border-border-hover focus:border-primary-400 focus:ring-2 focus:ring-primary-500/20 disabled:bg-surface-hover disabled:text-text-light disabled:cursor-not-allowed"
+            />
+          </div>
 
           <Textarea
             id="task-description"
@@ -120,18 +121,14 @@ export const TaskDetail = ({ task: initialTask, onClose }: TaskDetailProps) => {
             icon={FileText}
             iconClassName={FIELD_LABEL_ICON_CLASS}
             labelClassName={FIELD_LABEL_CLASS}
+            containerClassName="flex-1 min-h-0"
+            className="h-full min-h-[100px] resize-none"
             rows={6}
             placeholder="Add more detail…"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             onBlur={saveDescription}
             disabled={isPC}
-          />
-
-          <TaskAttachmentsSection
-            taskId={task.id}
-            attachments={task.attachments ?? []}
-            canManage={canManageAttachments}
           />
 
           <TaskVerificationBanner task={task} />
@@ -162,36 +159,23 @@ export const TaskDetail = ({ task: initialTask, onClose }: TaskDetailProps) => {
             disabled={isPC}
           />
 
-          <div className="grid grid-cols-2 gap-3">
-            <Input
-              id="task-start-date"
-              type="date"
-              label="Start Date"
-              icon={Calendar}
-              iconClassName={FIELD_LABEL_ICON_CLASS}
-              labelClassName={FIELD_LABEL_CLASS}
-              defaultValue={toDateInputValue(task.startDate)}
+          <div className="group/field flex flex-col gap-1.5">
+            <label className={FIELD_LABEL_CLASS}>
+              <CalendarRange className={FIELD_LABEL_ICON_CLASS} /> Start &amp; Due Date
+            </label>
+            <DateRangePicker
+              value={{
+                from: task.startDate ? new Date(task.startDate) : null,
+                to: task.dueDate ? new Date(task.dueDate) : null,
+              }}
               disabled={isPC}
-              onBlur={(e) =>
+              onChange={(range: DateRangeValue) =>
                 updateMutation.mutate({
                   id: task.id,
-                  payload: { startDate: e.target.value ? new Date(e.target.value).toISOString() : undefined },
-                })
-              }
-            />
-            <Input
-              id="task-due-date"
-              type="date"
-              label="Due Date"
-              icon={Calendar}
-              iconClassName={FIELD_LABEL_ICON_CLASS}
-              labelClassName={FIELD_LABEL_CLASS}
-              defaultValue={toDateInputValue(task.dueDate)}
-              disabled={isPC}
-              onBlur={(e) =>
-                updateMutation.mutate({
-                  id: task.id,
-                  payload: { dueDate: e.target.value ? new Date(e.target.value).toISOString() : undefined },
+                  payload: {
+                    startDate: range.from ? range.from.toISOString() : undefined,
+                    dueDate: range.to ? range.to.toISOString() : undefined,
+                  },
                 })
               }
             />
@@ -207,7 +191,10 @@ export const TaskDetail = ({ task: initialTask, onClose }: TaskDetailProps) => {
 
           <TaskFormReminderField
             minutes={task.reminderMinutesBefore}
-            onChange={(v) => updateMutation.mutate({ id: task.id, payload: { reminderMinutesBefore: v } })}
+            channel={task.reminderChannel}
+            onChange={(minutes, reminderChannel) =>
+              updateMutation.mutate({ id: task.id, payload: { reminderMinutesBefore: minutes, reminderChannel } })
+            }
             disabled={isPC}
           />
 
@@ -225,6 +212,8 @@ export const TaskDetail = ({ task: initialTask, onClose }: TaskDetailProps) => {
           )}
         </div>
       </div>
+
+      <TaskActivitySection taskId={task.id} />
     </Modal>
   );
 };

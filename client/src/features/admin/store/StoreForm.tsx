@@ -55,7 +55,7 @@ export const StoreForm = ({ onClose, store }: StoreFormProps) => {
           </button>
 
           <div className="flex items-start gap-4 pr-8">
-            <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-coral-500/15 text-coral-600 dark:text-coral-400 ring-1 ring-coral-500/20 shadow-sm shrink-0">
+            <div className="flex items-center justify-center text-coral-600 dark:text-coral-400 shrink-0">
               <StoreIcon className="w-6 h-6" />
             </div>
             <div className="space-y-1">

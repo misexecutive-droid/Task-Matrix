@@ -46,9 +46,15 @@ type UserFields = z.infer<ReturnType<typeof buildUserSchema>>;
 interface UserFormProps {
   onClose: () => void;
   user?: AdminUser;
+  /** Called with the newly-created user right after a successful create (not fired when editing). */
+  onCreated?: (user: AdminUser) => void;
+  /** Seeds fields on a fresh create (e.g. a name — and department, if it was also mentioned —
+   *  typed in Smart Add that didn't match anyone) without treating this as an edit — `user` above
+   *  is what triggers edit mode. */
+  prefill?: { firstName?: string; lastName?: string; departmentId?: string };
 }
 
-export const UserForm = ({ onClose, user }: UserFormProps) => {
+export const UserForm = ({ onClose, user, onCreated, prefill }: UserFormProps) => {
   const isEditing = Boolean(user);
   const [showPassword, setShowPassword] = useState(false);
 
@@ -69,11 +75,11 @@ export const UserForm = ({ onClose, user }: UserFormProps) => {
   } = useForm<UserFields>({
     resolver: zodResolver(schema),
     defaultValues: {
-      firstName: user?.firstName ?? '',
-      lastName: user?.lastName ?? '',
+      firstName: user?.firstName ?? prefill?.firstName ?? '',
+      lastName: user?.lastName ?? prefill?.lastName ?? '',
       email: user?.email ?? '',
       role: user?.role ?? 'USER',
-      departmentId: user?.departmentId ?? '',
+      departmentId: user?.departmentId ?? prefill?.departmentId ?? '',
       password: '',
     },
   });
@@ -111,7 +117,12 @@ export const UserForm = ({ onClose, user }: UserFormProps) => {
         role: data.role,
         departmentId: departmentPayload,
       },
-      { onSuccess: onClose }
+      {
+        onSuccess: (created) => {
+          onCreated?.(created);
+          onClose();
+        },
+      }
     );
   };
 

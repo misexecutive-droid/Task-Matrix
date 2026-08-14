@@ -3,7 +3,7 @@ import { Download } from 'lucide-react';
 import { Button, DateRangePicker, type DateRangeValue } from '../../components';
 import { useReportExportMutation } from './useReportExport';
 import { computeRange, PRESET_LABELS, type ReportPreset } from './dateRangePresets';
-import type { ReportModule, ReportFormat } from '../../api/reports';
+import type { ReportModule, ReportFormat, ReportExportParams } from '../../api/reports';
 
 const PRESETS: ReportPreset[] = ['daily', 'weekly', 'monthly', 'quarterly', 'yearly'];
 const FORMATS: ReportFormat[] = ['csv', 'xlsx'];
@@ -12,12 +12,17 @@ type RangeMode = ReportPreset | 'custom';
 
 const endOfDay = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate(), 23, 59, 59, 999);
 
+type TaskExportFilters = Pick<ReportExportParams, 'category' | 'status' | 'priority' | 'departmentId' | 'assigneeIds'>;
+
 interface ReportExportPanelProps {
   reportModule: ReportModule;
   description: string;
+  /** Current page filters (category/status/priority/department/assignee) to scope the export to
+   *  what's on screen — e.g. TaskList's active filters, so "Export" doesn't silently ignore them. */
+  filters?: TaskExportFilters;
 }
 
-export const ReportExportPanel = ({ reportModule, description }: ReportExportPanelProps) => {
+export const ReportExportPanel = ({ reportModule, description, filters }: ReportExportPanelProps) => {
   const [mode, setMode] = useState<RangeMode>('monthly');
   const [format, setFormat] = useState<ReportFormat>('csv');
   const [customRange, setCustomRange] = useState<DateRangeValue>({ from: null, to: null });
@@ -33,7 +38,7 @@ export const ReportExportPanel = ({ reportModule, description }: ReportExportPan
       ? { from: customRange.from!.toISOString(), to: endOfDay(customRange.to!).toISOString() }
       : computeRange(mode, new Date());
 
-    exportMutation.mutate({ from, to, format });
+    exportMutation.mutate({ from, to, format, ...filters });
   };
 
   return (

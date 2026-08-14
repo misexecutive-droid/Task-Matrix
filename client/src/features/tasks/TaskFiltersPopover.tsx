@@ -20,6 +20,9 @@ export interface TaskFilters {
   priority:     Task['priority'][];
   departmentId: string;
   assigneeIds:  string[];
+  /** Who raised/created the task (task.userId) — a distinct dimension from assigneeIds (who
+   *  it's assigned to). Someone can raise a task for a department without assigning themselves. */
+  raisedByIds:  string[];
 }
 
 interface TaskFiltersPopoverProps {
@@ -156,6 +159,32 @@ export const TaskFiltersPopover = ({
                   <Plus size={15} strokeWidth={2.5} />
                 </button>
               )}
+            </div>
+          </div>
+        )}
+
+        {!!assignableUsers?.length && (
+          <div className="flex flex-col gap-1.5">
+            <span className="text-[11px] font-bold text-text-muted uppercase tracking-wider">Raised by</span>
+            <div className="flex flex-wrap items-center gap-1.5">
+              {assignableUsers.map((u) => {
+                const name = `${u.firstName} ${u.lastName ?? ''}`.trim();
+                const selected = draft.raisedByIds.includes(u.id);
+                return (
+                  <button
+                    key={u.id}
+                    type="button"
+                    onClick={() => setDraft(d => ({ ...d, raisedByIds: toggleValue(d.raisedByIds, u.id) }))}
+                    title={name}
+                    aria-pressed={selected}
+                    className={`flex items-center justify-center size-8 rounded-full text-[11px] font-bold text-white transition-all cursor-pointer ${avatarColorClass(name)} ${
+                      selected ? 'ring-2 ring-offset-2 ring-primary-500 ring-offset-surface' : 'opacity-45 hover:opacity-100'
+                    }`}
+                  >
+                    {getInitials(name)}
+                  </button>
+                );
+              })}
             </div>
           </div>
         )}

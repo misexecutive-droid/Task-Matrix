@@ -3,7 +3,7 @@ import { Plus, Trash2, Pencil, CalendarClock, Loader2 } from 'lucide-react';
 import { Button, Skeleton } from '../../components';
 import { useAuth } from '@/context/AuthContext';
 import { useEventsQuery, useDeleteEventMutation } from './hook';
-import { EVENT_TYPE_LABELS, EVENT_TYPE_COLORS, EVENT_TYPE_ICONS } from './eventDisplay';
+import { EVENT_TYPE_LABELS, EVENT_TYPE_COLORS, EVENT_TYPE_ICON_TINTS, EVENT_TYPE_ICONS } from './eventDisplay';
 import { ErrorMessage, EmptyState } from '../admin/adminDisplay';
 import type { Event } from '@/api/events';
 
@@ -46,7 +46,7 @@ export const EventList = () => {
                 isDeleting ? 'opacity-40 pointer-events-none' : ''
               }`}
             >
-              <div className={`flex items-center justify-center size-10 rounded-lg shrink-0 ${EVENT_TYPE_COLORS[e.type]}`}>
+              <div className={`flex items-center justify-center shrink-0 ${EVENT_TYPE_ICON_TINTS[e.type]}`}>
                 <Icon size={18} />
               </div>
 

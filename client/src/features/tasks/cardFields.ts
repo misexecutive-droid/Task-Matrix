@@ -90,6 +90,11 @@ export const subtaskProgress = (task: { checklists?: { items: { isDone: boolean 
 export const formatShortDate = (iso: string) =>
   new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 
+export const formatShortDateTime = (iso: string) => {
+  const d = new Date(iso);
+  return `${d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}, ${d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })}`;
+};
+
 // Primary assignee + extras as one flat list — the UI treats "assignees" as a single unified
 // concept even though the backend stores them as assigneeId (primary) + additionalAssigneeIds
 // (extras) to keep the AI/WhatsApp parsing and reporting pipelines (all single-assignee) unchanged.

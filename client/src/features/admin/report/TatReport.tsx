@@ -35,7 +35,7 @@ export const TatReport = () => {
         <header className="flex flex-col sm:flex-row sm:items-end justify-between gap-6 pb-6 border-b border-slate-200 dark:border-slate-800/80">
           
           <div className="flex items-start gap-4">
-            <div className="p-3 bg-gradient-to-br from-indigo-500/10 to-violet-500/10 dark:from-indigo-500/20 dark:to-violet-500/20 rounded-2xl text-indigo-600 dark:text-indigo-400 ring-1 ring-indigo-500/20 shadow-sm shrink-0">
+            <div className="flex items-center justify-center text-indigo-600 dark:text-indigo-400 shrink-0">
               <ClipboardList className="w-6 h-6" />
             </div>
             <div className="space-y-1">

@@ -51,7 +51,7 @@ export const ConditionalLogicPanel = ({ itemType, trigger, actions, onTriggerCha
     <div className="flex flex-col gap-3 p-4 mt-2 rounded-xl bg-gradient-to-br from-coral-500/10 via-coral-500/5 to-transparent border border-coral-500/30 shadow-sm animate-fade-in-up">
       <div className="flex items-center justify-between">
         <span className="flex items-center gap-2 text-xs font-display font-bold uppercase tracking-wider text-coral-700 dark:text-coral-400">
-          <span className="flex items-center justify-center size-5 rounded-md bg-coral-500/20 text-coral-600">
+          <span className="flex items-center justify-center text-coral-600">
             <Zap size={12} />
           </span>
           Logic Rule

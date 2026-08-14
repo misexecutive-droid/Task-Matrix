@@ -19,7 +19,7 @@ export const TaskSourceBadge = ({ aiMeta }: TaskSourceBadgeProps) => {
         role="img"
         aria-label={label}
         title={label}
-        className="relative flex items-center justify-center size-6 rounded-full bg-success/10 text-success shrink-0"
+        className="relative flex items-center justify-center text-success shrink-0"
       >
         <FaWhatsapp size={15} />
         {isVoice && (
@@ -34,7 +34,7 @@ export const TaskSourceBadge = ({ aiMeta }: TaskSourceBadgeProps) => {
       role="img"
       aria-label="Created via Smart Add on the web app"
       title="Created via Smart Add on the web app"
-      className="flex items-center justify-center size-6 rounded-full bg-primary-50 text-primary-700 shrink-0"
+      className="flex items-center justify-center text-primary-700 shrink-0"
     >
       <Bot size={14} strokeWidth={2.5} />
     </span>

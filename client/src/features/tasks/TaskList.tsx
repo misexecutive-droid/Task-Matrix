@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { useSearchParams } from "react-router";
 import { toast } from "sonner";
-import { Wand2, CheckCheck, AlertCircle, LayoutList, Kanban, Table2, GanttChartSquare, Check, Save, Inbox, X, Plus, Settings2 } from "lucide-react";
+import { Wand2, CheckCheck, AlertCircle, LayoutList, Kanban, Table2, GanttChartSquare, Check, Save, Inbox, X, Plus, Settings2, FileDown } from "lucide-react";
 import { Button, Skeleton, DateRangePicker, type DateRangeValue } from "../../components";
+import { ExportDialog } from "../reports";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuCheckboxItem, DropdownMenuLabel } from "@/components/ui/dropdown-menu";
 import { useTasksQuery, useAssignableUsersQuery } from "./hook";
 import { useDepartmentsQuery } from "../tickets/hook";
@@ -60,7 +61,7 @@ const VIEW_TABS: { key: TaskView; label: string; icon: typeof LayoutList }[] = [
     { key: 'timeline', label: 'Timeline', icon: GanttChartSquare },
 ];
 
-const DEFAULT_FILTERS: TaskFilters = { category: 'all', status: 'all', priority: [], departmentId: '', assigneeIds: [] };
+const DEFAULT_FILTERS: TaskFilters = { category: 'all', status: 'all', priority: [], departmentId: '', assigneeIds: [], raisedByIds: [] };
 
 const filtersStorageKey = (userId?: string) => `task-filters:${userId ?? 'anon'}`;
 
@@ -71,6 +72,7 @@ export const TaskList = ({ userId, hideHeader = false }: TaskListProps = {}) => 
     const [searchParams] = useSearchParams();
     const [ showSmartModal , setShowSmartModal ] = useState(false)
     const [showForm, setShowForm] = useState(false);
+    const [showExport, setShowExport] = useState(false);
     const [selected, setSelected] = useState<Task | null>(null);
     const { data: tasks, isPending, isError } = useTasksQuery(userId);
     const { data: assignableUsers } = useAssignableUsersQuery();
@@ -93,8 +95,11 @@ export const TaskList = ({ userId, hideHeader = false }: TaskListProps = {}) => 
                 const saved = JSON.parse(raw);
                 // priority/assigneeIds used to be single values before multi-select — drop an
                 // old-shaped saved filter's value for those two fields rather than crash on it.
+                // raisedByIds didn't exist at all before — same treatment for a filter saved
+                // before this field was introduced.
                 if (!Array.isArray(saved.priority)) delete saved.priority;
                 if (!Array.isArray(saved.assigneeIds)) delete saved.assigneeIds;
+                if (!Array.isArray(saved.raisedByIds)) delete saved.raisedByIds;
                 return { ...DEFAULT_FILTERS, ...saved };
             }
         } catch {
@@ -147,7 +152,10 @@ export const TaskList = ({ userId, hideHeader = false }: TaskListProps = {}) => 
     const assigneeFiltered = filters.assigneeIds.length === 0
         ? departmentFiltered
         : departmentFiltered.filter(t => taskAssigneeIds(t).some(id => filters.assigneeIds.includes(id)));
-    const filtered = filters.status === 'all' ? assigneeFiltered : assigneeFiltered.filter(t => t.status === filters.status);
+    const raisedByFiltered = filters.raisedByIds.length === 0
+        ? assigneeFiltered
+        : assigneeFiltered.filter(t => filters.raisedByIds.includes(t.userId));
+    const filtered = filters.status === 'all' ? raisedByFiltered : raisedByFiltered.filter(t => t.status === filters.status);
 
     const sorted = [...filtered].sort(SORT_COMPARATORS[sort]);
     const dateGroups = groupByDueDate(sorted);
@@ -170,6 +178,13 @@ export const TaskList = ({ userId, hideHeader = false }: TaskListProps = {}) => 
                 : `Assignees: ${filters.assigneeIds.length}`,
             onClear: () => updateFilters({ assigneeIds: [] }),
         }] : []),
+        ...(filters.raisedByIds.length > 0 ? [{
+            key: 'raisedByIds',
+            label: filters.raisedByIds.length === 1
+                ? `Raised by: ${assigneeNames.get(filters.raisedByIds[0]) ?? 'Unknown'}`
+                : `Raised by: ${filters.raisedByIds.length}`,
+            onClear: () => updateFilters({ raisedByIds: [] }),
+        }] : []),
         ...(dueDateRange.from ? [{
             key: 'dueDateRange',
             label: `Due: ${formatShortDate(dueDateRange.from)}${dueDateRange.to ? ` – ${formatShortDate(dueDateRange.to)}` : ''}`,
@@ -186,7 +201,7 @@ export const TaskList = ({ userId, hideHeader = false }: TaskListProps = {}) => 
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 flex-wrap">
                 {!hideHeader && (
                     <div className="flex items-center gap-3">
-                        <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary-50 text-primary-700 border border-primary-100 shrink-0">
+                        <div className="flex items-center justify-center text-primary-700 shrink-0">
                             <CheckCheck size={20} strokeWidth={2} />
                         </div>
                         <div>
@@ -327,6 +342,18 @@ export const TaskList = ({ userId, hideHeader = false }: TaskListProps = {}) => 
                             ))}
                         </DropdownMenuContent>
                     </DropdownMenu>
+
+                    <Button
+                        size="sm"
+                        variant="secondary"
+                        className="gap-1.5 border-0 shadow-none rounded-full"
+                        onClick={() => setShowExport(true)}
+                        aria-label="Export tasks"
+                        title="Export tasks"
+                    >
+                        <FileDown size={14} />
+                        Export
+                    </Button>
                 </div>
             </div>
 
@@ -435,8 +462,8 @@ export const TaskList = ({ userId, hideHeader = false }: TaskListProps = {}) => 
 
             {!isPending && !isError && isEmpty && (
                 <div className="flex flex-col items-center justify-center py-20 px-4 text-center bg-surface-hover/40 rounded border-2 border-dashed border-border">
-                    <div className="flex items-center justify-center w-12 h-12 bg-surface rounded border border-border mb-4">
-                        <Inbox size={24} className="text-text-light" />
+                    <div className="flex items-center justify-center mb-4 text-text-light">
+                        <Inbox size={24} />
                     </div>
                     <h3 className="text-lg font-semibold text-text tracking-tight">No tasks found</h3>
                     <p className="text-sm text-text-muted mt-1 max-w-sm">
@@ -522,8 +549,28 @@ export const TaskList = ({ userId, hideHeader = false }: TaskListProps = {}) => 
             )}
 
             {/* Modals */}
-            {showForm && <TaskForm onClose={() => setShowForm(false)} />}
+            {showForm && (
+                <TaskForm
+                    onClose={() => setShowForm(false)}
+                    onCreated={(task) => setSelected(task)}
+                />
+            )}
             {showSmartModal && <SmartTaskModal onClose={() => setShowSmartModal(false)} />}
+            {showExport && (
+                <ExportDialog
+                    reportModule="tasks"
+                    title="Export Tasks"
+                    description="Every task matching your current filters — status, priority, department, and assignee."
+                    onClose={() => setShowExport(false)}
+                    filters={{
+                        category: filters.category !== 'all' ? filters.category : undefined,
+                        status: filters.status !== 'all' ? filters.status : undefined,
+                        priority: filters.priority.length ? filters.priority : undefined,
+                        departmentId: filters.departmentId || undefined,
+                        assigneeIds: filters.assigneeIds.length ? filters.assigneeIds : undefined,
+                    }}
+                />
+            )}
             {selected && (
                 <TaskDetail
                     key={selected.id}

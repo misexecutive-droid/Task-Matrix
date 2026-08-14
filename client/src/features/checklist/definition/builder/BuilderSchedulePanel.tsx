@@ -35,8 +35,8 @@ export const BuilderSchedulePanel = ({
 
     <div className="space-y-3">
       <label className="text-xs font-display font-semibold text-text-secondary flex items-center gap-2">
-        <div className="p-1.5 rounded-lg bg-success/10">
-          <Store size={14} className="text-success" />
+        <div className="text-success">
+          <Store size={14} />
         </div>
         Stores
       </label>

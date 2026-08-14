@@ -85,7 +85,7 @@ export const ActivityTrendChart = ({
   if (n === 0 || series.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center h-[260px] w-full rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 text-center">
-        <div className="size-10 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center mb-3 text-slate-400">
+        <div className="flex items-center justify-center mb-3 text-slate-400">
           <svg className="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" />
           </svg>

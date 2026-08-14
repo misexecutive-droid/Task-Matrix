@@ -66,7 +66,7 @@ export const ChecklistDefinitionDetail = () => {
 
       <div className="flex flex-col gap-3 p-5 rounded-xl border border-border bg-surface">
         <div className="flex items-center gap-3">
-          <div className="flex items-center justify-center size-10 rounded-lg bg-primary-500/10 border border-primary-500/20 text-primary-600 shrink-0">
+          <div className="flex items-center justify-center text-primary-600 shrink-0">
             <Repeat size={18} />
           </div>
           <div>

@@ -19,7 +19,7 @@ import { coverPhotoFor } from "./taskAttachmentDisplay";
 import { UPLOADS_BASE } from "../../lib/uploadsBase";
 import { avatarColorClass } from "./avatarColors";
 import { getInitials } from "../../lib/getInitials";
-import { CATEGORY_CONFIG, subtaskProgress, formatShortDate, type CardFieldVisibility } from "./cardFields";
+import { CATEGORY_CONFIG, subtaskProgress, formatShortDateTime, type CardFieldVisibility } from "./cardFields";
 import type { Task } from "../../api/task";
 
 interface TaskCardProps {
@@ -81,7 +81,7 @@ export const TaskCard = ({ task, assigneeNames = [], departmentName, isVerifier,
             }}
             aria-label="Open task"
             title="Open task"
-            className="flex items-center justify-center size-7 rounded-md text-text-light bg-surface-hover hover:text-primary-600 hover:bg-primary-500/10 transition-colors cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-primary-500/30"
+            className="flex items-center justify-center size-7 rounded-md text-text-light hover:text-primary-600 hover:bg-primary-500/10 transition-colors cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-primary-500/30"
           >
             <SquarePen size={15} strokeWidth={2.5} />
           </button>
@@ -121,53 +121,59 @@ export const TaskCard = ({ task, assigneeNames = [], departmentName, isVerifier,
         </p>
       )}
 
-      <div className="flex flex-wrap items-center gap-1.5">
-        {fields.department && departmentName && (
-          <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold ${departmentTagClass(departmentName)}`}>
-            {departmentName}
-          </span>
-        )}
-
-        {fields.priority && priority && (
-          <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold ${priority.className}`}>
-            <span className={`size-1.5 rounded-full shrink-0 ${priority.accent}`} />
-            {priority.label}
-          </span>
-        )}
-
-        {fields.category && (() => {
-          const cat = CATEGORY_CONFIG[task.category];
-          return (
-            <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold ${cat.className}`}>
-              <cat.icon size={12} strokeWidth={2.5} />
-              {cat.label}
+      {(fields.department || fields.priority || fields.category || fields.subtasks) && (
+        <div className="flex flex-wrap items-center gap-1.5">
+          {fields.department && departmentName && (
+            <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold ${departmentTagClass(departmentName)}`}>
+              {departmentName}
             </span>
-          );
-        })()}
+          )}
 
-        {fields.subtasks && subtasks && (
-          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-surface-hover text-text-secondary">
-            <ListChecks size={12} strokeWidth={2.5} />
-            {subtasks.done}/{subtasks.total}
-          </span>
-        )}
+          {fields.priority && priority && (
+            <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold ${priority.className}`}>
+              <span className={`size-1.5 rounded-full shrink-0 ${priority.accent}`} />
+              {priority.label}
+            </span>
+          )}
 
-        {fields.created && (
-          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium text-text-light">
-            <CalendarPlus size={12} strokeWidth={2.5} />
-            {formatShortDate(task.createdAt)}
-          </span>
-        )}
+          {fields.category && (() => {
+            const cat = CATEGORY_CONFIG[task.category];
+            return (
+              <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold ${cat.className}`}>
+                <cat.icon size={12} strokeWidth={2.5} />
+                {cat.label}
+              </span>
+            );
+          })()}
 
-        {fields.updated && (
-          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium text-text-light">
-            <History size={12} strokeWidth={2.5} />
-            {formatShortDate(task.updatedAt)}
-          </span>
-        )}
-      </div>
+          {fields.subtasks && subtasks && (
+            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-surface-hover text-text-secondary">
+              <ListChecks size={12} strokeWidth={2.5} />
+              {subtasks.done}/{subtasks.total}
+            </span>
+          )}
+        </div>
+      )}
 
-      <div className="flex items-center justify-between pt-1">
+      {(fields.created || fields.updated) && (
+        <div className="flex flex-wrap items-center gap-3 text-[11px] font-medium text-text-light">
+          {fields.created && (
+            <span className="flex items-center gap-1" title={`Created ${formatShortDateTime(task.createdAt)}`}>
+              <CalendarPlus size={12} strokeWidth={2.5} />
+              {formatShortDateTime(task.createdAt)}
+            </span>
+          )}
+
+          {fields.updated && (
+            <span className="flex items-center gap-1" title={`Updated ${formatShortDateTime(task.updatedAt)}`}>
+              <History size={12} strokeWidth={2.5} />
+              {formatShortDateTime(task.updatedAt)}
+            </span>
+          )}
+        </div>
+      )}
+
+      <div className="flex items-center justify-between pt-2 border-t border-border/60">
         {fields.assignee ? (
           assigneeNames.length > 0 ? (
             <div className="flex items-center -space-x-1.5">

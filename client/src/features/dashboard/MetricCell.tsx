@@ -33,7 +33,7 @@ export const MetricCell = ({
       <h3 className="text-sm font-display font-medium text-text-muted mt-1">
         {label}
       </h3>
-      <div className={`p-2 rounded-xl border border-border/50 bg-surface-hover flex items-center justify-center shadow-sm shrink-0 ${iconTint}`}>
+      <div className={`flex items-center justify-center shrink-0 ${iconTint}`}>
         <Icon size={18} />
       </div>
     </div>

@@ -54,11 +54,7 @@ export const Modal = ({
     >
       <div className={`flex items-center justify-between gap-3 shrink-0 px-5 py-3.5 border-b border-border/40 ${headerClassName}`}>
         <div className="flex items-center gap-3 min-w-0">
-          {icon && (
-            <div className="p-2 rounded-lg bg-primary-500/10 text-primary-500 border border-primary-500/20 shrink-0">
-              {icon}
-            </div>
-          )}
+          {icon && <div className="shrink-0">{icon}</div>}
           <div className="min-w-0">
             <DialogTitle className="truncate">{title}</DialogTitle>
             {description && <DialogDescription>{description}</DialogDescription>}
@@ -75,7 +71,7 @@ export const Modal = ({
         )}
       </div>
 
-      <div className={`flex flex-col gap-5 px-5 py-4 overflow-y-auto flex-1 min-h-0 ${bodyClassName}`}>
+      <div className={`flex flex-col gap-5 px-5 py-4 overflow-y-auto overflow-x-hidden flex-1 min-h-0 ${bodyClassName}`}>
         {children}
       </div>
 

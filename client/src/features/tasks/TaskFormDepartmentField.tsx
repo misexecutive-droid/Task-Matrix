@@ -29,7 +29,7 @@ export const TaskFormDepartmentField = ({ value, onChange, departments, isLoadin
       onValueChange={(v) => onChange(v === NO_DEPARTMENT ? '' : v)}
       disabled={isLoading || disabled}
     >
-      <SelectTrigger className="h-10 text-sm font-medium bg-surface border-border rounded shadow-sm hover:border-border-hover focus:outline-none focus:ring-2 focus:ring-primary-500/20 transition-all w-full">
+      <SelectTrigger className="h-10 text-sm font-medium bg-surface  rounded shadow-sm hover:border-border-hover focus:outline-none focus:ring-2 focus:ring-primary-500/20 transition-all w-full">
         <SelectValue placeholder="Select Department" />
       </SelectTrigger>
 

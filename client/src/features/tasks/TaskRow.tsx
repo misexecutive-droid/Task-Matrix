@@ -6,7 +6,7 @@ import { departmentTagClass } from "./departmentTagColors";
 import { coverPhotoFor } from "./taskAttachmentDisplay";
 import { UPLOADS_BASE } from "../../lib/uploadsBase";
 import { TaskSourceBadge } from "./TaskSourceBadge";
-import { CATEGORY_CONFIG, subtaskProgress, formatShortDate, type CardFieldVisibility } from "./cardFields";
+import { CATEGORY_CONFIG, subtaskProgress, formatShortDateTime, type CardFieldVisibility } from "./cardFields";
 import type { Task } from '../../api/task';
 
 interface TaskRowProps {
@@ -104,16 +104,16 @@ export const TaskRow = ({ task, assigneeName, departmentName, isVerifier, onOpen
                             })()}
 
                             {fields.created && (
-                                <span className="flex items-center gap-1.5 text-xs font-medium text-text-light">
+                                <span className="flex items-center gap-1.5 text-xs font-medium text-text-light" title={`Created ${formatShortDateTime(task.createdAt)}`}>
                                     <CalendarPlus size={13} strokeWidth={2.5} className="text-text-light" />
-                                    {formatShortDate(task.createdAt)}
+                                    {formatShortDateTime(task.createdAt)}
                                 </span>
                             )}
 
                             {fields.updated && (
-                                <span className="flex items-center gap-1.5 text-xs font-medium text-text-light">
+                                <span className="flex items-center gap-1.5 text-xs font-medium text-text-light" title={`Updated ${formatShortDateTime(task.updatedAt)}`}>
                                     <History size={13} strokeWidth={2.5} className="text-text-light" />
-                                    {formatShortDate(task.updatedAt)}
+                                    {formatShortDateTime(task.updatedAt)}
                                 </span>
                             )}
 

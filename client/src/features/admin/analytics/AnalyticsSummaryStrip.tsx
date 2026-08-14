@@ -44,28 +44,28 @@ export const AnalyticsSummaryStrip = ({ groupBy, from, to }: AnalyticsSummaryStr
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
       <StatCard
         icon={ClipboardCheck}
-        iconTint="bg-primary-500/10 text-primary-600 dark:text-primary-400"
+        iconTint="text-primary-600 dark:text-primary-400"
         label="Checklist completion"
         value={checklistCompletion.value != null ? `${checklistCompletion.value}%` : '—'}
         trend={checklistCompletion.trend}
       />
       <StatCard
         icon={ShieldCheck}
-        iconTint="bg-indigo-500/10 text-indigo-600 dark:text-indigo-400"
+        iconTint="text-indigo-600 dark:text-indigo-400"
         label="On-time completion"
         value={slaMetValue != null ? `${slaMetValue}%` : '—'}
         trend={slaMetTrend}
       />
       <StatCard
         icon={AlertTriangle}
-        iconTint="bg-amber-500/10 text-amber-600 dark:text-amber-400"
+        iconTint="text-amber-600 dark:text-amber-400"
         label="Overdue"
         value={overdue.value ?? '—'}
         trend={overdue.trend}
       />
       <StatCard
         icon={Camera}
-        iconTint="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+        iconTint="text-emerald-600 dark:text-emerald-400"
         label="Proof compliance"
         value={proofCompliance != null ? `${proofCompliance}%` : '—'}
         trend={proofTrend}

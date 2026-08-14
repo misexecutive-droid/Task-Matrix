@@ -46,7 +46,7 @@ export const CategoryList = () => {
             >
               <div className="flex items-start justify-between gap-3 mb-3">
                 <div className="flex items-center gap-3 min-w-0">
-                  <div className="flex items-center justify-center size-10 rounded-lg bg-primary-500/10 text-primary-600 dark:text-primary-300 shrink-0 shadow-xs">
+                  <div className="flex items-center justify-center text-primary-600 dark:text-primary-300 shrink-0">
                     <Tag size={18} />
                   </div>
                   <div className="min-w-0">

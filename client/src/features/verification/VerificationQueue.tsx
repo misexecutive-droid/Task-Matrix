@@ -37,7 +37,7 @@ const QueueRow = ({ icon, title, subtitle, onApprove, onReject, isPending }: Que
         
         {/* Info Section */}
         <div className="flex items-start sm:items-center gap-3.5 min-w-0">
-          <div className="flex items-center justify-center size-10 rounded-lg bg-primary-500/10 text-primary-500 border border-primary-500/20 shrink-0 shadow-sm">
+          <div className="flex items-center justify-center text-primary-500 shrink-0">
             {icon}
           </div>
           <div className="flex-1 min-w-0">
@@ -168,8 +168,8 @@ const SkeletonRow = () => (
 
 const EmptyState = ({ label }: { label: string }) => (
   <div className="flex flex-col items-center justify-center py-8 px-4 rounded-xl border border-dashed border-border/70 bg-surface/30 text-center">
-    <div className="flex items-center justify-center size-10 rounded-full bg-emerald-500/10 mb-3">
-      <CheckCircle2 size={20} className="text-emerald-500" />
+    <div className="flex items-center justify-center mb-3 text-emerald-500">
+      <CheckCircle2 size={20} />
     </div>
     <p className="text-sm font-medium text-text">All caught up</p>
     <p className="text-xs text-text-muted mt-1">No {label} waiting for verification.</p>

@@ -73,7 +73,7 @@ export const ChecklistDefinitionCard = ({ definition }: ChecklistDefinitionCardP
       className="flex flex-col gap-4 p-5 rounded-2xl border border-border bg-surface shadow-sm hover:shadow-md hover:border-border-hover transition-all duration-200"
     >
       <div className="flex items-start justify-between gap-3">
-        <div className="flex items-center justify-center size-10 rounded-xl bg-coral-500/15 text-coral-600 dark:text-coral-400 shrink-0">
+        <div className="flex items-center justify-center text-coral-600 dark:text-coral-400 shrink-0">
           <Icon size={18} />
         </div>
         <Badge variant={definition.isActive ? 'success' : 'neutral'}>

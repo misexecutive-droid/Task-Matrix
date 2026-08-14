@@ -28,7 +28,7 @@ export const StoreCard = ({ store, memberCount, isUpdating, isDeleting, onToggle
   >
     <header className="flex items-start justify-between gap-4 mb-6">
       <div className="flex items-center gap-4 min-w-0">
-        <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-coral-500/15 text-coral-600 dark:text-coral-400 shrink-0 shadow-sm ring-1 ring-coral-500/10">
+        <div className="flex items-center justify-center text-coral-600 dark:text-coral-400 shrink-0">
           <StoreIcon className="w-6 h-6" />
         </div>
         <div className="min-w-0 space-y-0.5">

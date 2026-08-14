@@ -5,10 +5,17 @@ const BASE = (import.meta.env.VITE_API_URL as string | undefined) ?? 'http://loc
 export type ReportModule = 'tickets' | 'tasks' | 'checklists';
 export type ReportFormat = 'csv' | 'xlsx';
 
+// category/status/priority/departmentId/assigneeIds only apply to the "tasks" module — they
+// mirror TaskList's own filter bar so "Export" downloads what's on screen, not the whole table.
 export type ReportExportParams = {
   from?: string;
   to?: string;
   format: ReportFormat;
+  category?: 'issue' | 'delegation' | 'task';
+  status?: string;
+  priority?: string[];
+  departmentId?: string;
+  assigneeIds?: string[];
 };
 
 const parseFilename = (contentDisposition: string | null, fallback: string) => {
@@ -25,6 +32,11 @@ export const reportApi = {
     const query = new URLSearchParams({ format: params.format });
     if (params.from) query.set('from', params.from);
     if (params.to) query.set('to', params.to);
+    if (params.category) query.set('category', params.category);
+    if (params.status) query.set('status', params.status);
+    if (params.priority?.length) query.set('priority', params.priority.join(','));
+    if (params.departmentId) query.set('departmentId', params.departmentId);
+    if (params.assigneeIds?.length) query.set('assigneeIds', params.assigneeIds.join(','));
 
     const res = await fetch(`${BASE}/reports/${reportModule}/export?${query.toString()}`, {
       credentials: 'include',

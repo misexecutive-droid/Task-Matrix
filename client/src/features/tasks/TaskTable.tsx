@@ -1,7 +1,7 @@
 import { Clock, User, ListChecks, CalendarPlus, History } from 'lucide-react';
 import { PRIORITY_MAP, STATUS_CONFIG } from './taskDisplay';
 import { departmentTagClass } from './departmentTagColors';
-import { CATEGORY_CONFIG, subtaskProgress, formatShortDate, type CardFieldVisibility } from './cardFields';
+import { CATEGORY_CONFIG, subtaskProgress, formatShortDate, formatShortDateTime, type CardFieldVisibility } from './cardFields';
 import type { Task } from '../../api/task';
 
 interface TaskTableProps {
@@ -159,7 +159,7 @@ export const TaskTable = ({ tasks, assigneeNames, departmentNames, onOpen, field
                           <td key={c.key} className="px-4 py-2.5 whitespace-nowrap">
                             <span className="flex items-center gap-1.5 text-text-secondary">
                               <CalendarPlus size={13} strokeWidth={2.5} className="text-text-light" />
-                              {formatShortDate(task.createdAt)}
+                              {formatShortDateTime(task.createdAt)}
                             </span>
                           </td>
                         );
@@ -168,7 +168,7 @@ export const TaskTable = ({ tasks, assigneeNames, departmentNames, onOpen, field
                           <td key={c.key} className="px-4 py-2.5 whitespace-nowrap">
                             <span className="flex items-center gap-1.5 text-text-secondary">
                               <History size={13} strokeWidth={2.5} className="text-text-light" />
-                              {formatShortDate(task.updatedAt)}
+                              {formatShortDateTime(task.updatedAt)}
                             </span>
                           </td>
                         );

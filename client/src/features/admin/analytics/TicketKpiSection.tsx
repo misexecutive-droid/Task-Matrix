@@ -30,21 +30,21 @@ export const TicketKpiSection = ({ groupBy, from, to }: TicketKpiSectionProps) =
       cards={[
         {
           icon: TicketCheck,
-          iconTint: 'bg-primary-500/10 text-primary-600 dark:text-primary-400',
+          iconTint: 'text-primary-600 dark:text-primary-400',
           label: 'Close rate',
           value: closeRate.value != null ? `${closeRate.value}%` : '—',
           trend: closeRate.trend,
         },
         {
           icon: Timer,
-          iconTint: 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400',
+          iconTint: 'text-indigo-600 dark:text-indigo-400',
           label: 'Avg TAT',
           value: avgTat.value != null ? `${avgTat.value}h` : '—',
           trend: avgTat.trend,
         },
         {
           icon: AlertTriangle,
-          iconTint: 'bg-amber-500/10 text-amber-600 dark:text-amber-400',
+          iconTint: 'text-amber-600 dark:text-amber-400',
           label: 'Overdue',
           value: overdue.value != null ? `${overdue.value}` : '—',
           trend: overdue.trend,

@@ -1,9 +1,13 @@
-import { useQuery , useMutation } from "@tanstack/react-query";
+import { useQuery , useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "../../context/AuthContext";
 import { taskApi } from "../../api/task";
 import { userApi } from "../../api/users"; // NEW — needed for the assignee picker
 import { taskChecklistApi } from "../../api/taskChecklist";
 import { checklistTemplateApi } from "../../api/checklistTemplates";
+import { taskCommentApi } from "../../api/taskComment";
+import type { CreateTaskCommentPayload } from "../../api/taskComment";
+import { smartTaskConversationApi } from "../../api/smartTaskConversation";
+import type { SmartTaskConversationMessage, PatchSmartTaskConversationPayload } from "../../api/smartTaskConversation";
 import type { CreateTaskPayload, UpdateTaskPayload, VerifyTaskPayload, Task } from "../../api/task";
 import type {
     CreateTaskChecklistPayload,
@@ -83,13 +87,16 @@ export const useDeleteTaskAttachmentMutation = (taskId: string) =>
         errorFallback: 'Failed to remove attachment',
     });
 
-export const useUpdateTaskMutation = () =>
+// `silent: true` drops the success toast (still errors loudly on failure) — used by TaskDetail's
+// per-field autosave, where a toast on every single edit is noise; the board/row quick-status
+// actions call this with no options so they keep the confirmation toast.
+export const useUpdateTaskMutation = (options?: { silent?: boolean }) =>
     useEntityMutation({
         mutationFn: ({ id, payload }: { id: string; payload: UpdateTaskPayload }) =>
             taskApi.update(id, payload),
         setDetailData: (updatedTask) => ({ key: TASK_KEYS.detail(updatedTask.id), data: updatedTask }),
         invalidateKeys: [['tasks']],
-        successMessage: 'Task updated',
+        successMessage: options?.silent ? null : 'Task updated',
         errorFallback: 'Failed to update task',
     });
 
@@ -135,6 +142,24 @@ export const useAssignableUsersQuery = () => {
         retry: handleQueryRetry,
     });
 };
+
+// ── Task activity/comments ──────────────────────────────────────────────
+export const useTaskCommentsQuery = (taskId: string) => {
+    const { token } = useAuth();
+    return useQuery({
+        queryKey: [...TASK_KEYS.detail(taskId), 'comments'],
+        queryFn: () => taskCommentApi.list(taskId),
+        enabled: !!token && !!taskId,
+        retry: handleQueryRetry,
+    });
+};
+
+export const useCreateTaskCommentMutation = (taskId: string) =>
+    useEntityMutation({
+        mutationFn: (payload: CreateTaskCommentPayload) => taskCommentApi.create(taskId, payload),
+        invalidateKeys: [[...TASK_KEYS.detail(taskId), 'comments']],
+        errorFallback: 'Failed to post comment',
+    });
 
 // ── Task checklists (items, images, remarks) ──────────────────────────────
 // All of these only ever affect one task's detail view, so they invalidate just that task's
@@ -239,3 +264,61 @@ export const useParseSmartTaskMutation = () =>
 
 export const useTranscribeVoiceNoteMutation = () =>
     useMutation({ mutationFn : (audioBlob : Blob) => taskApi.transcribeVoiceNote(audioBlob)});
+
+// ── Smart Add chat history ─────────────────────────────────────────────
+// Plain useQuery/useMutation rather than useEntityMutation — these are background saves fired on
+// every chat turn, and a success toast on every message would be noisy. The list is invalidated on
+// create/patch so History reflects the latest state next time it's opened; over-invalidating on a
+// plain append is harmless since the list only actually refetches when it's mounted and viewed.
+const SMART_TASK_CONVERSATION_KEYS = {
+    all:    ['smart-task-conversations'] as const,
+    detail: (id: string) => ['smart-task-conversations', id] as const,
+};
+
+// `enabled` defaults to true but is meant to be passed `view === "history"` from SmartTaskModal —
+// no reason to fetch the whole history list every time Smart Add opens if the user never clicks
+// through to it.
+export const useSmartTaskConversationsQuery = (enabled = true) => {
+    const { token } = useAuth();
+    return useQuery({
+        queryKey: SMART_TASK_CONVERSATION_KEYS.all,
+        queryFn: () => smartTaskConversationApi.list(),
+        enabled: !!token && enabled,
+        retry: handleQueryRetry,
+    });
+};
+
+export const useSmartTaskConversationQuery = (id: string | null) => {
+    const { token } = useAuth();
+    return useQuery({
+        queryKey: SMART_TASK_CONVERSATION_KEYS.detail(id ?? ''),
+        queryFn: () => smartTaskConversationApi.getOne(id!),
+        enabled: !!token && !!id,
+        retry: handleQueryRetry,
+    });
+};
+
+export const useCreateSmartTaskConversationMutation = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: (messages: SmartTaskConversationMessage[]) => smartTaskConversationApi.create(messages),
+        onSuccess: () => queryClient.invalidateQueries({ queryKey: SMART_TASK_CONVERSATION_KEYS.all }),
+    });
+};
+
+export const useUpdateSmartTaskConversationMutation = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: ({ id, payload }: { id: string; payload: PatchSmartTaskConversationPayload }) =>
+            smartTaskConversationApi.patch(id, payload),
+        onSuccess: () => queryClient.invalidateQueries({ queryKey: SMART_TASK_CONVERSATION_KEYS.all }),
+    });
+};
+
+export const useDeleteAllSmartTaskConversationsMutation = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: () => smartTaskConversationApi.deleteAll(),
+        onSuccess: () => queryClient.invalidateQueries({ queryKey: SMART_TASK_CONVERSATION_KEYS.all }),
+    });
+};

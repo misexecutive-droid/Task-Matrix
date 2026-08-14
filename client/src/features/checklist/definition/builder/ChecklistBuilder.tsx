@@ -273,7 +273,7 @@ export const ChecklistBuilder = () => {
 
             {itemDrafts.length === 0 ? (
               <div className="flex flex-col items-center justify-center gap-2 py-10 px-4 rounded-xl border border-dashed border-border text-center">
-                <span className="flex items-center justify-center size-10 rounded-full bg-surface-hover text-text-light">
+                <span className="flex items-center justify-center text-text-light">
                   <ListChecks size={18} />
                 </span>
                 <p className="text-sm font-display font-semibold text-text">No items yet</p>

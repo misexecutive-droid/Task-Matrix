@@ -23,7 +23,7 @@ export const ImportFromTemplateField = ({ templates, onImport }: ImportFromTempl
   return (
     <div className="flex flex-col gap-2.5 p-3 rounded-xl border border-coral-500/25 bg-coral-500/10">
       <div className="flex items-center gap-2">
-        <span className="flex items-center justify-center size-6 rounded-full bg-coral-500/15 text-coral-600 dark:text-coral-400 shrink-0">
+        <span className="flex items-center justify-center text-coral-600 dark:text-coral-400 shrink-0">
           <Sparkles size={13} />
         </span>
         <span className="text-xs font-display font-semibold text-text-secondary uppercase tracking-wider">

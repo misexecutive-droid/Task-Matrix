@@ -87,7 +87,7 @@ export const ChecklistTemplateFormUI = ({ departments, isSaving, saveError, onSu
           </button>
           
           <div className="flex items-start gap-4">
-            <div className="p-3 bg-indigo-50 dark:bg-indigo-500/10 rounded-xl text-indigo-600 dark:text-indigo-400 ring-1 ring-indigo-500/20 shadow-sm shrink-0">
+            <div className="flex items-center justify-center text-indigo-600 dark:text-indigo-400 shrink-0">
               <ListChecks className="w-6 h-6" />
             </div>
             <div className="space-y-1.5 pr-8">

@@ -3,11 +3,12 @@ import { apiFetch } from './http';
 export type Role = "ADMIN" | "MANAGER" | "AGENT" | "USER";
 
 export type AssignableUser = {
-    id:        string;
-    firstName: string;
-    lastName:  string | null;
-    email:     string;
-    role:      Role;
+    id:           string;
+    firstName:    string;
+    lastName:     string | null;
+    email:        string;
+    role:         Role;
+    departmentId: string | null;
 };
 
 export type ApiResponse<T> = { success: boolean; data: T };

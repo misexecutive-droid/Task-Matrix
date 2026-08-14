@@ -26,8 +26,8 @@ export const TaskTimeline = ({ tasks, assigneeNames, onOpen }: TaskTimelineProps
   if (plottable.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-16 px-4 text-center bg-surface-hover/40 rounded border-2 border-dashed border-border">
-        <div className="flex items-center justify-center w-12 h-12 bg-surface rounded border border-border mb-4">
-          <CalendarRange size={24} className="text-text-light" />
+        <div className="flex items-center justify-center mb-4 text-text-light">
+          <CalendarRange size={24} />
         </div>
         <h3 className="text-lg font-semibold text-text tracking-tight">Nothing to plot</h3>
         <p className="text-sm text-text-muted mt-1 max-w-sm">

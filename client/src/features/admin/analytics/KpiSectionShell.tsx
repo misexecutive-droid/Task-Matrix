@@ -31,7 +31,7 @@ export const KpiSectionShell = ({ icon: Icon, title, description, isPending, isE
   <section className="flex flex-col gap-6">
     <header className="flex items-start justify-between gap-4 flex-wrap">
       <div className="flex items-center gap-4">
-        <div className="flex items-center justify-center size-12 rounded-2xl bg-primary-500/10 text-primary-600 dark:text-primary-400 ring-1 ring-primary-500/20 shrink-0">
+        <div className="flex items-center justify-center text-primary-600 dark:text-primary-400 shrink-0">
           <Icon className="w-6 h-6" />
         </div>
         <div>

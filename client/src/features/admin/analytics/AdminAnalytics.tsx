@@ -35,7 +35,7 @@ export const AdminAnalytics = () => {
       <div className="flex flex-col gap-8 max-w-7xl mx-auto w-full">
         <header className="flex flex-col sm:flex-row sm:items-end justify-between gap-6 pb-6 border-b border-border">
           <div className="flex items-start gap-4">
-            <div className="flex items-center justify-center size-12 rounded-2xl bg-primary-500/10 text-primary-600 dark:text-primary-400 ring-1 ring-primary-500/20 shrink-0">
+            <div className="flex items-center justify-center text-primary-600 dark:text-primary-400 shrink-0">
               <BarChart3 className="w-6 h-6" />
             </div>
             <div className="space-y-1">

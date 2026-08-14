@@ -112,7 +112,7 @@ export function ImageUploader({
           }}
         />
 
-        <div className="flex items-center justify-center size-10 rounded-full bg-primary-50 text-primary-700">
+        <div className="flex items-center justify-center text-primary-700">
           <UploadCloud size={18} />
         </div>
 
