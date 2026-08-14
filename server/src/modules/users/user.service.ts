@@ -88,6 +88,6 @@ export const userService = {
             })
         };
 
-        return User.find(filter).select("firstName lastName email role").sort({ firstName: 1 });
+        return User.find(filter).select("firstName lastName email role departmentId").sort({ firstName: 1 });
     }
 };

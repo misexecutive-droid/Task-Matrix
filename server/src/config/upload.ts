@@ -32,6 +32,11 @@ const CHECKLIST_INSTANCE_SUBMISSION_UPLOAD_DIR = path.resolve("uploads", "checkl
 // folder since these aren't gated by the same image-only rules.
 const TASK_ATTACHMENT_UPLOAD_DIR = path.resolve("uploads", "task-attachments")
 
+// Files attached to a single Task comment/activity message (see taskComments module) — kept in
+// its own folder rather than reusing task-attachments/ so a comment's files are never confused
+// with the task's own top-level attachment list.
+const TASK_COMMENT_ATTACHMENT_UPLOAD_DIR = path.resolve("uploads", "task-comment-attachments")
+
 
 // A fresh clone of this repo won't have an uploads/ folder yet — we don't (and shouldn't) commit
 // an empty folder of user-uploaded content to git, so create it at startup if it's missing.
@@ -53,6 +58,9 @@ if (!fs.existsSync(CHECKLIST_INSTANCE_SUBMISSION_UPLOAD_DIR)) {
 }
 if (!fs.existsSync(TASK_ATTACHMENT_UPLOAD_DIR)) {
     fs.mkdirSync(TASK_ATTACHMENT_UPLOAD_DIR, { recursive: true })
+}
+if (!fs.existsSync(TASK_COMMENT_ATTACHMENT_UPLOAD_DIR)) {
+    fs.mkdirSync(TASK_COMMENT_ATTACHMENT_UPLOAD_DIR, { recursive: true })
 }
 
 const storage = multer.diskStorage({
@@ -102,6 +110,15 @@ const checklistInstanceSubmissionStorage = multer.diskStorage({
 
 const taskAttachmentStorage = multer.diskStorage({
     destination: (_req, _file, cb) => cb(null, TASK_ATTACHMENT_UPLOAD_DIR),
+    filename: (_req, file, cb) => {
+        const randomName = crypto.randomBytes(16).toString("hex");
+        const ext = path.extname(file.originalname).toLowerCase();
+        cb(null, `${randomName}${ext}`)
+    },
+})
+
+const taskCommentAttachmentStorage = multer.diskStorage({
+    destination: (_req, _file, cb) => cb(null, TASK_COMMENT_ATTACHMENT_UPLOAD_DIR),
     filename: (_req, file, cb) => {
         const randomName = crypto.randomBytes(16).toString("hex");
         const ext = path.extname(file.originalname).toLowerCase();
@@ -196,6 +213,25 @@ const taskAttachmentMulter = multer({
 
 export const taskAttachmentUpload = (req : Request , res : Response , next : NextFunction) =>
     taskAttachmentMulter.array("files", TASK_ATTACHMENT_MAX_FILES)(req, res, next)
+
+// Comment attachments reuse the same allowed types/limits as task-level attachments — same kind
+// of files (docs/images/video), just scoped to one comment instead of the whole task.
+const taskCommentAttachmentMulter = multer({
+    storage: taskCommentAttachmentStorage,
+    limits: {
+        fileSize: TASK_ATTACHMENT_MAX_SIZE_MB * 1024 * 1024,
+        files: TASK_ATTACHMENT_MAX_FILES,
+    },
+    fileFilter: (_req, file, cb) => {
+        if (!TASK_ATTACHMENT_MIME_TYPES.includes(file.mimetype)) {
+            return cb(null, false)
+        }
+        cb(null, true)
+    },
+})
+
+export const taskCommentAttachmentUpload = (req : Request , res : Response , next : NextFunction) =>
+    taskCommentAttachmentMulter.array("files", TASK_ATTACHMENT_MAX_FILES)(req, res, next)
 
 // Web Smart Add's voice-note recorder (client/src/features/tasks/VoiceNoteRecorder.tsx) — the
 // clip only needs to reach the transcription service once and can then be discarded, so this uses

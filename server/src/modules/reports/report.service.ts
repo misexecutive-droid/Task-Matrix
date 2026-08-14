@@ -13,6 +13,44 @@ const dateFilter = (field: string, from?: string, to?: string) => {
     return { [field]: range };
 };
 
+// Mirrors TaskList's own filter bar (taskFilters.ts's CATEGORY_PREDICATES) so "Export" downloads
+// exactly what's on screen, not the whole table — "delegation"/"task" both store category
+// "delegation" on the Task document, split by whether aiMeta was recorded (AI/WhatsApp-created vs
+// typed into the New Task form).
+export type TaskExportFilters = {
+    category?: "issue" | "delegation" | "task";
+    status?: string;
+    priority?: string[];
+    departmentId?: string;
+    assigneeIds?: string[];
+};
+
+const taskExtraFilter = (extra?: TaskExportFilters) => {
+    if (!extra) return {};
+    const query: Record<string, unknown> = {};
+
+    if (extra.category === "issue") query.category = "issue";
+    else if (extra.category === "delegation") {
+        query.category = "delegation";
+        query.aiMeta = { $ne: null };
+    } else if (extra.category === "task") {
+        query.category = "delegation";
+        query.aiMeta = null;
+    }
+
+    if (extra.status) query.status = extra.status;
+    if (extra.priority?.length) query.priority = { $in: extra.priority };
+    if (extra.departmentId) query.departmentId = extra.departmentId;
+    if (extra.assigneeIds?.length) {
+        query.$or = [
+            { assigneeId: { $in: extra.assigneeIds } },
+            { additionalAssigneeIds: { $in: extra.assigneeIds } },
+        ];
+    }
+
+    return query;
+};
+
 const fullName = (person: { firstName?: string; lastName?: string | null } | null | undefined) =>
     person ? `${person.firstName ?? ""} ${person.lastName ?? ""}`.trim() : "";
 
@@ -65,7 +103,7 @@ export const REPORT_COLUMNS: Record<ReportModule, CsvColumn[]> = {
 
 
 export const reportService = {
-    async *ticketRows(from?: string, to?: string) {
+    async *ticketRows(from?: string, to?: string, _extra?: TaskExportFilters) {
         const cursor = Ticket.find(dateFilter("createAt", from, to))
             .populate({ path: "assignee", select: "firstamNe lastName" })
             .populate({ path: "raisedBy", select: "firstName lastName" })
@@ -90,9 +128,10 @@ export const reportService = {
         }
     },
 
-    async *taskRows(from?: string, to?: string) {
-        const cursor = Task.find(dateFilter("createdAt", from, to))
+    async *taskRows(from?: string, to?: string, extra?: TaskExportFilters) {
+        const cursor = Task.find({ ...dateFilter("createdAt", from, to), ...taskExtraFilter(extra) })
             .populate({ path: "assigneeId", select: "firstName lastName" })
+            .populate({ path: "additionalAssigneeIds", select: "firstName lastName" })
             .populate({ path: "userId", select: "firstName lastName" })
             .populate({ path: "departmentId", select: "name" })
             .sort({ createAt: -1 })
@@ -101,13 +140,19 @@ export const reportService = {
 
 
         for await (const t of cursor as any) {
+            // A task can have a primary assignee plus extra ones (additionalAssigneeIds) — list
+            // everyone, not just the primary, so a two-person task doesn't silently show one name.
+            const assigneeNames = [t.assigneeId, ...(t.additionalAssigneeIds ?? [])]
+                .map(fullName)
+                .filter(Boolean);
+
             yield {
                 id: t._id.toString(),
                 title: t.title,
                 status: t.status,
                 priority: t.priority,
                 department: t.departmentId?.name ?? "",
-                assignee: fullName(t.assigneeId),
+                assignee: assigneeNames.join(", "),
                 raisedBy: fullName(t.userId),
                 dueDate: isoOrEmpty(t.dueDate),
                 createdAt: isoOrEmpty(t.createdAt)
@@ -115,7 +160,7 @@ export const reportService = {
         }
     },
 
-    async *checklistRows(from?: string, to?: string) {
+    async *checklistRows(from?: string, to?: string, _extra?: TaskExportFilters) {
         const cursor = ChecklistInstance.find(dateFilter("periodStart", from, to))
             .populate({ path: "storeId", select: "name" })
             .populate({ path: "assigneeIds", select: "firstName lastName" })
@@ -146,7 +191,7 @@ export const reportService = {
 
 };
 
-export const REPORT_ROW_STREAMS: Record<ReportModule, (from?: string, to?: string) => AsyncGenerator<Record<string, unknown>>> = {
+export const REPORT_ROW_STREAMS: Record<ReportModule, (from?: string, to?: string, extra?: TaskExportFilters) => AsyncGenerator<Record<string, unknown>>> = {
     tickets: reportService.ticketRows,
     tasks: reportService.taskRows,
     checklists: reportService.checklistRows,

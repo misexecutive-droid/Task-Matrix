@@ -3,7 +3,8 @@ import { taskController } from "./task.controller.js" // the functions that actu
 import { authenticate , requireRole } from "../../middleware/auth/auth.js" // middleware that checks the JWT and attaches req.user, or rejects the request
 import { taskChecklistController } from "../taskChecklists/taskChecklist.controller.js" // creating a checklist under a specific task
 import { taskAttachmentController } from "../taskAttachments/taskAttachment.controller.js" // attaching general files (pdf/csv/image/video) directly to a task
-import { taskAttachmentUpload, voiceNoteUpload } from "../../config/upload.js"
+import { taskCommentController } from "../taskComments/taskComment.controller.js" // the task's activity/comment feed
+import { taskAttachmentUpload, taskCommentAttachmentUpload, voiceNoteUpload } from "../../config/upload.js"
 import { taskAiController } from "./ai/task.ai.controller.js"
 
 export const taskRouter = Router()
@@ -24,6 +25,9 @@ taskRouter.post("/:taskId/checklists", requireRole("ADMIN"), taskChecklistContro
 taskRouter.post("/:taskId/checklists/from-template/:templateId", requireRole("ADMIN"), taskChecklistController.createFromTemplate)
 
 taskRouter.post("/:id/attachments", taskAttachmentUpload, taskAttachmentController.upload) // POST /tasks/:id/attachments -> attach general files (pdf/csv/image/video) to this task
+
+taskRouter.get("/:taskId/comments", taskCommentController.list) // GET /tasks/:taskId/comments -> the task's activity feed
+taskRouter.post("/:taskId/comments", taskCommentAttachmentUpload, taskCommentController.create) // POST /tasks/:taskId/comments -> post a comment (text/attachments/location)
 
 taskRouter.post("/ai/parse", taskAiController.parse)
 taskRouter.post("/ai/create", taskAiController.create)

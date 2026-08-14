@@ -9,6 +9,9 @@ export type TaskPriority = (typeof TASK_PRIORITIES)[number];
 export const TASK_CATEGORIES = ["issue", "delegation"] as const;
 export type TaskCategory = (typeof TASK_CATEGORIES)[number];
 
+export const TASK_REMINDER_CHANNELS = ["notification", "alarm", "email", "sms"] as const;
+export type TaskReminderChannel = (typeof TASK_REMINDER_CHANNELS)[number];
+
 
 const taskSchema = new Schema(
     {
@@ -21,6 +24,8 @@ const taskSchema = new Schema(
         dueDate: { type: Date, default: null },
         // How long before dueDate to send a reminder notification (null = no reminder wanted).
         reminderMinutesBefore: { type: Number, default: null },
+        // Which channel taskDeadlineReminder.job.ts should use when the reminder fires.
+        reminderChannel: { type: String, enum: TASK_REMINDER_CHANNELS, default: "notification" },
         // Set once taskDeadlineReminder.job.ts actually fires the reminder, so the sweep never
         // sends it twice — reset to null whenever dueDate or reminderMinutesBefore changes.
         reminderSentAt: { type: Date, default: null },

@@ -1,15 +1,16 @@
 import { z } from "zod"
-import { TASK_PRIORITIES , TASK_STATUSES } from "../../models/Task.js" ;
+import { TASK_PRIORITIES , TASK_STATUSES, TASK_REMINDER_CHANNELS } from "../../models/Task.js" ;
 import { objectId } from "../../utils/index.js"
 
 export const createTaskSchema = z.object({
-    title : z.string().min(1), 
+    title : z.string().min(1),
     description : z.string().optional(),
-    status : z.enum(TASK_STATUSES).optional(), 
+    status : z.enum(TASK_STATUSES).optional(),
     priority : z.enum(TASK_PRIORITIES).optional(),
     startDate : z.string().datetime().optional(),
     dueDate : z.string().datetime().optional(),
     reminderMinutesBefore : z.number().int().positive().optional(),
+    reminderChannel : z.enum(TASK_REMINDER_CHANNELS).optional(),
     projectId : objectId.optional(),
     assigneeId : objectId.optional(),
     additionalAssigneeIds : z.array(objectId).optional(),

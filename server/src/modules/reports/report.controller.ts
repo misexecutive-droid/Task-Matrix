@@ -23,10 +23,17 @@ const exporters: Record<"csv" | "xlsx", ExportHandler> = {
     csv: streamCsv,
 };
 
-const exportHandler = (reportModule: ReportModule) => 
+const exportHandler = (reportModule: ReportModule) =>
     asyncHandler(async (req: Request, res: Response) => {
-        const { from, to, format } = reportExportQuerySchema.parse(req.query);
-        const rows = REPORT_ROW_STREAMS[reportModule](from, to);
+        const { from, to, format, category, status, priority, departmentId, assigneeIds } =
+            reportExportQuerySchema.parse(req.query);
+        const rows = REPORT_ROW_STREAMS[reportModule](from, to, {
+            category,
+            status,
+            priority: priority?.split(",").filter(Boolean),
+            departmentId,
+            assigneeIds: assigneeIds?.split(",").filter(Boolean),
+        });
         const columns = REPORT_COLUMNS[reportModule];
         const datePart = new Date().toISOString().slice(0, 10);
         const filename = `${reportModule}-export-${datePart}.${format}`;

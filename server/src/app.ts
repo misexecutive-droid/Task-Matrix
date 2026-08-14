@@ -30,6 +30,7 @@ import { notificationRouter } from "./modules/notifications/notification.routes.
 import { settingsRouter } from "./modules/settings/settings.routes.js"
 import { reportRouter } from "./modules/reports/report.routes.js"
 import { eventRouter } from "./modules/events/event.routes.js"
+import { smartTaskConversationRouter } from "./modules/smartTaskConversations/smartTaskConversation.routes.js"
 import { createApiLimiter, createAuthLimiter, createAiLimiter , createWebhookLimiter } from "./middleware/rateLimiter/rateLimiter.js"
 import { whatsappRouter } from "./modules/whatsapp/whatsapp.routes.js"
 import { doubletickRouter } from "./modules/doubletick/doubletick.routes.js"
@@ -110,6 +111,7 @@ class App {
         this.app.use("/notifications", notificationRouter)
         this.app.use("/reports", reportRouter)
         this.app.use("/events", eventRouter)
+        this.app.use("/smart-task-conversations", smartTaskConversationRouter)
         this.app.use((_req: Request, res: Response) => res.status(404).json({ success: false, message: 'Not found' }))
     }
 
