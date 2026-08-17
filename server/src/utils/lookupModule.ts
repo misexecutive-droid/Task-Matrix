@@ -45,7 +45,7 @@ export const createLookupRouter = (LookupModel: Model<any>) => {
     // have the "ADMIN" role. `router.use(...)` applies this middleware to all routes
     // defined after it in this router (POST, PATCH, DELETE below), so only admins can
     // create, edit, or delete lookup entries - regular users can only view them (see GET above).
-    router.use(authenticate, requireRole("ADMIN"))
+    router.use(authenticate, requireRole("ADMIN", "PC"))
 
 
     // POST / -> create a new lookup item (admin only).

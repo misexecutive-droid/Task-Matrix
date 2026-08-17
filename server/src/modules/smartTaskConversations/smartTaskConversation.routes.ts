@@ -9,4 +9,4 @@ smartTaskConversationRouter.post("/", smartTaskConversationController.create);
 smartTaskConversationRouter.patch("/:id", smartTaskConversationController.patch);
 smartTaskConversationRouter.get("/", smartTaskConversationController.list);
 smartTaskConversationRouter.get("/:id", smartTaskConversationController.getOne);
-smartTaskConversationRouter.delete("/", requireRole("ADMIN"), smartTaskConversationController.deleteAll);
+smartTaskConversationRouter.delete("/", requireRole("ADMIN", "PC"), smartTaskConversationController.deleteAll);

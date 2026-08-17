@@ -7,7 +7,7 @@ import type { AccessTokenPayload } from "../../middleware/auth/auth.js"
 
 // Same rule as completing an item — only the assignee (or an admin) can add evidence photos.
 const assertCanUpload = (user: AccessTokenPayload, item: any) => {
-    if (user.role === "ADMIN") return;
+    if (user.role === "ADMIN" || user.role === "PC") return;
     if (item.assigneeId && String(item.assigneeId) === user.sub) return;
     throw AppError.forbidden("Only the assigned person can upload evidence for this item");
 };

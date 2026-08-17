@@ -9,7 +9,7 @@ import type { CreateTaskCommentInput } from "./taskComment.validation.js"
 // Who can view/post to a task's activity feed — same circle as task attachments (creator,
 // assignee, or Admin): general collaboration context, not gated to one specific role.
 const assertCanComment = (user: AccessTokenPayload, task: any) => {
-    if (user.role === "ADMIN") return;
+    if (user.role === "ADMIN" || user.role === "PC") return;
     if (String(task.userId) === user.sub) return;
     if (task.assigneeId && String(task.assigneeId) === user.sub) return;
     if ((task.additionalAssigneeIds ?? []).some((id: any) => String(id) === user.sub)) return;

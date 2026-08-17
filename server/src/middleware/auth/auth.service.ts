@@ -190,10 +190,14 @@ export const authService = {
     });
 
     const resetLink = `${env.CLIENT_URL}/reset-password?token=${rawToken}`;
-    // Always logged server-side regardless of whether the email actually sends (dev convenience,
-    // and a fallback if SMTP is ever misconfigured) - see config/mailer.ts for the send itself.
+    // The raw link is a live account-takeover credential (whoever has it can reset this user's
+    // password), so it's only ever logged outside production, purely as a local-dev convenience
+    // for testing the flow without a working SMTP setup. Production logs just the fact that a
+    // reset was requested, never the token itself — see config/mailer.ts for the actual send.
     console.log(`[auth] Password reset requested for ${user.email}`);
-    console.log(`[auth] Reset link: ${resetLink}`);
+    if (env.NODE_ENV !== 'production') {
+      console.log(`[auth] Reset link: ${resetLink}`);
+    }
 
     await sendMail({
       to: user.email,

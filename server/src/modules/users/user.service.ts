@@ -4,10 +4,13 @@ import { auditService } from "../audit/audit.service.js";
 import { AccessTokenPayload } from "../../middleware/auth/auth.js";
 import type { CreateUserInput, UpdateUserInput } from "./user.validation.js";
 
-const requireEntity = <T>(entity: T | null, message: string = 'User not found'): T => {
+// An assertion function (not a "return NonNullable<T>" helper) because generic return-type
+// inference collapses to `never` against Mongoose's actual findById*/findByIdAndUpdate/Delete
+// return types here — asserting on the original expression's declared type narrows it via normal
+// control-flow analysis instead, which Mongoose's types don't fight.
+function assertFound<T>(entity: T | null, message: string = 'User not found'): asserts entity is T {
     if (!entity) throw AppError.notFound(message);
-    return entity;
-};
+}
 
 const requireUnique = <T>(entity: T | null, message: string): void => {
     if (entity) throw AppError.conflict(message);
@@ -19,7 +22,9 @@ export const userService = {
     },
 
     async getById(id: string) {
-        return requireEntity(await User.findById(id));
+        const user = await User.findById(id);
+        assertFound(user);
+        return user;
     },
 
     async create(input: CreateUserInput, actorId: string) {
@@ -40,8 +45,10 @@ export const userService = {
     },
 
     async update(id: string, input: UpdateUserInput, actorId: string) {
-        const before = requireEntity(await User.findById(id));
-        const user = requireEntity(await User.findByIdAndUpdate(id, input, { new: true, runValidators: true }));
+        const before = await User.findById(id);
+        assertFound(before);
+        const user = await User.findByIdAndUpdate(id, input, { new: true, runValidators: true });
+        assertFound(user);
 
         await auditService.record({
             entityType: "User",
@@ -56,7 +63,8 @@ export const userService = {
     },
 
     async remove(id: string, actorId: string) {
-        const user = requireEntity(await User.findByIdAndDelete(id));
+        const user = await User.findByIdAndDelete(id);
+        assertFound(user);
 
         await auditService.record({
             entityType: "User",

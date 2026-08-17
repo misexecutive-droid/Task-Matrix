@@ -10,17 +10,17 @@ export const ticketRouter = Router();
 
 ticketRouter.use(authenticate);
 ticketRouter.get('/', ticketController.list);
-ticketRouter.get('/reports/tat', requireRole('ADMIN'), ticketController.tatReport); // NEW — see Part B
+ticketRouter.get('/reports/tat', requireRole('ADMIN', 'PC'), ticketController.tatReport); // NEW — see Part B
 ticketRouter.get('/:id', ticketController.getOne);
 
 ticketRouter.post('/', ticketController.create);
 ticketRouter.patch('/:id', ticketController.update);
 ticketRouter.post('/:id/status-updates', ticketAttachmentUpload, ticketController.addStatusUpdate);
 ticketRouter.patch('/:id/verify', requireRole('PC', 'ADMIN'), ticketController.verify);
-ticketRouter.delete('/:id', requireRole('ADMIN'), ticketController.remove);
+ticketRouter.delete('/:id', requireRole('ADMIN', 'PC'), ticketController.remove);
 
-ticketRouter.post('/:ticketId/checklists', requireRole('ADMIN'), checklistController.addToTicket);
-ticketRouter.post('/:ticketId/checklists/from-template/:templateId', requireRole('ADMIN'), checklistController.addFromTemplateToTicket);
+ticketRouter.post('/:ticketId/checklists', requireRole('ADMIN', 'PC'), checklistController.addToTicket);
+ticketRouter.post('/:ticketId/checklists/from-template/:templateId', requireRole('ADMIN', 'PC'), checklistController.addFromTemplateToTicket);
 
 ticketRouter.post('/:ticketId/attachments', ticketAttachmentUpload, ticketAttachmentController.upload);
 

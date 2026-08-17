@@ -19,8 +19,8 @@ import type { Response } from "express";
 // };
 
 export const streamXlsx = async (
-    res : Response, 
-    rows : AsyncIterator<Record<string,unknown>>,
+    res : Response,
+    rows : AsyncIterable<Record<string,unknown>>,
     columns : CsvColumn[],
     sheetName = "Report",
 ) : Promise<void> => {

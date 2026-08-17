@@ -5,8 +5,8 @@ import { asyncHandler } from "../../utils/asyncHandler.js"
 
 export const ticketController = {
     list : asyncHandler( async ( req : Request , res : Response) => {
-        const { page , limit, status } = paginatioinSchema.parse(req.query);
-        const result = await ticketService.list(req.user!, page , limit, status)
+        const { page , limit, status, assigneeId } = paginatioinSchema.parse(req.query);
+        const result = await ticketService.list(req.user!, page , limit, status, assigneeId)
         res.json({ success : true , ...result})
     }),
 

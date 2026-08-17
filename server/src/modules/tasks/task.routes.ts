@@ -18,11 +18,11 @@ taskRouter.patch("/:id" , taskController.update)
 taskRouter.patch("/:id/verify", requireRole("PC", "ADMIN"), taskController.verify) 
 taskRouter.delete("/:id" , requireRole("ADMIN", "PC"),taskController.remove)
 
-taskRouter.post("/", requireRole("ADMIN"), taskController.create)
+taskRouter.post("/", requireRole("ADMIN", "PC"), taskController.create)
 
 
-taskRouter.post("/:taskId/checklists", requireRole("ADMIN"), taskChecklistController.createForTask) // POST /tasks/:taskId/checklists -> create a checklist under this task
-taskRouter.post("/:taskId/checklists/from-template/:templateId", requireRole("ADMIN"), taskChecklistController.createFromTemplate)
+taskRouter.post("/:taskId/checklists", requireRole("ADMIN", "PC"), taskChecklistController.createForTask) // POST /tasks/:taskId/checklists -> create a checklist under this task
+taskRouter.post("/:taskId/checklists/from-template/:templateId", requireRole("ADMIN", "PC"), taskChecklistController.createFromTemplate)
 
 taskRouter.post("/:id/attachments", taskAttachmentUpload, taskAttachmentController.upload) // POST /tasks/:id/attachments -> attach general files (pdf/csv/image/video) to this task
 

@@ -11,7 +11,7 @@ import type { UpdateChecklistInstanceItemSubmissionAccessoriesInput, UpdateCheck
 // specific people, not a group) — tighter than the item-level "any instance assignee" check used
 // for STANDARD items.
 export const assertCanAccess = (submission: any, user: AccessTokenPayload) => {
-    if (user.role === "ADMIN") return
+    if (user.role === "ADMIN" || user.role === "PC") return
     if (submission.userId.toString() === user.sub) return
     throw AppError.forbidden("Only the named auditor can act on this submission")
 }

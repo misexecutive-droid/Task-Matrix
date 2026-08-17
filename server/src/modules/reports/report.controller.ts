@@ -13,7 +13,7 @@ const CONTENT_TYPES: Record<"csv" | "xlsx", string> = {
 
 type ExportHandler = (
     res: Response,
-    rows: AsyncIterator<Record<string, unknown>>,
+    rows: AsyncIterable<Record<string, unknown>>,
     columns: CsvColumn[],
     sheetName?: string
 ) => Promise<void>;

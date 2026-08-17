@@ -18,7 +18,7 @@ const populateChecklist = (query: any) =>
 // a different permission than "who can complete an item" below — managing the work is not the
 // same thing as doing the work.
 const assertCanManage = (user: AccessTokenPayload, task: any) => {
-    if (user.role === "ADMIN") return;
+    if (user.role === "ADMIN" || user.role === "PC") return;
     if (String(task.userId) === user.sub) return;
     throw AppError.forbidden("Only the task owner can manage its checklists");
 };
@@ -27,7 +27,7 @@ const assertCanManage = (user: AccessTokenPayload, task: any) => {
 // assignee, or an admin. Not the task owner automatically (unless they're also the assignee) —
 // completion is about who actually did the work.
 const assertCanComplete = (user: AccessTokenPayload, item: any) => {
-    if (user.role === "ADMIN") return;
+    if (user.role === "ADMIN" || user.role === "PC") return;
     if (item.assigneeId && String(item.assigneeId) === user.sub) return;
     throw AppError.forbidden("Only the assigned person can complete this item");
 };

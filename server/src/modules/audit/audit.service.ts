@@ -38,10 +38,7 @@ export const auditService = {
     // Fetches the full audit history for one entity, newest first - e.g. "show me everything that ever happened to Ticket #123"
     async listForEntity(entityType : string , entityId : string){
         return AuditLog.find({ entityType , entityId}) // find all logs matching this entity type + id
-        .sort({ createAt : -1}) // sort so the newest entries come first
-        // note: this looks like it might not do what's intended - the AuditLog schema uses { timestamps: true },
-        // which creates a field called "createdAt" (with a "d"), not "createAt". Sorting on a field that
-        // doesn't exist likely means this sort has no real effect and results come back in insertion/default order.
+        .sort({ createdAt : -1}) // sort so the newest entries come first
         .populate({ path : "actorId" , select : "email firstName role"}); // replace the raw actorId with the actual user's email/firstName/role, so the frontend doesn't have to look it up separately
     },
 }

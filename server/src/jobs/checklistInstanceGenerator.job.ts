@@ -74,10 +74,10 @@ const generateInstanceForStore = async (definition: HydratedDocument<any>, store
             const submissionDrafts = items.flatMap((item, index) => {
                 if (item.itemType !== "AUDIT" || !item.auditUserIds?.length) return []
                 const instanceItem = instanceItems[index]
-                return item.auditUserIds.map(userId => ({
+                return item.auditUserIds.map((userId: string) => ({
                     itemId: instanceItem._id,
                     userId,
-                    accessories: (item.accessories ?? []).map(name => ({ name, checked: false })),
+                    accessories: (item.accessories ?? []).map((name: string) => ({ name, checked: false })),
                 }))
             })
             if (submissionDrafts.length) {

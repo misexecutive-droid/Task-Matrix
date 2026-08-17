@@ -7,7 +7,7 @@ import { authenticate, requireRole } from "../../middleware/auth/auth.js"
 // (see modules/checklistInstances), never the definitions directly.
 export const checklistDefinitionRouter = Router()
 checklistDefinitionRouter.use(authenticate)
-checklistDefinitionRouter.use(requireRole("ADMIN"))
+checklistDefinitionRouter.use(requireRole("ADMIN", "PC"))
 checklistDefinitionRouter.get("/", checklistDefinitionController.list)
 checklistDefinitionRouter.get("/:id", checklistDefinitionController.getOne)
 checklistDefinitionRouter.post("/", checklistDefinitionController.create)

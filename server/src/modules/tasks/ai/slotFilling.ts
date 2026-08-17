@@ -57,17 +57,35 @@ export function resolveDueDateLocally(answer: string, reference: Date = new Date
         return base
     }
 
-    const weekdayIndex = WEEKDAYS.findIndex((w) => containsFuzzyWord(lower, w))
-    if (weekdayIndex !== -1) {
-        base.setDate(base.getDate() + daysUntilWeekday(base.getDay(), weekdayIndex))
-        return base
-    }
-
-    if (containsFuzzyWord(lower, "tomorrow") || lower.includes("kal")) {
+    // Exact keyword matches are checked for EVERYTHING (today/tomorrow/every weekday) before any
+    // fuzzy typo-tolerance is attempted for anything — "today" and "monday" (edit distance 2) sit
+    // within containsFuzzyWord's default tolerance, so fuzzy-matching one before checking whether
+    // the OTHER was typed exactly would silently swap the resolved day. Mirrors the same fix in
+    // client/src/features/tasks/SmartTaskModal.tsx's resolveDueDateLocally.
+    if (/\btomorrow\b/.test(lower) || lower.includes("kal")) {
         base.setDate(base.getDate() + 1)
         return base
     }
-    if (containsFuzzyWord(lower, "today") || lower.includes("aaj")) {
+    if (/\btoday\b/.test(lower) || lower.includes("aaj")) {
+        return base
+    }
+    const exactWeekdayIndex = WEEKDAYS.findIndex((w) => new RegExp(`\\b${w}\\b`).test(lower))
+    if (exactWeekdayIndex !== -1) {
+        base.setDate(base.getDate() + daysUntilWeekday(base.getDay(), exactWeekdayIndex))
+        return base
+    }
+
+    // Nothing matched exactly — only now fall back to typo tolerance.
+    if (containsFuzzyWord(lower, "tomorrow")) {
+        base.setDate(base.getDate() + 1)
+        return base
+    }
+    if (containsFuzzyWord(lower, "today")) {
+        return base
+    }
+    const fuzzyWeekdayIndex = WEEKDAYS.findIndex((w) => containsFuzzyWord(lower, w))
+    if (fuzzyWeekdayIndex !== -1) {
+        base.setDate(base.getDate() + daysUntilWeekday(base.getDay(), fuzzyWeekdayIndex))
         return base
     }
 

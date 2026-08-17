@@ -6,7 +6,7 @@ import { AppError } from "../../utils/AppError.js";
 import type { AccessTokenPayload } from "../../middleware/auth/auth.js";
 
 const assertCanAttach = (user: AccessTokenPayload, ticket: any) => {
-    if (user.role === "ADMIN" || user.role === "MANAGER") return;
+    if (user.role === "ADMIN" || user.role === "PC" || user.role === "MANAGER") return;
     if (String(ticket.userId) === user.sub) return;
     if (ticket.assigneeId && String(ticket.assigneeId) === user.sub) return;
     throw AppError.forbidden("You don't have access to this ticket's attachments");

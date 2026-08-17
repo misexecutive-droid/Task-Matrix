@@ -42,7 +42,7 @@ export const taskController = {
         const query = complianceReportQuerySchema.parse(req.query);
         const isPrivileged = req.user!.role === "ADMIN" || req.user!.role === "PC";
         const departmentId = isPrivileged ? query.departmentId : undefined;
-        const userId = isPrivileged ? undefined : req.user!.sub;
+        const userId = isPrivileged ? query.userId : req.user!.sub;
         const data = await taskService.complianceReport(query.groupBy, departmentId, query.from, query.to, userId);
         res.json({ success : true, data })
     }),

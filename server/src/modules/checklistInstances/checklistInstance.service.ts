@@ -38,7 +38,7 @@ const filterByStatus = (instances: any[], status?: InstanceStatusFilter) => {
 
 const assertCanAccess = (instance: any, user: AccessTokenPayload) => {
     const isAssignee = instance.assigneeIds.some((id: any) => id.toString() === user.sub)
-    if (user.role !== "ADMIN" && !isAssignee) throw AppError.forbidden()
+    if (user.role !== "ADMIN" && user.role !== "PC" && !isAssignee) throw AppError.forbidden()
 }
 
 // Same rule as checklist.service.ts's completeItem — never trust the client's isDone, always
@@ -299,12 +299,11 @@ export const syncVerificationStatus = async (instance: any) => {
     }
 }
 
-// PC verification is store-scoped here (unlike Ticket's cross-department PC) — a PC only
-// verifies checklist instances within their own store.
-
+// PC has the same org-wide verification access as ADMIN — same parity as everywhere else in
+// the app (tickets, tasks) — so a PC user isn't limited to their own store.
 const CAN_VERIFY_BY_ROLE: Partial<Record<Role, (instance: any, user: AccessTokenPayload) => boolean>> = {
     ADMIN: () => true,
-    PC: (instance, user) => Boolean(user.storeId) && instance.storeId?.toString() === user.storeId,
+    PC: () => true,
 }
 
 const assertCanVerify = (instance: any, user: AccessTokenPayload) => {
@@ -377,14 +376,9 @@ if (values.textValue !== undefined) item.booleanAnswer = values.booleanAnswer as
         return item
     },
 
-    // GET /checklist-instances/pending-verification — PC sees only their own store's queue,
-    // ADMIN sees every store's.
-    async listPendingVerification(user: AccessTokenPayload) {
+    // GET /checklist-instances/pending-verification — PC sees every store's queue, same as ADMIN.
+    async listPendingVerification(_user: AccessTokenPayload) {
         const query: Record<string, unknown> = { verificationStatus: "PENDING" }
-        if (user.role === "PC") {
-            if (!user.storeId) return []
-            query.storeId = user.storeId
-        }
         return populateInstance(ChecklistInstance.find(query).sort({ periodStart: -1 }))
     },
 

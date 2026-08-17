@@ -34,13 +34,9 @@ const populateTicket = (query: any) =>
 
 
 const visibilityFilter = (user: AccessTokenPayload) => {
-  if (user.role === "ADMIN") return {}
-
-  if (user.role === "PC") {
-    const or: Record<string, unknown>[] = [{ userId: user.sub }, { assigneeId: user.sub }];
-    if (user.departmentId) or.push({ departmentId: user.departmentId });
-    return { $or: or }
-  }
+  // PC has the same org-wide access as ADMIN — same as tasks (see task.service.ts's own
+  // visiblityFilter), so a PC user isn't blocked from other departments' tickets.
+  if (user.role === "ADMIN" || user.role === "PC") return {}
 
   if (user.role === "MANAGER") {
     const or: Record<string, unknown>[] = [{ userId: user.sub }];
@@ -64,7 +60,7 @@ const isSameDeptOrStore = (user: AccessTokenPayload, ticket: any) => {
 }
 
 const assertCanMutate = (user: AccessTokenPayload, ticket: any) => {
-  if (user.role === "ADMIN") return;
+  if (user.role === "ADMIN" || user.role === "PC") return;
   if (user.role === "AGENT" || user.role === "USER") {
 
     const ownTicket = String(ticket.assigneeId) === user.sub || String(ticket.userId) === user.sub;
@@ -82,9 +78,12 @@ const assertCanMutate = (user: AccessTokenPayload, ticket: any) => {
 };
 
 export const ticketService = {
-  async list(user: AccessTokenPayload, page: number, limit: number, status?: string) {
+  async list(user: AccessTokenPayload, page: number, limit: number, status?: string, assigneeId?: string) {
     const filter: Record<string, unknown> = visibilityFilter(user);
     if (status) filter.status = status;
+    if (assigneeId && (user.role === "ADMIN" || user.role === "PC")) {
+      filter.$or = [{ userId: assigneeId }, { assigneeId }];
+    }
     const [data, total] = await Promise.all([
       populateTicket(Ticket.find(filter).sort({ createdAt: -1 }).skip((page - 1) * limit).limit(limit)),
       Ticket.countDocuments(filter),
@@ -99,7 +98,7 @@ export const ticketService = {
     const ticket = await populateTicket(Ticket.findById(id))
 
     if (!ticket) throw AppError.notFound("Ticket not found");
-    if (user.role !== "ADMIN") {
+    if (user.role !== "ADMIN" && user.role !== "PC") {
       const visible = await Ticket.exists({ _id: id, ...visibilityFilter(user) })
 
       if (!visible) throw AppError.forbidden();

@@ -44,9 +44,19 @@ export const listTasksQuerySchema = z.object({
     limit : z.coerce.number().int().min(1).max(200).optional().default(200),
 })
 
+export const parseTaskTextSchema = z.object({
+    // Smart Add's free-form input (typed or transcribed) — capped well above any real message so
+    // a malicious caller can't force extractTaskFromText to send a huge payload to the AI provider.
+    text : z.string().min(1, "text is required").max(4000),
+})
+
 export const complianceReportQuerySchema = z.object({
     groupBy : z.enum(["hour", "day", "week", "month", "year"]).default("day"),
     departmentId : objectId.optional(),
+    // Lets an ADMIN/PC drill into one specific person's checklist completion (e.g. the Team
+    // Overview page) — ignored for a non-privileged caller, who's always scoped to themselves
+    // regardless of what's passed here (see task.controller.ts).
+    userId : objectId.optional(),
     from : z.string().optional(),
     to : z.string().optional()
 })
@@ -72,3 +82,4 @@ export type UpdateTaskInput = z.infer<typeof updateTaskSchema>;
 export type ComplianceReportQuery = z.infer<typeof complianceReportQuerySchema>;
 export type VerifyTaskInput = z.infer<typeof verifyTaskSchema>;
 export type ConfirmSmartTaskInput = z.infer<typeof confirmSmartTaskSchema>;
+export type ParseTaskTextInput = z.infer<typeof parseTaskTextSchema>;

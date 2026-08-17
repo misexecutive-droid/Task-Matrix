@@ -10,7 +10,7 @@ import type { AccessTokenPayload } from "../../middleware/auth/auth.js";
 // unlike the Ticket/Task side, "can upload" is checked against the whole instance's assigneeIds,
 // not a single item.assigneeId.
 const assertCanUpload = async (user: AccessTokenPayload, item: any) => {
-    if (user.role === "ADMIN") return;
+    if (user.role === "ADMIN" || user.role === "PC") return;
     const instance = await ChecklistInstance.findById(item.instanceId);
     if (!instance) throw AppError.notFound("Checklist instance not found");
     if (instance.assigneeIds.some((id: any) => id.toString() === user.sub)) return;

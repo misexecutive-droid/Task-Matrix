@@ -22,7 +22,7 @@ const populateChecklist = (query: any) =>
 // change photo requirements, reassign items: the ticket's raiser, or an admin. Same split as
 // the Task side (taskChecklist.service.ts) — managing the work isn't the same as doing it.
 const assertCanManage = (user: AccessTokenPayload, ticket: any) => {
-  if (user.role === 'ADMIN') return;
+  if (user.role === 'ADMIN' || user.role === 'PC') return;
   if (String(ticket.userId) === user.sub) return;
   throw AppError.forbidden('Only the ticket owner can manage its checklists');
 };
@@ -30,7 +30,7 @@ const assertCanManage = (user: AccessTokenPayload, ticket: any) => {
 // Who's allowed to mark a specific item complete, or upload photos toward it — the item's
 // assignee, or an admin.
 const assertCanComplete = (user: AccessTokenPayload, item: any) => {
-  if (user.role === 'ADMIN') return;
+  if (user.role === 'ADMIN' || user.role === 'PC') return;
   if (item.assigneeId && String(item.assigneeId) === user.sub) return;
   throw AppError.forbidden('Only the assigned person can complete this item');
 };

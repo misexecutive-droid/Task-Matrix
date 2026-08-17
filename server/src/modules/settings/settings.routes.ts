@@ -6,5 +6,5 @@ export const settingsRouter = Router()
 
 settingsRouter.use(authenticate)
 
-settingsRouter.get("/", requireRole("ADMIN"), settingsController.get)
-settingsRouter.patch("/", requireRole("ADMIN"), settingsController.update)
+settingsRouter.get("/", requireRole("ADMIN", "PC"), settingsController.get)
+settingsRouter.patch("/", requireRole("ADMIN", "PC"), settingsController.update)

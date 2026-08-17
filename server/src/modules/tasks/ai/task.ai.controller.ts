@@ -1,6 +1,6 @@
 import type { Request, Response } from "express";
 import { extractTaskFromText, resolveAssignee, resolveDueDate, priorityForCreatorRank } from "./providers/task.ai.service.js";
-import { confirmSmartTaskSchema } from "../task.validation.js";
+import { confirmSmartTaskSchema, parseTaskTextSchema } from "../task.validation.js";
 import { taskService } from "../task.service.js";
 import { asyncHandler } from "../../../utils/asyncHandler.js";
 import { User } from "../../../models/User.js";
@@ -9,10 +9,7 @@ import { AppError } from "../../../utils/AppError.js";
 
 export const taskAiController = {
     parse : asyncHandler ( async (req : Request , res : Response) => {
-        const { text } = req.body as { text : string};
-        if(!text?.trim()){
-            throw AppError.badRequest("text is required")
-        }
+        const { text } = parseTaskTextSchema.parse(req.body);
 
         const referenceDate = new Date();
         const extraction = await extractTaskFromText(text, referenceDate)
