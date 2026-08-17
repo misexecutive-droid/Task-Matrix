@@ -1,5 +1,5 @@
 import { Link } from 'react-router';
-import { CalendarClock, ArrowRight } from 'lucide-react';
+import { CalendarClock } from 'lucide-react';
 import { Skeleton } from '../../components';
 import { EVENT_TYPE_COLORS, EVENT_TYPE_ICON_TINTS, EVENT_TYPE_LABELS, EVENT_TYPE_ICONS } from '../events/eventDisplay';
 import type { Event } from '../../api/events';
@@ -10,15 +10,15 @@ interface UpcomingEventsProps {
 }
 
 export const UpcomingEvents = ({ events, isPending }: UpcomingEventsProps) => (
-  <div id="upcoming-events" className="relative group rounded-2xl border border-border/60 bg-surface flex flex-col shadow-sm hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300 overflow-hidden">
-    
+  <div id="upcoming-events" className="relative group rounded-xl border border-border/60 bg-surface flex flex-col hover:border-primary-300 transition-colors duration-300 overflow-hidden">
+
     {/* Decorative Background Glow */}
     <div className="absolute -top-20 -right-20 w-40 h-40 bg-primary/10 rounded-full blur-3xl pointer-events-none transition-opacity group-hover:opacity-100 opacity-50" />
 
     {/* Header */}
     <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4 px-6 py-5 border-b border-border/40 bg-surface/50 backdrop-blur-sm">
       <div className="flex items-center gap-3">
-        <div className="p-2 rounded-xl border border-border/50 bg-surface-hover flex items-center justify-center shadow-sm">
+        <div className="p-2 rounded-lg border border-border/50 bg-surface-hover flex items-center justify-center">
           <CalendarClock size={18} className="text-primary-500" />
         </div>
         <div>
@@ -26,12 +26,12 @@ export const UpcomingEvents = ({ events, isPending }: UpcomingEventsProps) => (
           <p className="text-xs font-display text-text-muted mt-0.5">Deadlines, announcements, and broadcasts</p>
         </div>
       </div>
-      
-      <Link 
-        to="/events" 
-        className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-display font-medium text-text-muted hover:text-primary-500 hover:bg-primary-500/10 transition-all shrink-0"
+
+      <Link
+        to="/events"
+        className="px-3 py-1.5 rounded-md text-xs font-display font-medium text-text-muted hover:text-primary-600 hover:bg-surface-hover transition-colors shrink-0"
       >
-        View all <ArrowRight size={14} />
+        View all
       </Link>
     </div>
 
@@ -41,7 +41,7 @@ export const UpcomingEvents = ({ events, isPending }: UpcomingEventsProps) => (
         // Skeleton State
         <div className="flex flex-col gap-1">
           {Array.from({ length: 3 }).map((_, i) => (
-            <div key={i} className="flex items-center gap-4 px-4 py-3 rounded-xl">
+            <div key={i} className="flex items-center gap-4 px-4 py-3 rounded-lg">
               <Skeleton className="size-8 rounded-lg shrink-0" />
               <div className="flex flex-col gap-2 flex-1">
                 <Skeleton className="h-4 w-3/4 max-w-sm rounded" />
@@ -67,7 +67,7 @@ export const UpcomingEvents = ({ events, isPending }: UpcomingEventsProps) => (
               <Link
                 key={e.id}
                 to="/events"
-                className="group/item flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 px-4 py-3 rounded-xl hover:bg-surface-hover/60 transition-colors"
+                className="group/item flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 px-4 py-3 rounded-lg hover:bg-surface-hover/60 transition-colors"
               >
                 <div className="flex items-center gap-3 flex-1 min-w-0">
                   {/* Icon */}
@@ -83,7 +83,7 @@ export const UpcomingEvents = ({ events, isPending }: UpcomingEventsProps) => (
 
                 {/* Badges and Metadata */}
                 <div className="flex items-center gap-4 pl-11 sm:pl-0 shrink-0">
-                  <span className={`inline-flex items-center justify-center text-[11px] font-display font-semibold px-2.5 py-1 rounded-full uppercase tracking-wider border border-current/10 shadow-sm ${EVENT_TYPE_COLORS[e.type]}`}>
+                  <span className={`inline-flex items-center justify-center text-[11px] font-display font-semibold px-2.5 py-1 rounded-full ${EVENT_TYPE_COLORS[e.type]}`}>
                     {EVENT_TYPE_LABELS[e.type]}
                   </span>
                   

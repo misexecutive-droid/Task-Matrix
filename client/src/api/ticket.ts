@@ -168,9 +168,9 @@ export type UpdateChecklistItemPayload = {
 };
 
 export const ticketApi = {
-  getAll: (page = 1, limit = 20, status?: TicketStatus) =>
+  getAll: (page = 1, limit = 20, status?: TicketStatus, assigneeId?: string) =>
     apiFetch<PaginatedResponse<Ticket>>(
-      `/tickets?page=${page}&limit=${limit}${status ? `&status=${status}` : ''}`,
+      `/tickets?page=${page}&limit=${limit}${status ? `&status=${status}` : ''}${assigneeId ? `&assigneeId=${assigneeId}` : ''}`,
     ),
 
   getOne: (id: string) =>

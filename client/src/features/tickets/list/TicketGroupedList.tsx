@@ -39,16 +39,12 @@ const GroupHeader = ({ label, groupBy, ticketCount, stats }: GroupHeaderProps) =
 
       <div className="flex items-center gap-2">
         {stats.total > 0 && (
-          <span className="text-[11px] font-display px-2 py-0.5 rounded-full bg-primary-500/10 text-primary-600 dark:text-primary-300 border border-primary-500/20">
-            <span className="font-mono tabular-nums">
-              {stats.done}/{stats.total}
-            </span>{' '}
-            checklist items done
+          <span className="text-[11px] font-display font-medium px-2 py-0.5 rounded bg-primary-500/10 text-primary-600 dark:text-primary-300">
+            <span className="tabular-nums">{stats.done}/{stats.total}</span> checklist done
           </span>
         )}
-        <span className="text-[11px] font-display px-2 py-0.5 rounded-full bg-surface-muted text-text-muted border border-border/50">
-          <span className="font-mono tabular-nums">{ticketCount}</span>{' '}
-          {ticketCount === 1 ? 'ticket' : 'tickets'}
+        <span className="text-[11px] font-display font-medium px-2 py-0.5 rounded bg-surface-hover text-text-muted">
+          <span className="tabular-nums">{ticketCount}</span> {ticketCount === 1 ? 'ticket' : 'tickets'}
         </span>
       </div>
     </div>
@@ -61,14 +57,13 @@ export const TicketGroupedList = ({
   onSelectTicket,
   departmentNames,
 }: TicketGroupedListProps) => {
-  const groupOffsets = useMemo(() => {
-    let count = 0;
-    return groups.map((group) => {
-      const offset = count;
-      count += group.tickets.length;
-      return offset;
-    });
-  }, [groups]);
+  const groupOffsets = useMemo(() => (
+    groups.reduce<{ offsets: number[]; count: number }>((acc, group) => {
+      acc.offsets.push(acc.count);
+      acc.count += group.tickets.length;
+      return acc;
+    }, { offsets: [], count: 0 }).offsets
+  ), [groups]);
 
   return (
     <div className="flex flex-col gap-6">
@@ -85,7 +80,7 @@ export const TicketGroupedList = ({
               stats={stats}
             />
 
-            <div className="flex flex-col gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
               {group.tickets.map((ticket, ticketIdx) => (
                 <TicketCard
                   key={ticket.id}

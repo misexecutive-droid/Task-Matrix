@@ -148,10 +148,12 @@ export const taskApi = {
     delete: (id: string) =>
         apiFetch<ApiResponse<{ deleted: boolean }>>(`/tasks/${id}`, { method: 'DELETE' }),
 
-    getComplianceReport: (groupBy: 'hour' | 'day' | 'week' | 'month' | 'year' = 'month', from?: string, to?: string) => {
+    getComplianceReport: (groupBy: 'hour' | 'day' | 'week' | 'month' | 'year' = 'month', from?: string, to?: string, departmentId?: string, userId?: string) => {
         const params = new URLSearchParams({ groupBy });
         if (from) params.set('from', from);
         if (to) params.set('to', to);
+        if (departmentId) params.set('departmentId', departmentId);
+        if (userId) params.set('userId', userId);
         return apiFetch<ApiResponse<ComplianceReportRow[]>>(`/tasks/reports/compliance?${params.toString()}`);
     },
 

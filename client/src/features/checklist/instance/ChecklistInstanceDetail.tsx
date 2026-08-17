@@ -108,7 +108,8 @@ export const ChecklistInstanceDetail = () => {
   const total = instance.items.length;
   const done = instance.items.filter(i => i.isDone).length;
   const progress = total ? Math.round((done / total) * 100) : 0;
-  const canWork = user?.role === 'ADMIN' || (!!user && instance.assigneeIds.includes(user.id));
+  // PC has full parity with ADMIN throughout this app.
+  const canWork = user?.role === 'ADMIN' || user?.role === 'PC' || (!!user && instance.assigneeIds.includes(user.id));
   const isLocked = instance.verificationStatus === 'APPROVED';
 
   return (

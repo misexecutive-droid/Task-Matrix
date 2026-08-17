@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useTicketsQuery, useDepartmentsQuery } from '../tickets/hook';
 import { useTasksQuery, useComplianceReportQuery } from '../tasks/hook';
@@ -6,20 +6,23 @@ import { useUsersQuery } from '../admin/hook';
 import { useUpcomingEventsQuery } from '../events/hook';
 import { DashboardHeader } from './DashboardHeader';
 import { DashboardOverview } from './DashboardOverview';
+import { MonthlyTargetCard, type FooterStat } from './MonthlyTargetCard';
 import { DepartmentBreakdown, type DepartmentRow } from './DepartmentBreakdown';
 import { UserBreakdown, type UserRow } from './UserBreakdown';
 import { RecentActivity } from './RecentActivity';
 import { UpcomingEvents } from './UpcomingEvents';
-import { type FeedItem, lastMonths, countInMonth, pointDelta } from './dashboardDisplay';
+import { type FeedItem, type CompliancePeriod, PERIOD_LABEL, bucketKeyFor, shiftPeriod, pointDelta } from './dashboardDisplay';
 
 export const HomePage = () => {
   const { user } = useAuth();
-  const isAdmin = user?.role === 'ADMIN';
+  // PC has the same org-wide dashboard access as ADMIN throughout this app.
+  const hasFullAccess = user?.role === 'ADMIN' || user?.role === 'PC';
+  const [period, setPeriod] = useState<CompliancePeriod>('month');
   const { data: ticketPage, isPending: ticketsPending } = useTicketsQuery(1, 100);
   const { data: tasks, isPending: tasksPending } = useTasksQuery();
   const { data: departments } = useDepartmentsQuery();
-  const { data: users } = useUsersQuery(isAdmin);
-  const { data: complianceRows } = useComplianceReportQuery('month');
+  const { data: users } = useUsersQuery(hasFullAccess);
+  const { data: complianceRows } = useComplianceReportQuery(period);
   const { data: upcomingEvents, isPending: eventsPending } = useUpcomingEventsQuery(5);
 
   const tickets = ticketPage?.data ?? [];
@@ -38,6 +41,7 @@ export const HomePage = () => {
     .slice(0, 6);
 
   const departmentRows: DepartmentRow[] = (departments ?? []).map(dept => ({
+    id: dept.id,
     name: dept.name,
     openTickets: tickets.filter(t => t.departmentId === dept.id && t.status !== 'CLOSED').length,
     openTasks: (tasks ?? []).filter(t => t.departmentId === dept.id && t.status !== 'done').length,
@@ -56,23 +60,14 @@ export const HomePage = () => {
     }))
     .filter(row => row.openTickets + row.openTasks > 0);
 
-  const ticketDates = tickets.map(t => t.createdAt);
-  const taskDates = (tasks ?? []).map(t => t.createdAt);
-  const [prevMonth, curMonth] = lastMonths(2);
-
-  const recentMonths = lastMonths(6);
-  const monthlyData = recentMonths.map(({ year, month, label }) => ({
-    month: label,
-    value: countInMonth(ticketDates, year, month) + countInMonth(taskDates, year, month),
-  }));
-
-  // Monthly Target gauge — checklist completion rate for the current month, from
+  // Target gauge — checklist completion rate for the selected period, from
   // /tasks/reports/compliance (role-scoped server-side: own tasks only for non-admin/PC).
-  // Matched by exact "YYYY-MM" bucket key rather than array position, so a month with zero
-  // checklist activity reads as "no data" instead of silently picking up an older bucket.
-  const monthBucketKey = (year: number, month: number) => `${year}-${String(month + 1).padStart(2, '0')}`;
-  const currentBucket = complianceRows?.find(r => r.bucket === monthBucketKey(curMonth.year, curMonth.month));
-  const previousBucket = complianceRows?.find(r => r.bucket === monthBucketKey(prevMonth.year, prevMonth.month));
+  // Matched by exact bucket key (day/week/month/year, whichever is selected) rather than array
+  // position, so a period with zero checklist activity reads as "no data" instead of silently
+  // picking up an unrelated bucket.
+  const nowDate = useMemo(() => new Date(now), [now]);
+  const currentBucket = complianceRows?.find(r => r.bucket === bucketKeyFor(period, nowDate));
+  const previousBucket = complianceRows?.find(r => r.bucket === bucketKeyFor(period, shiftPeriod(period, nowDate, -1)));
   const targetPercent = Math.round(currentBucket?.completionRate ?? 0);
   const targetChange = pointDelta(currentBucket?.completionRate ?? 0, previousBucket?.completionRate ?? 0);
 
@@ -83,42 +78,70 @@ export const HomePage = () => {
   const prevDone = previousBucket?.doneItems ?? 0;
   const prevPending = prevTotal - prevDone;
 
+  const periodLabel = PERIOD_LABEL[period];
   const targetDescription = totalItems === 0
-    ? "No checklist items recorded yet this month."
-    : `${targetPercent}% of this month's checklist items are complete${
-        previousBucket ? (targetPercent >= (previousBucket.completionRate ?? 0) ? " — ahead of last month's pace." : " — behind last month's pace.") : '.'
+    ? `No checklist items recorded ${periodLabel}.`
+    : `${targetPercent}% of ${periodLabel}'s checklist items are complete${
+        previousBucket ? (targetPercent >= (previousBucket.completionRate ?? 0) ? " — ahead of the previous period's pace." : " — behind the previous period's pace.") : '.'
       }`;
+
+  const targetStats: [FooterStat, FooterStat, FooterStat] = [
+    { label: 'Target', value: String(totalItems), direction: totalItems >= prevTotal ? 'up' : 'down' },
+    { label: 'Resolved', value: String(doneItems), direction: doneItems >= prevDone ? 'up' : 'down' },
+    { label: 'Pending', value: String(pendingItems), direction: pendingItems <= prevPending ? 'up' : 'down' },
+  ];
 
   return (
     <div className="flex flex-col gap-5 w-full animate-in fade-in duration-500 ease-out">
       <DashboardHeader userName={user?.name} />
 
-      <DashboardOverview
-        isPending={isPending}
-        tickets={tickets}
-        tasks={tasks ?? []}
-        monthlyData={monthlyData}
-        targetPercent={targetPercent}
-        targetChange={targetChange}
-        targetDescription={targetDescription}
-        targetStats={[
-          { label: 'Target', value: String(totalItems), direction: totalItems >= prevTotal ? 'up' : 'down' },
-          { label: 'Resolved', value: String(doneItems), direction: doneItems >= prevDone ? 'up' : 'down' },
-          { label: 'Pending', value: String(pendingItems), direction: pendingItems <= prevPending ? 'up' : 'down' },
-        ]}
-      />
+      <DashboardOverview isPending={isPending} tickets={tickets} tasks={tasks ?? []} />
 
-      {isAdmin && !isPending && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <DepartmentBreakdown rows={departmentRows} />
-          <UserBreakdown rows={userRows} />
-        </div>
+      {/* Target pairs with By Department (both half-width) so neither sits alone in an empty
+          row; By User then pairs with Recent Activity below it, matching the same half/half
+          rhythm. Non-admins don't get the department/user breakdowns at all, so Target falls
+          back to full width and Recent Activity keeps its original pairing with Upcoming
+          Events. */}
+      {hasFullAccess && !isPending ? (
+        <>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <MonthlyTargetCard
+              percent={targetPercent}
+              change={targetChange}
+              description={targetDescription}
+              stats={targetStats}
+              period={period}
+              onPeriodChange={setPeriod}
+            />
+            <DepartmentBreakdown rows={departmentRows} />
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <UserBreakdown rows={userRows} />
+            <RecentActivity feed={feed} isPending={isPending} />
+          </div>
+
+          <div className="pb-8">
+            <UpcomingEvents events={upcomingEvents ?? []} isPending={eventsPending} />
+          </div>
+        </>
+      ) : (
+        <>
+          <MonthlyTargetCard
+            percent={targetPercent}
+            change={targetChange}
+            description={targetDescription}
+            stats={targetStats}
+            period={period}
+            onPeriodChange={setPeriod}
+          />
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 pb-8">
+            <RecentActivity feed={feed} isPending={isPending} />
+            <UpcomingEvents events={upcomingEvents ?? []} isPending={eventsPending} />
+          </div>
+        </>
       )}
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 pb-8">
-        <RecentActivity feed={feed} isPending={isPending} />
-        <UpcomingEvents events={upcomingEvents ?? []} isPending={eventsPending} />
-      </div>
     </div>
   );
 };

@@ -13,6 +13,7 @@ import {
   ShieldQuestion,
   CalendarClock,
   ChevronDown,
+  Building2,
 } from 'lucide-react';
 
 interface NavChild {
@@ -110,7 +111,7 @@ export const Sidebar = ({ isOpen, user, logout, onNavigate }: SidebarProps) => {
 
   const navItems: NavItem[] = [
     ...NAV.map((item) => {
-      if (item.label === 'Checklists' && isAdmin) {
+      if (item.label === 'Checklists' && (isAdmin || isPC)) {
         return { ...item, children: [...CHECKLIST_CHILDREN, ...CHECKLIST_ADMIN_CHILDREN] };
       }
       if (item.label === 'Tasks' && (isAdmin || isPC)) {
@@ -121,7 +122,10 @@ export const Sidebar = ({ isOpen, user, logout, onNavigate }: SidebarProps) => {
     ...(user?.role === 'PC' || user?.role === 'ADMIN'
       ? [{ to: '/verify', icon: ShieldQuestion, label: 'Verification Queue' }]
       : []),
-    ...(isAdmin ? [{ to: '/admin/users', icon: ShieldCheck, label: 'Admin' }] : []),
+    // Department -> person -> checklist drill-down — PC has full parity with ADMIN, so both
+    // get it (see App.tsx's AdminRoute, which now admits PC too).
+    ...(isAdmin || isPC ? [{ to: '/team', icon: Building2, label: 'Team Overview' }] : []),
+    ...(isAdmin || isPC ? [{ to: '/admin/users', icon: ShieldCheck, label: 'Admin' }] : []),
   ];
 
   const handleNavClick = () => {

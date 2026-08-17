@@ -11,7 +11,7 @@ export const useTaskComplianceReportQuery = (groupBy: GroupBy, from?: string, to
   return useQuery({
     queryKey: ['analytics', 'task-compliance', groupBy, from, to],
     queryFn: () => taskApi.getComplianceReport(groupBy, from, to).then((r) => r.data),
-    enabled: !!token && user?.role === 'ADMIN',
+    enabled: !!token && (user?.role === 'ADMIN' || user?.role === 'PC'),
     retry: handleQueryRetry,
   });
 };
@@ -21,7 +21,7 @@ export const useTicketTatReportQuery = (groupBy: GroupBy, from?: string, to?: st
   return useQuery({
     queryKey: ['analytics', 'ticket-tat', groupBy, from, to],
     queryFn: () => ticketApi.getTatReport(groupBy, from, to).then((r) => r.data),
-    enabled: !!token && user?.role === 'ADMIN',
+    enabled: !!token && (user?.role === 'ADMIN' || user?.role === 'PC'),
     retry: handleQueryRetry,
   });
 };
@@ -31,17 +31,7 @@ export const useChecklistInstanceComplianceReportQuery = (groupBy: GroupBy, from
   return useQuery({
     queryKey: ['analytics', 'checklist-instance-compliance', groupBy, from, to],
     queryFn: () => checklistInstanceApi.getComplianceReport(groupBy, undefined, from, to).then((r) => r.data),
-    enabled: !!token && user?.role === 'ADMIN',
+    enabled: !!token && (user?.role === 'ADMIN' || user?.role === 'PC'),
     retry: handleQueryRetry,
   });
 };
-
-
-// export const useDepartmentComplianceReporttQuery = (groupBy : GroupBy, from?: string , to?: string) => {
-//   const { token , user} = useAuth();
-// }
-
-
-// export const useDepartmentPerPersonWiseConplianceReportQuery = ( groupBy : GroupBy, from?: string , to?: string) => {
-//   const { token, user } = useAuth()
-// }

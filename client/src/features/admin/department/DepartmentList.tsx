@@ -1,4 +1,4 @@
-import React, { useState, useMemo, lazy, Suspense } from "react";
+import { useState, useMemo, lazy, Suspense } from "react";
 import { Plus, Building2, AlertCircle, Inbox } from "lucide-react";
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';

@@ -10,6 +10,7 @@ import { TaskFormDepartmentField } from './TaskFormDepartmentField';
 import { TaskAssigneesField } from './TaskAssigneesField';
 import { TaskFormReminderField } from './TaskFormReminderField';
 import { TaskActivitySection } from './TaskActivitySection';
+import { TaskAttachmentsSection } from './TaskAttachmentsSection';
 import { TaskVerificationBanner } from './TaskVerificationBanner';
 import { STATUS_LABEL, NEXT_STATUS } from './taskDisplay';
 import { taskAssigneeIds } from './cardFields';
@@ -28,6 +29,12 @@ export const TaskDetail = ({ task: initialTask, onClose }: TaskDetailProps) => {
   const { user } = useAuth();
   const isPC = user?.role === 'PC';
   const isVerifier = isPC || user?.role === 'ADMIN';
+  // Mirrors the server's assertCanAttach in taskAttachment.service.ts — creator, assignee, or
+  // Admin/PC. Looser than checklist-item evidence (assignee-only) since this is general
+  // reference material on the task itself, not one person's specific work item.
+  const canManageAttachments = isVerifier
+    || task.userId === user?.id
+    || taskAssigneeIds(task).includes(user?.id ?? '');
 
   const updateMutation = useUpdateTaskMutation({ silent: true });
   const deleteMutation = useDeleteTaskMutation();
@@ -136,6 +143,12 @@ export const TaskDetail = ({ task: initialTask, onClose }: TaskDetailProps) => {
           {isVerifier && task.status === 'pending_verification' && (
             <TaskVerifyActions task={task} />
           )}
+
+          <TaskAttachmentsSection
+            taskId={task.id}
+            attachments={task.attachments ?? []}
+            canManage={canManageAttachments}
+          />
         </div>
 
         {/* Right column — fields */}

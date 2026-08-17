@@ -29,7 +29,8 @@ interface TaskAssigneesFieldProps {
 // (primary) + additionalAssigneeIds (extras) before saving.
 export const TaskAssigneesField = ({ selectedIds, onChange, users, isLoading = false, disabled = false }: TaskAssigneesFieldProps) => {
   const { user: currentUser } = useAuth();
-  const isAdmin = currentUser?.role === 'ADMIN';
+  // PC has full parity with ADMIN throughout this app.
+  const isAdmin = currentUser?.role === 'ADMIN' || currentUser?.role === 'PC';
   const [isCreatingUser, setIsCreatingUser] = useState(false);
 
   const toggle = (id: string) => {

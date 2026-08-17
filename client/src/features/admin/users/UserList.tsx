@@ -1,4 +1,4 @@
-import React, { useState, useMemo, lazy, Suspense } from 'react';
+import { useState, useMemo, lazy, Suspense } from 'react';
 import { 
   Plus, 
   Trash2, 

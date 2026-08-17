@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Plus, Ticket as TicketIcon, AlertCircle, Inbox, RotateCcw, Building2, User, FileDown } from 'lucide-react';
+import { useSearchParams } from 'react-router';
+import { Plus, Ticket as TicketIcon, AlertCircle, Inbox, RotateCcw, Building2, User, FileDown, X } from 'lucide-react';
 import { Button, PageNav } from '../../components';
 import { useAuth } from '@/context/AuthContext';
 import { useTicketsQuery, useDepartmentsQuery } from './hook';
@@ -26,7 +27,13 @@ export const TicketList = () => {
   const [selected, setSelected] = useState<Ticket | null>(null);
   const [page, setPage] = useState(1);
 
-  const { data, isPending, isError } = useTicketsQuery(page);
+  // A deep link from the Team Overview drill-down (department -> person -> Ticket bar) — a
+  // one-person server-side filter, distinct from the scope/status/search filters below, which
+  // stay session-only. Cleared via its own "×", not "Reset Filters".
+  const [searchParams, setSearchParams] = useSearchParams();
+  const assigneeIdFilter = searchParams.get('assigneeIds') ?? undefined;
+
+  const { data, isPending, isError } = useTicketsQuery(page, 20, assigneeIdFilter);
   const tickets = data?.data ?? [];
   const meta = data?.meta;
   const { data: departments } = useDepartmentsQuery();
@@ -76,7 +83,7 @@ export const TicketList = () => {
   };
 
   return (
-    <div className="flex flex-col gap-5 max-w-4xl mx-auto w-full pb-10">
+    <div className="flex flex-col gap-5 max-w-[1400px] mx-auto w-full pb-10">
 
       {/* Page Header + Controls */}
       <div className="flex flex-col gap-4 pb-4 border-b border-border/40">
@@ -100,16 +107,16 @@ export const TicketList = () => {
 
           <div className="flex items-center gap-2 flex-wrap">
             {/* View Tabs */}
-            <div className="flex gap-1 p-1 bg-surface-hover/70 rounded-full">
+            <div className="flex items-center gap-0.5 p-0.5 rounded-lg bg-surface-hover border border-border/50">
               {SCOPE_FILTERS.map((f) => (
                 <button
                   key={f.key}
                   type="button"
                   onClick={() => { setScopeFilter(f.key); setPage(1); }}
-                  className={`px-3 py-1.5 text-xs font-display font-medium rounded-full transition-colors cursor-pointer ${
+                  className={`px-2.5 py-1 rounded-md text-xs font-display font-medium transition-colors cursor-pointer ${
                     scopeFilter === f.key
-                      ? 'bg-surface text-text shadow-sm'
-                      : 'text-text-muted hover:text-text-secondary'
+                      ? 'bg-surface text-text border border-border/60'
+                      : 'text-text-muted hover:text-text'
                   }`}
                 >
                   {f.label}
@@ -118,14 +125,14 @@ export const TicketList = () => {
             </div>
 
             {/* Group By Toggle */}
-            <div className="flex gap-1 p-1 bg-surface-hover/70 rounded-full">
+            <div className="flex items-center gap-0.5 p-0.5 rounded-lg bg-surface-hover border border-border/50">
               <button
                 type="button"
                 onClick={() => setGroupBy('department')}
-                className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-display font-medium rounded-full transition-colors cursor-pointer ${
+                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-display font-medium transition-colors cursor-pointer ${
                   groupBy === 'department'
-                    ? 'bg-surface text-text shadow-sm'
-                    : 'text-text-muted hover:text-text-secondary'
+                    ? 'bg-surface text-text border border-border/60'
+                    : 'text-text-muted hover:text-text'
                 }`}
               >
                 <Building2 size={12} /> Department
@@ -133,10 +140,10 @@ export const TicketList = () => {
               <button
                 type="button"
                 onClick={() => setGroupBy('assignee')}
-                className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-display font-medium rounded-full transition-colors cursor-pointer ${
+                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-display font-medium transition-colors cursor-pointer ${
                   groupBy === 'assignee'
-                    ? 'bg-surface text-text shadow-sm'
-                    : 'text-text-muted hover:text-text-secondary'
+                    ? 'bg-surface text-text border border-border/60'
+                    : 'text-text-muted hover:text-text'
                 }`}
               >
                 <User size={12} /> Person
@@ -144,24 +151,16 @@ export const TicketList = () => {
             </div>
 
             {(user?.role === 'ADMIN' || user?.role === 'PC') && (
-              <button
-                type="button"
-                onClick={() => setShowExport(true)}
-                className="inline-flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-display font-medium rounded-full border border-border/60 text-text-secondary hover:bg-surface-hover hover:text-text transition-all duration-200 cursor-pointer"
-              >
+              <Button variant="outline" size="sm" onClick={() => setShowExport(true)} className="gap-1.5">
                 <FileDown size={14} />
-                <span className="tracking-wide">Export</span>
-              </button>
+                Export
+              </Button>
             )}
 
-            <button
-              type="button"
-              onClick={() => setShowForm(true)}
-              className="group relative inline-flex items-center justify-center gap-2 px-4 py-2 text-xs font-display font-semibold rounded-full text-white bg-gradient-to-r from-primary-600 to-primary-500 hover:from-primary-500 hover:to-primary-400 shadow-[0_2px_10px_rgba(16,185,129,0.3)] hover:shadow-[0_4px_16px_rgba(16,185,129,0.45)] active:scale-[0.97] transition-all duration-200 cursor-pointer"
-            >
-              <Plus size={15} className="transition-transform duration-300 group-hover:scale-125" />
-              <span className="tracking-wide">Create Ticket</span>
-            </button>
+            <Button variant="primary" size="sm" onClick={() => setShowForm(true)} className="gap-1.5">
+              <Plus size={15} />
+              Create Ticket
+            </Button>
           </div>
         </div>
 
@@ -171,6 +170,20 @@ export const TicketList = () => {
           statusFilter={statusFilter}
           onStatusFilterChange={key => { setStatusFilter(key); setPage(1); }}
         />
+
+        {assigneeIdFilter && (
+          <div className="flex items-center gap-1.5 pl-3 pr-1.5 py-1 rounded-full bg-primary-50 text-primary-700 text-xs font-semibold w-fit">
+            Showing tickets for {tickets[0]?.assignee?.firstName ?? 'this person'}
+            <button
+              type="button"
+              onClick={() => setSearchParams(prev => { const p = new URLSearchParams(prev); p.delete('assigneeIds'); return p; })}
+              aria-label="Clear assignee filter"
+              className="p-0.5 rounded-full hover:bg-primary-100 transition-colors cursor-pointer"
+            >
+              <X size={13} />
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Loading Skeletons */}

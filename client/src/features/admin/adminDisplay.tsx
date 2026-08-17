@@ -1,4 +1,4 @@
-import React, { type ElementType } from 'react';
+import { type ElementType } from 'react';
 import { AlertCircle } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';

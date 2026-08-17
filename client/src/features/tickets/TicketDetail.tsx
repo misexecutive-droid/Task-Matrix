@@ -42,11 +42,13 @@ export const TicketDetail = ({ ticket: initialTicket, onClose }: TicketDetailPro
   const verifyMut = useVerifyTicketMutation();
 
   const { user: currentUser } = useAuth();
-  const canAssign = currentUser?.role === "ADMIN" || currentUser?.role === "MANAGER";
-  const isAdmin = currentUser?.role === "ADMIN";
+  const canAssign = currentUser?.role === "ADMIN" || currentUser?.role === "PC" || currentUser?.role === "MANAGER";
+  // PC has full parity with ADMIN throughout this app.
+  const isAdmin = currentUser?.role === "ADMIN" || currentUser?.role === "PC";
   const isVerifier = currentUser?.role === "PC" || currentUser?.role === "ADMIN";
   const canChangeStatus =
     currentUser?.role === "ADMIN" ||
+    currentUser?.role === "PC" ||
     currentUser?.role === "MANAGER" ||
     // AGENT and USER are both allowed to change status when they're the raiser or the assignee —
     // a plain USER can be assigned a ticket to fix just like an AGENT can (see

@@ -67,9 +67,9 @@ const filtersStorageKey = (userId?: string) => `task-filters:${userId ?? 'anon'}
 
 export const TaskList = ({ userId, hideHeader = false }: TaskListProps = {}) => {
     const { user } = useAuth();
-    const isAdmin = user?.role === "ADMIN";
+    // PC has full parity with ADMIN throughout this app.
     const isVerifier = user?.role === "PC" || user?.role === "ADMIN";
-    const [searchParams] = useSearchParams();
+    const [searchParams, setSearchParams] = useSearchParams();
     const [ showSmartModal , setShowSmartModal ] = useState(false)
     const [showForm, setShowForm] = useState(false);
     const [showExport, setShowExport] = useState(false);
@@ -85,8 +85,12 @@ export const TaskList = ({ userId, hideHeader = false }: TaskListProps = {}) => 
         const fromUrl: Partial<TaskFilters> = {};
         const category = searchParams.get('category');
         const status = searchParams.get('status');
+        const departmentId = searchParams.get('departmentId');
+        const assigneeIds = searchParams.get('assigneeIds');
         if (category) fromUrl.category = category as CategoryFilterKey;
         if (status) fromUrl.status = status as Task['status'];
+        if (departmentId) fromUrl.departmentId = departmentId;
+        if (assigneeIds) fromUrl.assigneeIds = assigneeIds.split(',');
         if (Object.keys(fromUrl).length) return { ...DEFAULT_FILTERS, ...fromUrl };
 
         try {
@@ -114,8 +118,47 @@ export const TaskList = ({ userId, hideHeader = false }: TaskListProps = {}) => 
     // filters, a regular user gets it scoped to their own tasks same as everything else here.
     const [dueDateRange, setDueDateRange] = useState<DateRangeValue>({ from: null, to: null });
 
-    const updateFilters = (patch: Partial<TaskFilters>) => setFilters(f => ({ ...f, ...patch }));
-    const clearFilters = () => setFilters(DEFAULT_FILTERS);
+    // Keeps the URL's filter params (category/status/departmentId/assigneeIds — the ones a
+    // deep link like a dashboard tile can set on mount) in sync with whatever the user does
+    // afterward in the filter UI. Without this, clearing or changing a filter only updated
+    // React state: the original deep-link params stayed in the address bar, so refreshing the
+    // page re-read them and silently brought back a filter the user had just removed.
+    const syncFiltersToUrl = (next: TaskFilters) => {
+        setSearchParams(prev => {
+            const params = new URLSearchParams(prev);
+            if (next.category !== 'all') params.set('category', next.category); else params.delete('category');
+            if (next.status !== 'all') params.set('status', next.status); else params.delete('status');
+            if (next.departmentId) params.set('departmentId', next.departmentId); else params.delete('departmentId');
+            if (next.assigneeIds.length) params.set('assigneeIds', next.assigneeIds.join(',')); else params.delete('assigneeIds');
+            return params;
+        }, { replace: true });
+    };
+    // Once a user has ever clicked "Save this filter", that saved copy in localStorage is what
+    // a plain refresh (no URL params) restores — so it has to track every later change too, not
+    // just stay frozen at whatever was true the moment "Save" was clicked. Otherwise, clearing
+    // or editing a filter after saving looked like it worked, but refreshing brought the stale
+    // saved combination straight back. No-ops for anyone who's never saved a filter.
+    const persistFiltersIfSaved = (next: TaskFilters) => {
+        try {
+            const key = filtersStorageKey(user?.id);
+            if (localStorage.getItem(key) !== null) {
+                localStorage.setItem(key, JSON.stringify(next));
+            }
+        } catch {
+            // Corrupt/unavailable localStorage — the URL sync above still keeps this refresh-safe.
+        }
+    };
+    const updateFilters = (patch: Partial<TaskFilters>) => {
+        const next = { ...filters, ...patch };
+        setFilters(next);
+        syncFiltersToUrl(next);
+        persistFiltersIfSaved(next);
+    };
+    const clearFilters = () => {
+        setFilters(DEFAULT_FILTERS);
+        syncFiltersToUrl(DEFAULT_FILTERS);
+        persistFiltersIfSaved(DEFAULT_FILTERS);
+    };
     const saveFilters = () => {
         try {
             localStorage.setItem(filtersStorageKey(user?.id), JSON.stringify(filters));
@@ -236,7 +279,7 @@ export const TaskList = ({ userId, hideHeader = false }: TaskListProps = {}) => 
                         ))}
                     </div>
 
-                    {!userId && isAdmin && (
+                    {!userId && isVerifier && (
                         <Button
                             size="sm"
                             variant="secondary"
@@ -268,7 +311,7 @@ export const TaskList = ({ userId, hideHeader = false }: TaskListProps = {}) => 
                         departments={departments}
                         assignableUsers={assignableUsers}
                         currentUserId={user?.id}
-                        isAdmin={isAdmin}
+                        isAdmin={isVerifier}
                         activeCount={activeChips.length}
                     />
 

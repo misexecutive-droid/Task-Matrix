@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router';
 import { AnimatePresence, motion } from 'framer-motion';
 import {

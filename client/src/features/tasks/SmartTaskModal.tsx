@@ -490,7 +490,8 @@ export const SmartTaskModal = ({ onClose }: SmartTaskModalProps) => {
     const { data: assignableUsers, isLoading: isLoadingUsers } = useAssignableUsersQuery();
     const { data: departments, isLoading: isLoadingDepts } = useDepartmentsQuery();
     const { user: currentUser } = useAuth();
-    const isAdmin = currentUser?.role === "ADMIN";
+    // PC has full parity with ADMIN throughout this app.
+    const isAdmin = currentUser?.role === "ADMIN" || currentUser?.role === "PC";
 
     useEffect(() => {
         if (scrollRef.current) {

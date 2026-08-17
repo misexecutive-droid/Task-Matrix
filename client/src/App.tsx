@@ -24,6 +24,7 @@ import { MyErrorBoundary, NotFoundPage } from './components/error';
 import { CategoryList, SettingsLayout } from './features/settings';
 import { ReportsPage } from './features/reports';
 import { EventList } from './features/events';
+import { TeamOverviewPage } from './features/team/TeamOverviewPage';
 
 const ProtectedRoute = () => {
   const { token } = useAuth();
@@ -35,10 +36,12 @@ const AuthRoute = () => {
   return token ? <Navigate to="/" replace /> : <Outlet />;
 };
 
+// PC has full parity with ADMIN throughout this app, so it gets the same access to every
+// /admin/* page too.
 const AdminRoute = () => {
   const { token, user } = useAuth();
   if (!token) return <Navigate to="/login" replace />;
-  return user?.role === 'ADMIN' ? <Outlet /> : <Navigate to="/" replace />;
+  return user?.role === 'ADMIN' || user?.role === 'PC' ? <Outlet /> : <Navigate to="/" replace />;
 };
 
 const PCRoute = () => {
@@ -94,6 +97,8 @@ const router = createBrowserRouter([
               // both need this, so it lives here instead of under AdminRoute/AdminLayout,
               // which is gated to ADMIN only.
               { path: '/tasks/team', element: <AdminTaskList /> },
+              // Department -> person -> checklist drill-down — same PC/ADMIN audience as above.
+              { path: '/team', element: <TeamOverviewPage /> },
             ],
           },
         ],

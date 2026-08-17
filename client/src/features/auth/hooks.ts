@@ -20,7 +20,7 @@ export const useLoginMutation = () => {
         email: user.email,
         role:  user.role,
       });
-      navigate(user.role === 'ADMIN' ? '/admin' : '/', { replace: true });
+      navigate(user.role === 'ADMIN' || user.role === 'PC' ? '/admin' : '/', { replace: true });
     },
   });
 };

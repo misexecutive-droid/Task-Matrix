@@ -26,7 +26,7 @@ export const StatCard = ({ label, value, trend, icon: Icon, iconTint, caption, o
       role={onClick ? 'button' : undefined}
       tabIndex={onClick ? 0 : undefined}
       onKeyDown={onClick ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick(); } } : undefined}
-      className={`relative flex flex-col gap-2 rounded-2xl border border-border bg-surface p-6 shadow-sm transition-shadow duration-200 hover:shadow-md ${onClick ? 'cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50' : ''}`}
+      className={`relative flex flex-col gap-2 rounded-xl border border-border bg-surface p-6 transition-colors duration-200 ${onClick ? 'cursor-pointer outline-none hover:border-primary-300 focus-visible:ring-2 focus-visible:ring-primary-500/50' : ''}`}
     >
       {/* Value */}
       <div className="flex items-center justify-between gap-3">

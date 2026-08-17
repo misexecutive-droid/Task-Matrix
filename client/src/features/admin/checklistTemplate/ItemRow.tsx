@@ -1,6 +1,5 @@
-import React, { useRef } from 'react';
+import { useRef } from 'react';
 import {
-  Camera,
   Check,
   UserCheck,
   Trash2,

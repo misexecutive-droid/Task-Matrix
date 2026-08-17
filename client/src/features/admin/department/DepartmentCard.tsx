@@ -1,4 +1,3 @@
-import React from 'react';
 import { Trash2, Pencil, Building2, Users, Loader2 } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';

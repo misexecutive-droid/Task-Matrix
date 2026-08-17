@@ -19,15 +19,15 @@ import { checklistTemplateApi } from "../../api/checklistTemplates";
 import { handleQueryRetry, useEntityMutation } from '../../lib/queryHelpers';
 
 const KEYS = {
-  all: (page: number) => ['tickets', page] as const,
+  all: (page: number, assigneeId?: string) => ['tickets', page, assigneeId] as const,
   detail: (id: string) => ['tickets', 'detail', id] as const,
 };
 
-export const useTicketsQuery = (page = 1, limit = 20) => {
+export const useTicketsQuery = (page = 1, limit = 20, assigneeId?: string) => {
   const { token } = useAuth();
   return useQuery({
-    queryKey: KEYS.all(page),
-    queryFn: () => ticketApi.getAll(page, limit),
+    queryKey: KEYS.all(page, assigneeId),
+    queryFn: () => ticketApi.getAll(page, limit, undefined, assigneeId),
     enabled: !!token,
     retry: handleQueryRetry,
   });
@@ -228,7 +228,7 @@ export const useTatReportQuery = (groupBy: TatReportGroupBy, from?: string, to?:
   return useQuery({
     queryKey: ["tickets", "tat-report", groupBy, from, to],
     queryFn: () => ticketApi.getTatReport(groupBy, from, to).then(r => r.data),
-    enabled: !!token && user?.role === "ADMIN",
+    enabled: !!token && (user?.role === "ADMIN" || user?.role === "PC"),
     retry: handleQueryRetry,
   });
 };

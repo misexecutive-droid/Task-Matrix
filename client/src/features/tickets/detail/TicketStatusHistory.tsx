@@ -41,9 +41,10 @@ export const TicketStatusHistory = ({ statusUpdates, onPreview }: TicketStatusHi
           const statusOption = STATUS_UPDATE_OPTIONS.find((o) => o.value === su.toStatus);
           const statusLabel = statusOption?.label ?? su.toStatus;
           
-          const firstName = su.changedBy?.firstName || '';
-          const lastName = su.changedBy?.lastName || '';
-          const userDisplayName = `${firstName} ${lastName}`.trim() || 'Unknown';
+          // changedBy is only ever populated with "email firstName role" (see ticket.service.ts's
+          // populateTicket — every "who did this" field in this file is first-name-only), so
+          // there's no lastName to show here.
+          const userDisplayName = su.changedBy?.firstName || 'Unknown';
 
           return (
             <div key={su.id} className="relative group">

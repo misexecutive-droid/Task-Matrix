@@ -329,7 +329,8 @@ const emptyItemDraft = (): ItemDraft => ({
 
 export const ChecklistPanel = ({ ticketId, checklists }: ChecklistPanelProps) => {
   const { user } = useAuth();
-  const isAdmin = user?.role === 'ADMIN';
+  // PC has full parity with ADMIN throughout this app.
+  const isAdmin = user?.role === 'ADMIN' || user?.role === 'PC';
   const [adding, setAdding] = useState(false);
   const [title, setTitle] = useState('');
   const [itemDrafts, setItemDrafts] = useState<ItemDraft[]>([emptyItemDraft()]);
