@@ -71,7 +71,7 @@ export const TICKET_COLUMNS: CsvColumn[] = [
 ];
 
 export const TASK_COLUMNS: CsvColumn[] = [
-    { key: "id", label: "Task ID" },
+    { key: "id", label: "Delegation ID" },
     { key: "title", label: "Title" },
     { key: "status", label: "Status" },
     { key: "priority", label: "Priority" },

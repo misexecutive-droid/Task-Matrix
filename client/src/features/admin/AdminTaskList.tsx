@@ -40,10 +40,10 @@ export const AdminTaskList = () => {
             </div>
             <div className="flex flex-col gap-1">
               <h1 className="text-2xl font-bold tracking-tight text-text">
-                Team Tasks
+                Team Delegations
               </h1>
               <p className="text-sm text-text-muted max-w-lg leading-relaxed">
-                Every task across the organization — filter by person, department, status, or date to narrow your view.
+                Every delegation across the organization — filter by person, department, status, or date to narrow your view.
               </p>
             </div>
           </div>
@@ -53,7 +53,7 @@ export const AdminTaskList = () => {
 
             {/* Person Filter */}
             <Select value={userId || ALL_USERS} onValueChange={v => setUserId(v === ALL_USERS ? "" : v)}>
-              <SelectTrigger className="flex-1 sm:w-56 h-10 text-sm" aria-label="Filter tasks by person">
+              <SelectTrigger className="flex-1 sm:w-56 h-10 text-sm" aria-label="Filter delegations by person">
                 <Users className="w-4 h-4 shrink-0 text-text-light" />
                 <SelectValue />
               </SelectTrigger>
@@ -77,7 +77,7 @@ export const AdminTaskList = () => {
         </header>
 
         {/* List Content */}
-        <section aria-label="Task List" className="flex flex-col flex-1">
+        <section aria-label="Delegation List" className="flex flex-col flex-1">
           <TaskList userId={userId || undefined} hideHeader />
         </section>
 
@@ -85,8 +85,8 @@ export const AdminTaskList = () => {
         {showExport && (
           <ExportDialog
             reportModule="tasks"
-            title="Export Tasks"
-            description="Every task created in the selected period — status, priority, department, and assignee."
+            title="Export Delegations"
+            description="Every delegation created in the selected period — status, priority, department, and assignee."
             onClose={() => setShowExport(false)}
           />
         )}

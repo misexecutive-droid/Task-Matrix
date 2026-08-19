@@ -1,5 +1,6 @@
 import { Clock, User, ListChecks, CalendarPlus, History } from 'lucide-react';
 import { PRIORITY_MAP, STATUS_CONFIG } from './taskDisplay';
+import { TaskScoreBadge } from './TaskScoreBadge';
 import { departmentTagClass } from './departmentTagColors';
 import { CATEGORY_CONFIG, subtaskProgress, formatShortDate, formatShortDateTime, type CardFieldVisibility } from './cardFields';
 import type { Task } from '../../api/task';
@@ -18,6 +19,7 @@ export const TaskTable = ({ tasks, assigneeNames, departmentNames, onOpen, field
     { key: 'assignee', label: 'Assignee', show: fields.assignee },
     { key: 'dueDate', label: 'Due', show: fields.dueDate },
     { key: 'status', label: 'Status', show: fields.status },
+    { key: 'mark', label: 'Mark', show: fields.status },
     { key: 'priority', label: 'Priority', show: fields.priority },
     { key: 'category', label: 'Category', show: fields.category },
     { key: 'subtasks', label: 'Subtasks', show: fields.subtasks },
@@ -119,6 +121,12 @@ export const TaskTable = ({ tasks, assigneeNames, departmentNames, onOpen, field
                             <span className={`inline-flex items-center gap-1.5 text-[11px] font-semibold px-2 py-0.5 rounded-full border ${status.badge}`}>
                               {status.label}
                             </span>
+                          </td>
+                        );
+                      case 'mark':
+                        return (
+                          <td key={c.key} className="px-4 py-2.5 whitespace-nowrap">
+                            <TaskScoreBadge status={task.status} />
                           </td>
                         );
                       case 'priority':

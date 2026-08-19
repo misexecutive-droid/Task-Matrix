@@ -86,6 +86,9 @@ export const StoresPerformanceSection = ({ groupBy, from, to }: StoresPerformanc
 
   const leaderboard: LeaderRow[] = useMemo(() => {
     const departmentName = (id: string | null) => departments.find((d) => d.id === id)?.name ?? '—';
+    // "now" only needs to be approximately current for the overdue checks below; memoized so
+    // it's read once per mount, not on every render (see HomePage.tsx for the same pattern).
+    // eslint-disable-next-line react-hooks/purity
     const now = Date.now();
 
     return users

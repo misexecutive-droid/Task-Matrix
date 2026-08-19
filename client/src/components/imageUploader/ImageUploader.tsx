@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect, type DragEvent, type KeyboardEvent } from 'react';
+import { useRef, useState, useEffect, useMemo, type DragEvent, type KeyboardEvent } from 'react';
 import { UploadCloud, X } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -18,13 +18,10 @@ interface ImageUploaderProps {
 }
 
 function ImagePreview({ file, onRemove }: { file: File; onRemove: () => void }) {
-  const [url, setUrl] = useState('');
-
-  useEffect(() => {
-    const objectUrl = URL.createObjectURL(file);
-    setUrl(objectUrl);
-    return () => URL.revokeObjectURL(objectUrl);
-  }, [file]);
+  // Derived synchronously from `file` — no need to route it through state/effect, which would
+  // cost an extra render (mount with an empty url, then the effect setting it).
+  const url = useMemo(() => URL.createObjectURL(file), [file]);
+  useEffect(() => () => URL.revokeObjectURL(url), [url]);
 
   return (
     <div className="group relative aspect-square rounded-md border border-border overflow-hidden bg-surface-hover shrink-0 shadow-sm">

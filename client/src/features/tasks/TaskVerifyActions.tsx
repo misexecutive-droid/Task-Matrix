@@ -97,8 +97,8 @@ export const TaskVerifyActions = ({ task, compact = false }: TaskVerifyActionsPr
       <div className="flex items-center gap-1.5" onClick={e => e.stopPropagation()}>
         <button
           type="button"
-          aria-label="Verify task"
-          title="Verify task"
+          aria-label="Verify delegation"
+          title="Verify delegation"
           disabled={verifyMut.isPending}
           onClick={() => verifyMut.mutate({ id: task.id, payload: { action: 'APPROVE' } })}
           className={iconButtonClass('success')}

@@ -49,7 +49,7 @@ const CATEGORY_OPTIONS: { value: CategoryFilterKey; label: string }[] = [
   { value: 'all', label: 'All' },
   { value: 'issue', label: 'Issue' },
   { value: 'delegation', label: 'Delegation' },
-  { value: 'task', label: 'Task' },
+  { value: 'task', label: 'Direct Task' },
 ];
 
 const PRIORITY_OPTIONS: { value: Task['priority']; label: string }[] = [

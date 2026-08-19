@@ -1,6 +1,6 @@
 import { apiFetch } from './http';
 
-export type Role = "ADMIN" | "MANAGER" | "AGENT" | "USER" | "PC";
+export type Role = "ADMIN" | "SENIOR" | "MANAGER" | "AGENT" | "USER" | "PC";
 
 export type AdminUser = {
     id: string;
@@ -24,9 +24,10 @@ export type CreateUserPayload = {
     storeId?: string;
 };
 
-export type UpdateUserPayload = Partial<Omit<CreateUserPayload, "password" | "departmentId">> & {
+export type UpdateUserPayload = Partial<Omit<CreateUserPayload, "password" | "departmentId" | "storeId">> & {
     isActive?: boolean;
     departmentId?: string | null;
+    storeId?: string | null;
 };
 export type ApiResponse<T> = { success: boolean; data: T };
 

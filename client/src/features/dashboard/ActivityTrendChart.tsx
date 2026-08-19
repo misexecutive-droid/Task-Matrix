@@ -80,7 +80,7 @@ export const ActivityTrendChart = ({
     }
 
     return { minVal: min, maxVal: max, yTicks: yTicksArr, xTicks: xTicksArr };
-  }, [dates, series, n]);
+  }, [series, n]);
 
   if (n === 0 || series.length === 0) {
     return (

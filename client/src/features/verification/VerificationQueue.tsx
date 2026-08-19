@@ -224,10 +224,10 @@ export const VerificationQueue = () => {
           </div>
         </section>
 
-        {/* Tasks Section */}
+        {/* Delegations Section */}
         <section className="flex flex-col gap-3">
           <div className="flex items-center gap-2 mb-1">
-            <h2 className="text-xs font-semibold text-text-muted uppercase tracking-widest">Tasks</h2>
+            <h2 className="text-xs font-semibold text-text-muted uppercase tracking-widest">Delegations</h2>
             {!tasksPending && tasks.length > 0 && (
               <span className="px-2 py-0.5 rounded-full bg-border/50 text-[10px] font-medium text-text-muted">
                 {tasks.length}

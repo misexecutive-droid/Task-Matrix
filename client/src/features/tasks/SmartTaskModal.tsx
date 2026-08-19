@@ -38,9 +38,9 @@ type Slot = "assignee" | "department" | "dueDate" | "priority";
 const SLOT_ORDER: readonly Slot[] = ["assignee", "department", "dueDate", "priority"] as const;
 
 const SLOT_QUESTIONS: Record<Slot, string> = {
-    assignee: "Who should I assign this task to?",
+    assignee: "Who should I assign this delegation to?",
     department: "Which department does this belong to?",
-    dueDate: "When is this task due?",
+    dueDate: "When is this delegation due?",
     priority: "Should this be low, medium, or high priority?",
 };
 
@@ -522,7 +522,7 @@ export const SmartTaskModal = ({ onClose }: SmartTaskModalProps) => {
         }
 
         updateConversationMutation.mutate({ id: conversationIdRef.current, payload: { messages: payload } });
-    }, [messages]);
+    }, [messages, createConversationMutation, updateConversationMutation]);
 
     useEffect(() => {
         return () => {
@@ -540,7 +540,7 @@ export const SmartTaskModal = ({ onClose }: SmartTaskModalProps) => {
             updateConversationMutation.mutate({ id: conversationIdRef.current, payload: { status: "abandoned" } });
         }
         onClose();
-    }, [onClose]);
+    }, [onClose, updateConversationMutation]);
 
     const handleClearHistory = useCallback(async () => {
         const ok = await confirm({

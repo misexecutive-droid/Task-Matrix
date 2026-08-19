@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
+import { ApiError } from '../api/http';
 
 // Shared by every feature's hook.ts — was previously copy-pasted identically in
 // features/tickets/hook.ts and features/tasks/hook.ts.
@@ -8,8 +9,8 @@ export const errorMessage = (err: unknown, fallback: string) =>
 
 // Stops React Query from retrying a query when the failure is a 401 — no point hammering the
 // server once the session itself is invalid. Pass as a query's `retry` option.
-export const handleQueryRetry = (failureCount: number, error: any) => {
-  if (error?.response?.status === 401 || error?.status === 401) return false;
+export const handleQueryRetry = (failureCount: number, error: unknown) => {
+  if (error instanceof ApiError && error.status === 401) return false;
   return failureCount < 3;
 };
 

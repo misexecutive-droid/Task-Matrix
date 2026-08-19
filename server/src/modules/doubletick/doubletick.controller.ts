@@ -48,7 +48,7 @@ function draftToConfirmInput(draft: ConversationDraftLike) {
 function formatTaskConfirmation(taskTitle: string, draft: ConversationDraftLike) {
     const assigneeLabel = draft.assigneeId ? draft.assigneeName : "unassigned";
     const dueDate = draft.dueDate ?? new Date();
-    return `Task Created: ${taskTitle}\nAssigned to: ${assigneeLabel}\nDue: ${dueDate.toLocaleDateString()}\nPriority: ${draft.priority}`;
+    return `Delegation Created: ${taskTitle}\nAssigned to: ${assigneeLabel}\nDue: ${dueDate.toLocaleDateString()}\nPriority: ${draft.priority}`;
 }
 
 function conversationDraftToPlain(draft: any): ConversationDraftLike {
@@ -117,7 +117,7 @@ export const doubletickController = {
             try {
                 if (CANCEL_PATTERN.test(text)) {
                     await cancelConversation(from);
-                    await sendDoubleTickMessage(from, "Okay, I've cancelled that task request. Send a new message anytime to start again.");
+                    await sendDoubleTickMessage(from, "Okay, I've cancelled that delegation request. Send a new message anytime to start again.");
                     return;
                 }
 
@@ -195,7 +195,7 @@ export const doubletickController = {
             await sendDoubleTickMessage(from, SLOT_QUESTIONS[missing[0]]);
         } catch (err) {
             console.error("DoubleTick task creation failed:", err);
-            await sendDoubleTickMessage(from, "Sorry, something went wrong creating that task. Please try again or add it manually.");
+            await sendDoubleTickMessage(from, "Sorry, something went wrong creating that delegation. Please try again or add it manually.");
         }
     }),
 }

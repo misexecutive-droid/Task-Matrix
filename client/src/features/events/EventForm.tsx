@@ -2,14 +2,7 @@ import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { CalendarClock } from 'lucide-react';
-import { Input, Textarea, Button, Modal } from '../../components';
-import {
-  Select,
-  SelectTrigger,
-  SelectValue,
-  SelectContent,
-  SelectItem,
-} from '@/components/ui/select';
+import { Input, Textarea, Button, Modal, Combobox } from '../../components';
 import { useCreateEventMutation, useUpdateEventMutation } from './hook';
 import { EVENT_TYPE_LABELS } from './eventDisplay';
 import type { Event, EventType } from '@/api/events';
@@ -108,16 +101,13 @@ export const EventForm = ({ onClose, event }: EventFormProps) => {
             control={control}
             name="type"
             render={({ field }) => (
-              <Select value={field.value} onValueChange={field.onChange}>
-                <SelectTrigger id="type" className="w-full h-10 text-sm">
-                  <SelectValue placeholder="Select type" />
-                </SelectTrigger>
-                <SelectContent>
-                  {EVENT_TYPES.map(t => (
-                    <SelectItem key={t} value={t}>{EVENT_TYPE_LABELS[t]}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Combobox
+                id="type"
+                value={field.value}
+                onChange={field.onChange}
+                placeholder="Search type..."
+                options={EVENT_TYPES.map(t => ({ value: t, label: EVENT_TYPE_LABELS[t] }))}
+              />
             )}
           />
         </div>

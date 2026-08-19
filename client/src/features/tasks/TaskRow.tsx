@@ -1,7 +1,8 @@
 import { Loader2, AlertCircle, Trash2, Clock, User, ListChecks, CalendarPlus, History, MoreVertical, SquarePen } from "lucide-react";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { useUpdateTaskMutation, useDeleteTaskMutation } from "./hook";
-import { PRIORITY_MAP, STATUS_ICON, NEXT_STATUS } from "./taskDisplay";
+import { PRIORITY_MAP, STATUS_ICON, STATUS_CONFIG, NEXT_STATUS } from "./taskDisplay";
+import { TaskScoreBadge } from "./TaskScoreBadge";
 import { departmentTagClass } from "./departmentTagColors";
 import { coverPhotoFor } from "./taskAttachmentDisplay";
 import { UPLOADS_BASE } from "../../lib/uploadsBase";
@@ -79,6 +80,17 @@ export const TaskRow = ({ task, assigneeName, departmentName, isVerifier, onOpen
                         </div>
 
                         <div className="flex items-center gap-2 flex-wrap">
+                            {fields.status && (() => {
+                                const status = STATUS_CONFIG[task.status];
+                                return (
+                                    <span className={`inline-flex items-center gap-1.5 text-[11px] font-semibold px-2 py-0.5 rounded-full border ${status.badge}`}>
+                                        {status.label}
+                                    </span>
+                                );
+                            })()}
+
+                            {fields.status && <TaskScoreBadge status={task.status} />}
+
                             {fields.dueDate && task.dueDate && (
                                 <span className="flex items-center gap-1.5 text-xs font-medium text-text-muted">
                                     <Clock size={13} strokeWidth={2.5} className="text-text-light" />
@@ -165,8 +177,8 @@ export const TaskRow = ({ task, assigneeName, departmentName, isVerifier, onOpen
                                 onClick={(e) => e.stopPropagation()}
                                 disabled={deleteMutation.isPending}
                                 className="shrink-0 p-1.5 rounded text-text-light hover:text-text hover:bg-surface-hover transition-colors cursor-pointer disabled:opacity-50 outline-none focus-visible:ring-2 focus-visible:ring-primary-500/30"
-                                aria-label="Task actions"
-                                title="Task actions"
+                                aria-label="Delegation actions"
+                                title="Delegation actions"
                             >
                                 {deleteMutation.isPending
                                     ? <Loader2 size={17} strokeWidth={2.5} className="animate-spin text-danger" />

@@ -2,6 +2,7 @@ import type { Request, Response } from "express"
 import { checklistInstanceService, type InstanceStatusFilter } from "./checklistInstance.service.js"
 import { setChecklistInstanceItemDoneSchema, verifyChecklistInstanceSchema, checklistInstanceComplianceReportQuerySchema } from "./checklistInstance.validation.js"
 import { asyncHandler } from "../../utils/asyncHandler.js"
+import { resolveReportScope, resolveStoreIdForDepartment } from "../../utils/reportScope.js"
 
 export const checklistInstanceController = {
     // GET /checklist-instances/mine?status=OPEN|COMPLETED
@@ -46,10 +47,19 @@ export const checklistInstanceController = {
         res.json({ success: true, data: instance })
     }),
 
-    // GET /checklist-instances/reports/compliance?groupBy=&storeId=&from=&to= (ADMIN only)
+    // GET /checklist-instances/reports/compliance?groupBy=&storeId=&from=&to=
+    // ADMIN/PC may pass any storeId (or none, for org-wide). SENIOR is forced to their own
+    // store regardless of what's in the query — a SENIOR must never be able to read another
+    // store's data by passing a different storeId. MANAGER has no store of their own, but their
+    // department can optionally have a home store (Department.storeId) — resolve it so a
+    // department head's checklist view isn't just org-wide.
     complianceReport: asyncHandler(async (req: Request, res: Response) => {
         const query = checklistInstanceComplianceReportQuerySchema.parse(req.query)
-        const data = await checklistInstanceService.complianceReport(query.groupBy, query.storeId, query.from, query.to)
+        const { storeId: baseStoreId } = resolveReportScope(req.user!, { storeId: query.storeId })
+        const storeId = req.user!.role === "MANAGER" && req.user!.departmentId
+            ? await resolveStoreIdForDepartment(req.user!.departmentId)
+            : baseStoreId;
+        const data = await checklistInstanceService.complianceReport(query.groupBy, storeId, query.from, query.to)
         res.json({ success: true, data })
     }),
 }

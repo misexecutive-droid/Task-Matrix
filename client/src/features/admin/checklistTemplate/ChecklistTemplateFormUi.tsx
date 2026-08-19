@@ -12,22 +12,28 @@ import {
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
-import { Input } from '../../../components';
+import { Input, ChecklistItemDraftRow, emptyChecklistItemDraft, type ChecklistItemDraft } from '../../../components';
 import { useAssignableUsersQuery } from '../../tickets/hook';
-import { ItemDraftRow, emptyItemDraft, type ItemDraft } from './ItemDraftRow';
+import type { ChecklistTemplateTarget, CreateChecklistTemplateItemPayload } from '../../../api/checklistTemplates';
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-type ChecklistTemplateTarget = 'TASK' | 'TICKET';
 const NO_DEPARTMENT = '__none__';
+
+export interface ChecklistTemplateFormPayload {
+  name: string;
+  appliesTo: ChecklistTemplateTarget;
+  departmentId: string;
+  items: CreateChecklistTemplateItemPayload[];
+}
 
 interface FormUIProps {
   departments: { id: string; name: string }[];
   isSaving: boolean;
   saveError?: string;
-  onSubmit: (data: any) => void;
+  onSubmit: (data: ChecklistTemplateFormPayload) => void;
   onClose: () => void;
 }
 
@@ -35,12 +41,12 @@ export const ChecklistTemplateFormUI = ({ departments, isSaving, saveError, onSu
   const [name, setName] = useState('');
   const [appliesTo, setAppliesTo] = useState<ChecklistTemplateTarget>('TASK');
   const [departmentId, setDepartmentId] = useState('');
-  const [itemDrafts, setItemDrafts] = useState<ItemDraft[]>([emptyItemDraft()]);
+  const [itemDrafts, setItemDrafts] = useState<ChecklistItemDraft[]>([emptyChecklistItemDraft()]);
   const [validationError, setValidationError] = useState<string | null>(null);
 
   const { data: assignableUsers } = useAssignableUsersQuery(departmentId || undefined);
 
-  const updateDraft = useCallback((i: number, patch: Partial<ItemDraft>) => {
+  const updateDraft = useCallback((i: number, patch: Partial<ChecklistItemDraft>) => {
     setItemDrafts(drafts => drafts.map((d, idx) => (idx === i ? { ...d, ...patch } : d)));
   }, []);
 
@@ -126,7 +132,7 @@ export const ChecklistTemplateFormUI = ({ departments, isSaving, saveError, onSu
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="TASK">Tasks</SelectItem>
+                    <SelectItem value="TASK">Delegations</SelectItem>
                     <SelectItem value="TICKET">Tickets</SelectItem>
                   </SelectContent>
                 </Select>
@@ -167,11 +173,12 @@ export const ChecklistTemplateFormUI = ({ departments, isSaving, saveError, onSu
             <div className="space-y-3">
               <AnimatePresence mode="popLayout">
                 {itemDrafts.map((draft, i) => (
-                  <ItemDraftRow
+                  <ChecklistItemDraftRow
                     key={draft.id}
                     draft={draft}
                     index={i}
-                    departmentId={departmentId}
+                    showDueDate={false}
+                    assigneeDisabledReason={!departmentId ? 'Select department first' : undefined}
                     assignableUsers={assignableUsers}
                     canRemove={itemDrafts.length > 1}
                     onChange={patch => updateDraft(i, patch)}
@@ -183,7 +190,7 @@ export const ChecklistTemplateFormUI = ({ departments, isSaving, saveError, onSu
 
             <button
               type="button"
-              onClick={() => setItemDrafts(d => [...d, emptyItemDraft()])}
+              onClick={() => setItemDrafts(d => [...d, emptyChecklistItemDraft()])}
               className={cn(
                 "w-full py-4 mt-2 border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-xl",
                 "text-slate-500 dark:text-slate-400 font-medium text-sm transition-all duration-300 ease-in-out",

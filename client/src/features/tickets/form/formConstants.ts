@@ -1,10 +1,4 @@
 export const LABEL_CLASS = 'text-xs font-display font-medium text-text-secondary uppercase tracking-wider flex items-center gap-1.5';
-export const SELECT_CLASS = 'w-full px-3 h-10 text-base sm:text-sm font-display bg-surface text-text rounded-md border border-border focus:outline-none focus:ring-2 focus:ring-primary-500/30 transition-all cursor-pointer hover:border-border/80';
-export const SELECT_CLASS_DISABLED = `${SELECT_CLASS} disabled:opacity-50 disabled:cursor-not-allowed`;
-
-export const ANY_DEPARTMENT = '__any__';
-export const UNASSIGNED = '__unassigned__';
-export const NO_CATEGORY = '__none__';
 
 export type TicketPriority = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
 

@@ -64,6 +64,20 @@ export const STATUS_CONFIG = {
 >;
 
 
+// Per-task completion weight for scoring/reporting: Done counts fully, In Progress counts as
+// half-credit (whether or not its due date has already passed — being actively worked still
+// counts for something), and anything not yet started (todo) counts as zero, overdue or not.
+// pending_verification is grouped with in_progress since the work itself isn't verified/closed
+// out yet — only an explicit "done" status is full credit.
+export const TASK_SCORE: Record<Task['status'], number> = {
+  todo: 0,
+  in_progress: 0.5,
+  pending_verification: 0.5,
+  done: 1,
+};
+
+export const taskScorePercent = (status: Task['status']) => Math.round(TASK_SCORE[status] * 100);
+
 export const NEXT_STATUS: Record<Task['status'], Task['status'] | null> = {
   todo: 'in_progress',
   in_progress: 'pending_verification',

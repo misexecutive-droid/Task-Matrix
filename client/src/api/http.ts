@@ -31,6 +31,17 @@ const refreshAccessToken = (staleToken: string | null): Promise<string | null> =
   return doRefresh();
 };
 
+// Thrown for any non-ok response so callers (see queryHelpers.ts's handleQueryRetry) can branch
+// on the actual HTTP status — a plain Error has nowhere to carry that.
+export class ApiError extends Error {
+  status: number;
+  constructor(message: string, status: number) {
+    super(message);
+    this.name = 'ApiError';
+    this.status = status;
+  }
+}
+
 const forceLogout = () => {
   localStorage.removeItem('tm-user');
   tokenStore.set(null);
@@ -68,6 +79,6 @@ export const apiFetch = async <T>(path: string, options: RequestInit = {}): Prom
   }
 
   const data = await res.json().catch(() => null);
-  if (!res.ok) throw new Error(data?.message ?? 'Request failed');
+  if (!res.ok) throw new ApiError(data?.message ?? 'Request failed', res.status);
   return data as T;
 };

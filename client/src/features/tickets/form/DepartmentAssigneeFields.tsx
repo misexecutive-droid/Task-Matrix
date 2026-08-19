@@ -1,6 +1,6 @@
 import { Building2, UserCheck } from 'lucide-react';
-import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
-import { LABEL_CLASS, SELECT_CLASS_DISABLED, ANY_DEPARTMENT, UNASSIGNED } from './formConstants';
+import { Combobox } from '../../../components';
+import { LABEL_CLASS } from './formConstants';
 import type { Department } from '@/api/departments';
 import type { AssignableUser } from '@/api/users';
 
@@ -29,44 +29,31 @@ export const DepartmentAssigneeFields = ({
       <label className={LABEL_CLASS}>
         <Building2 className="w-3.5 h-3.5" /> Department
       </label>
-      <Select
-        value={departmentId || ANY_DEPARTMENT}
-        onValueChange={v => onDepartmentChange(v === ANY_DEPARTMENT ? '' : v)}
+      <Combobox
+        value={departmentId ?? ''}
+        onChange={onDepartmentChange}
         disabled={locked}
-      >
-        <SelectTrigger className={SELECT_CLASS_DISABLED}>
-          <SelectValue placeholder="Any department" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value={ANY_DEPARTMENT} className="font-display text-xs">Any department</SelectItem>
-          {departments?.map(d => (
-            <SelectItem key={d.id} value={d.id} className="font-display text-xs">{d.name}</SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+        placeholder="Search departments..."
+        emptyOptionLabel="Any department"
+        options={(departments ?? []).map(d => ({ value: d.id, label: d.name }))}
+      />
     </div>
 
     <div className="flex flex-col gap-2">
       <label className={LABEL_CLASS}>
         <UserCheck className="w-3.5 h-3.5" /> Assignee
       </label>
-      <Select
-        value={assigneeId || UNASSIGNED}
-        onValueChange={v => onAssigneeChange(v === UNASSIGNED ? '' : v)}
+      <Combobox
+        value={assigneeId ?? ''}
+        onChange={onAssigneeChange}
         disabled={locked}
-      >
-        <SelectTrigger className={SELECT_CLASS_DISABLED}>
-          <SelectValue placeholder="Unassigned" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value={UNASSIGNED} className="font-display text-xs">Unassigned</SelectItem>
-          {assignableUsers?.map(u => (
-            <SelectItem key={u.id} value={u.id} className="font-display text-xs">
-              {u.firstName} {u.lastName ?? ''} ({u.role})
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+        placeholder="Search team members..."
+        emptyOptionLabel="Unassigned"
+        options={(assignableUsers ?? []).map(u => ({
+          value: u.id,
+          label: `${u.firstName} ${u.lastName ?? ''}`.trim() + ` (${u.role})`,
+        }))}
+      />
     </div>
   </div>
 );

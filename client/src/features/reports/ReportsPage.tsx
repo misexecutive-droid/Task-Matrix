@@ -12,9 +12,9 @@ const MODULES: { key: ReportModule; label: string; icon: typeof Ticket; descript
   },
   {
     key: 'tasks',
-    label: 'Tasks',
+    label: 'Delegations',
     icon: ClipboardList,
-    description: 'Every task created in the selected period — status, priority, department, and assignee.',
+    description: 'Every delegation created in the selected period — status, priority, department, and assignee.',
   },
   {
     key: 'checklists',

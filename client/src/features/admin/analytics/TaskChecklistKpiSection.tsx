@@ -19,11 +19,11 @@ export const TaskChecklistKpiSection = ({ groupBy, from, to }: TaskChecklistKpiS
   return (
     <KpiSectionShell
       icon={ClipboardCheck}
-      title="Task Checklists"
-      description="Checklist-item completion and photo-quality compliance across every task."
+      title="Delegation Checklists"
+      description="Checklist-item completion and photo-quality compliance across every delegation."
       isPending={isPending}
       isError={isError}
-      errorMessage="Failed to load task checklist data."
+      errorMessage="Failed to load delegation checklist data."
       from={from}
       to={to}
       cards={[

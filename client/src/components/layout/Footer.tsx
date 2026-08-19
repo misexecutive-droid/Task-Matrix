@@ -2,7 +2,7 @@ import { CheckSquare } from "lucide-react";
 import { NavLink } from "react-router";
 
 const LINKS = [
-  { to: '/tasks', label: 'Tasks' },
+  { to: '/tasks', label: 'Delegation' },
   { to: '/projects', label: 'Projects' },
   { to: '/calendar', label: 'Calendar' },
   { to: '/settings', label: 'Settings' },

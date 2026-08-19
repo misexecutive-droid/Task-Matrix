@@ -62,7 +62,7 @@ export const KpiStrip = ({ tickets, tasks, isPending }: KpiStripProps) => {
       onClick: () => navigate('/tickets'),
     },
     {
-      key: 'openTasks', label: 'Open Tasks', value: openTasks.length,
+      key: 'openTasks', label: 'Open Delegations', value: openTasks.length,
       sparkline: seriesInMonths(openTasks.map(t => t.createdAt), months),
       ...trendForDates(openTasks.map(t => t.createdAt)),
       onClick: () => navigate('/tasks'),

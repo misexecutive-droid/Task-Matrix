@@ -41,7 +41,7 @@ export const RecentActivity = ({ feed, isPending }: RecentActivityProps) => (
           to="/tasks"
           className="px-3 py-1.5 rounded-md text-text-muted hover:text-primary-600 hover:bg-surface-hover transition-colors"
         >
-          Tasks
+          Delegations
         </Link>
       </div>
     </div>

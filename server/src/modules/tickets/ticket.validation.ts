@@ -33,6 +33,10 @@ export const tatReportQuerySchema = z.object({
     groupBy : z.enum(["hour", "day", "week", "month", "year"]).default("day"),
     from : z.string().optional(),
     to : z.string().optional(),
+    // Only honored for ADMIN/PC callers — MANAGER/SENIOR get their own departmentId/storeId
+    // forced by the controller regardless of what's sent here (see ticket.controller.ts).
+    departmentId : objectId.optional(),
+    storeId : objectId.optional(),
 })
 
 // PC/Admin verification action on a ticket that's IN_REVIEW: APPROVE closes it for good,

@@ -1,4 +1,5 @@
 import path from "node:path"
+import { Types } from "mongoose"
 import { Ticket } from "../../models/Ticket.js"
 import { TicketStatusUpdate } from "../../models/TicketStatusUpdate.js"
 import { TicketAttachment } from "../../models/TicketAttachment.js"
@@ -45,6 +46,11 @@ const visibilityFilter = (user: AccessTokenPayload) => {
     return { $or: or }
   }
 
+  // SENIOR is store-only (no department fallback) — an Area Head oversees exactly one store.
+  if (user.role === "SENIOR") {
+    return user.storeId ? { storeId: user.storeId } : { userId: user.sub };
+  }
+
   if (user.role === 'AGENT' || user.role === 'USER') {
     const own = { $or: [{ assigneeId: user.sub }, { userId: user.sub }] };
     return user.departmentId ? { $and: [own, { departmentId: user.departmentId }] } : own;
@@ -72,6 +78,11 @@ const assertCanMutate = (user: AccessTokenPayload, ticket: any) => {
   if (user.role === "MANAGER") {
     if (isSameDeptOrStore(user, ticket)) return
     throw AppError.forbidden("Outside your department/store")
+  }
+
+  if (user.role === "SENIOR") {
+    if (user.storeId && String(ticket.storeId) === user.storeId) return;
+    throw AppError.forbidden("Outside your store")
   }
 
   throw AppError.forbidden()
@@ -314,11 +325,13 @@ export const ticketService = {
     return ticket;
   },
 
- async tatReport(groupBy: DateBucket, from?: string, to?: string) {
+ async tatReport(groupBy: DateBucket, from?: string, to?: string, departmentId?: string, storeId?: string) {
 
     const closedMatch : Record<string , any> = { closedAt : { $ne : null}}
     if(from) closedMatch.closedAt = { ...closedMatch.closedAt, $gte : new Date(from)};
     if(to) closedMatch.closedAt = { ...closedMatch.closedAt, $lte : new Date(to)};
+    if(departmentId) closedMatch.departmentId = new Types.ObjectId(departmentId);
+    if(storeId) closedMatch.storeId = new Types.ObjectId(storeId);
 
     const createdMatch : Record<string , any> = {}
     if(from || to) {
@@ -326,6 +339,8 @@ export const ticketService = {
       if(from) createdMatch.createdAt.$gte = new Date(from);
       if(to) createdMatch.createdAt.$lte = new Date(to);
     }
+    if(departmentId) createdMatch.departmentId = new Types.ObjectId(departmentId);
+    if(storeId) createdMatch.storeId = new Types.ObjectId(storeId);
 
     const [facet] = await Ticket.aggregate([
       {

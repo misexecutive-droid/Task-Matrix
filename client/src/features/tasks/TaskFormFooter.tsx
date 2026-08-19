@@ -28,7 +28,7 @@ export const TaskFormFooter = ({ onClose, isPending, isSubmitting }: TaskFormFoo
       className="w-full sm:w-auto gap-1.5"
     >
       <Plus size={16} strokeWidth={2.5} />
-      <span>Add new task</span>
+      <span>Add new delegation</span>
     </Button>
   </div>
 );

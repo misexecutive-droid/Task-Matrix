@@ -13,6 +13,7 @@ import { TaskActivitySection } from './TaskActivitySection';
 import { TaskAttachmentsSection } from './TaskAttachmentsSection';
 import { TaskVerificationBanner } from './TaskVerificationBanner';
 import { STATUS_LABEL, NEXT_STATUS } from './taskDisplay';
+import { TaskScoreBadge } from './TaskScoreBadge';
 import { taskAssigneeIds } from './cardFields';
 import { useAuth } from '../../context/AuthContext';
 import { FIELD_LABEL_CLASS, FIELD_LABEL_ICON_CLASS } from './taskFormFieldStyles';
@@ -69,12 +70,13 @@ export const TaskDetail = ({ task: initialTask, onClose }: TaskDetailProps) => {
       onClose={onClose}
       size="2xl"
       icon={<CheckSquare className="w-5 h-5 text-primary-600" />}
-      title="Edit task"
+      title="Edit delegation"
       description="Changes save automatically as you edit each field."
       bodyClassName="p-0"
       footer={
         <div className="flex items-center justify-between w-full gap-3">
-          <div>
+          <div className="flex items-center gap-2.5">
+            <TaskScoreBadge status={task.status} />
             {task.status === 'done' && (
               <span className="flex items-center gap-1.5 text-xs font-semibold text-success">
                 <CheckCircle2 size={15} /> Completed
@@ -116,7 +118,7 @@ export const TaskDetail = ({ task: initialTask, onClose }: TaskDetailProps) => {
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               onBlur={saveTitle}
-              placeholder="Task title"
+              placeholder="Delegation title"
               disabled={isPC}
               className="w-full h-10 px-3 rounded-md border border-border bg-surface text-sm font-semibold text-text outline-none transition-colors hover:border-border-hover focus:border-primary-400 focus:ring-2 focus:ring-primary-500/20 disabled:bg-surface-hover disabled:text-text-light disabled:cursor-not-allowed"
             />

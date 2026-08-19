@@ -51,4 +51,7 @@ function Badge({
   )
 }
 
+// badgeVariants is exported so other components can reuse the same variant classes (shadcn/ui
+// convention); only affects Fast Refresh granularity, not runtime correctness.
+// eslint-disable-next-line react-refresh/only-export-components
 export { Badge, badgeVariants }

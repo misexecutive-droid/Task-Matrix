@@ -3,15 +3,13 @@ import { NavLink, Outlet, useLocation } from 'react-router';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   LayoutDashboard,
-  Users,
-  Building2,
-  Store,
+  Contact,
   TicketCheck,
   Settings,
   ListChecks,
   ClipboardList,
   FileDown,
-  BarChart3,
+  Network,
   ChevronDown
 } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
@@ -20,6 +18,7 @@ import { twMerge } from 'tailwind-merge';
 import { useAuth } from "../../context/AuthContext";
 import { Header } from "../../components/layout";
 import { Breadcrumbs } from "../../components/breadcrumbs";
+import { OrbitDecoration } from "../../components/orbitDecoration";
 
 /** Utility for intelligent Tailwind class merging */
 function cn(...inputs: ClassValue[]) {
@@ -41,24 +40,22 @@ interface AdminNavItem {
 }
 
 const NAV: AdminNavItem[] = [
-  { to: '/admin', icon: LayoutDashboard, label: 'Overview', end: true },
-  { to: '/admin/analytics', icon: BarChart3, label: 'Analytics & Dashboard', end: false },
-  { to: '/admin/users', icon: Users, label: 'Users', end: false },
-  { to: '/admin/departments', icon: Building2, label: 'Departments', end: false },
-  { to: '/admin/stores', icon: Store, label: 'Stores', end: false },
+  { to: '/admin', icon: LayoutDashboard, label: 'Overview & Analytics', end: true },
+  { to: '/admin/directory', icon: Contact, label: 'Directory', end: false },
+  { to: '/admin/org-structure', icon: Network, label: 'Org Structure', end: false },
   {
     to: '/admin/checklist-templates',
     icon: ListChecks,
     label: 'Checklists',
     end: false,
     children: [
-      { to: '/admin/checklist-templates', label: 'Task Templates' },
+      { to: '/admin/checklist-templates', label: 'Delegation Templates' },
       { to: '/admin/scheduled-checklists', label: 'Templates' },
       { to: '/admin/scheduled-checklists/builder', label: 'Builder' },
     ],
   },
   { to: '/admin/tickets', icon: TicketCheck, label: 'Tickets', end: false },
-  { to: '/tasks/team', icon: ClipboardList, label: 'Tasks', end: false },
+  { to: '/tasks/team', icon: ClipboardList, label: 'Team Delegations', end: false },
   { to: '/admin/reports', icon: FileDown, label: 'Reports', end: false },
   { to: '/admin/settings', icon: Settings, label: 'Settings', end: false },
 ];
@@ -132,14 +129,17 @@ export const AdminLayout = () => {
         {/* Sidebar Navigation */}
         <aside
           className={cn(
-            "flex flex-col border-r border-slate-200 dark:border-slate-800/80 bg-white/80 dark:bg-slate-950/80 backdrop-blur-md",
+            "relative isolate flex flex-col border-r border-slate-200 dark:border-slate-800/80 bg-white/80 dark:bg-slate-950/80 backdrop-blur-md",
             "transition-all duration-300 ease-in-out overflow-hidden shrink-0 shadow-sm md:shadow-none",
             "fixed top-14 bottom-0 left-0 z-40 w-72 px-4 py-6",
-            "md:static md:top-auto md:z-auto md:py-6",
+            "md:relative md:top-auto md:z-auto md:py-6",
             sidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0",
             sidebarOpen ? "md:w-64" : "md:w-[84px] md:px-3"
           )}
         >
+          <OrbitDecoration corner="top-right" tone="primary" className="w-44 h-44 -top-10 -right-14" />
+          <OrbitDecoration corner="bottom-left" tone="coral" className="w-24 h-24 -bottom-8 -left-8" />
+
           {/* User Profile Area */}
           <div className={cn(
             "flex items-center gap-3 pb-6 mb-4 border-b border-slate-100 dark:border-slate-800/60 transition-all duration-300",
@@ -185,7 +185,7 @@ export const AdminLayout = () => {
                         "active:scale-[0.98]",
                         !sidebarOpen && "md:justify-center md:px-0",
                         (isActive || hasActiveChild)
-                          ? "bg-primary-50 text-primary-700"
+                          ? "bg-primary-50 text-primary-700 dark:bg-primary-500/15 dark:text-primary-400"
                           : "text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800/50 dark:hover:text-slate-200"
                       )}
                       title={!sidebarOpen ? label : undefined}
@@ -196,7 +196,7 @@ export const AdminLayout = () => {
                             className={cn(
                               "w-[17px] h-[17px] shrink-0 transition-all duration-300 group-hover:scale-110",
                               (isActive || hasActiveChild)
-                                ? "text-primary-700"
+                                ? "text-primary-700 dark:text-primary-400"
                                 : "text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-300"
                             )}
                             strokeWidth={(isActive || hasActiveChild) ? 2 : 1.75}
@@ -210,7 +210,7 @@ export const AdminLayout = () => {
 
                           {/* Active Indicator Pip (Visible only when sidebar is collapsed) */}
                           {!sidebarOpen && (isActive || hasActiveChild) && (
-                            <span className="hidden md:block absolute left-1 w-1 h-1/2 bg-primary-700 rounded-full" />
+                            <span className="hidden md:block absolute left-1 w-1 h-1/2 bg-primary-700 dark:bg-primary-400 rounded-full" />
                           )}
                         </>
                       )}
@@ -245,7 +245,7 @@ export const AdminLayout = () => {
                           className={({ isActive }) => cn(
                             "rounded-lg px-2.5 py-1.5 text-[12.5px] font-medium transition-colors duration-200",
                             isActive
-                              ? "bg-primary-50 text-primary-700 font-semibold"
+                              ? "bg-primary-50 text-primary-700 font-semibold dark:bg-primary-500/15 dark:text-primary-400"
                               : "text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800/50 dark:hover:text-slate-200"
                           )}
                         >

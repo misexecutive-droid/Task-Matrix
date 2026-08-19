@@ -1,12 +1,44 @@
 import { useParams, useNavigate, Link } from 'react-router';
-import { ArrowLeft, AlertCircle, Repeat, Users, Calendar, Pencil } from 'lucide-react';
+import { ArrowLeft, AlertCircle, Repeat, Users, Calendar, Pencil, Gauge, Camera } from 'lucide-react';
 import { Skeleton } from '../../../components';
 import { useChecklistDefinitionQuery, useInstancesForDefinitionQuery, useStoresQuery } from '../hook';
 import { ChecklistInstanceRow } from '../instance/ChecklistInstanceRow';
-import { formatDate, instanceProgressStatus, INSTANCE_STATUS_LABEL, type InstanceProgressStatus } from '../checklistDisplay';
+import {
+  formatDate, instanceProgressStatus, INSTANCE_STATUS_LABEL, rateToneClass, rateBarClass,
+  type InstanceProgressStatus,
+} from '../checklistDisplay';
 import type { ChecklistInstance } from '../../../api/checklistInstances';
 
 const STATUS_ORDER: InstanceProgressStatus[] = ['TODO', 'IN_PROGRESS', 'COMPLETED'];
+
+interface RateTileProps {
+  icon: typeof Gauge;
+  label: string;
+  rate: number | null;
+  emptyLabel: string;
+}
+
+const RateTile = ({ icon: Icon, label, rate, emptyLabel }: RateTileProps) => (
+  <div className="flex flex-col gap-2 p-4 rounded-xl border border-border bg-surface flex-1 min-w-[10rem]">
+    <span className="flex items-center gap-1.5 text-xs font-display font-semibold text-text-muted uppercase tracking-wider">
+      <Icon size={13} />
+      {label}
+    </span>
+    {rate !== null ? (
+      <>
+        <p className={`font-display text-2xl font-bold ${rateToneClass(rate)}`}>{rate}%</p>
+        <div className="h-1.5 w-full rounded-full bg-surface-hover overflow-hidden">
+          <div
+            className={`h-full rounded-full transition-[width] duration-300 ${rateBarClass(rate)}`}
+            style={{ width: `${rate}%` }}
+          />
+        </div>
+      </>
+    ) : (
+      <p className="text-sm font-display text-text-light">{emptyLabel}</p>
+    )}
+  </div>
+);
 
 const groupByStatus = (instances: ChecklistInstance[]) =>
   STATUS_ORDER.map(status => ({
@@ -88,6 +120,11 @@ export const ChecklistDefinitionDetail = () => {
           <span className="flex items-center gap-1"><Calendar size={12} /> Starts {formatDate(definition.startDate)}</span>
           <span className="font-semibold text-text-secondary">v{definition.version}</span>
         </div>
+      </div>
+
+      <div className="flex flex-wrap gap-4">
+        <RateTile icon={Gauge} label="Completion rate" rate={definition.completionRate} emptyLabel="No runs generated yet" />
+        <RateTile icon={Camera} label="Photo compliance" rate={definition.qualityRate} emptyLabel="No photo-proof items yet" />
       </div>
 
       <div className="flex flex-col gap-6">

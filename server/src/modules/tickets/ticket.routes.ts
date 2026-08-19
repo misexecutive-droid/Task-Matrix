@@ -10,7 +10,7 @@ export const ticketRouter = Router();
 
 ticketRouter.use(authenticate);
 ticketRouter.get('/', ticketController.list);
-ticketRouter.get('/reports/tat', requireRole('ADMIN', 'PC'), ticketController.tatReport); // NEW — see Part B
+ticketRouter.get('/reports/tat', requireRole('ADMIN', 'PC', 'MANAGER', 'SENIOR'), ticketController.tatReport);
 ticketRouter.get('/:id', ticketController.getOne);
 
 ticketRouter.post('/', ticketController.create);

@@ -11,15 +11,7 @@ import { checklistInstanceApi, type ChecklistInstanceStatus, type VerifyChecklis
 import { checklistInstanceItemSubmissionApi } from '../../api/checklistInstanceItemSubmissions';
 import type { ChecklistInstanceItemSubmissionAccessory } from '../../api/checklistInstances';
 import type { CaptureMethod } from '../../api/ticket';
-import { useEntityMutation } from '../../lib/queryHelpers';
-
-const errorMessage = (err: unknown, fallback: string) => (err instanceof Error ? err.message : fallback);
-
-// Helper function to prevent React Query from retrying on 401 Unauthorized errors
-const handleQueryRetry = (failureCount: number, error: any) => {
-  if (error?.response?.status === 401 || error?.status === 401) return false;
-  return failureCount < 3;
-};
+import { useEntityMutation, errorMessage, handleQueryRetry } from '../../lib/queryHelpers';
 
 const KEYS = {
   definitions:            (filters: ListChecklistDefinitionsParams) => ['checklist-definitions', filters] as const,

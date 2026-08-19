@@ -99,7 +99,7 @@ export const notificationService = {
     const idField = kind === 'TICKET' ? { ticketId: entity._id.toString() } : { taskId: entity._id.toString() };
     return notificationService.notifyMany(recipientIds, {
       type: `${kind}_PENDING_VERIFICATION`,
-      title: kind === 'TICKET' ? 'Ticket awaiting verification' : 'Task awaiting verification',
+      title: kind === 'TICKET' ? 'Ticket awaiting verification' : 'Delegation awaiting verification',
       message: `"${entity.title}" is ready for your review.`,
       ...idField,
     });
@@ -139,7 +139,7 @@ export const notificationService = {
     const idField = kind === 'TICKET' ? { ticketId: entity._id.toString() } : { taskId: entity._id.toString() };
     return notificationService.notifyMany(recipientIds, {
       type: `${kind}_ON_HOLD`,
-      title: kind === 'TICKET' ? 'Ticket put on hold' : 'Task put on hold',
+      title: kind === 'TICKET' ? 'Ticket put on hold' : 'Delegation put on hold',
       message: `"${entity.title}" was put on hold: ${remark}`,
       ...idField,
     });

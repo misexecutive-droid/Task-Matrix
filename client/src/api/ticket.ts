@@ -249,10 +249,14 @@ export const ticketApi = {
       body:   JSON.stringify({ body }),
     }),
 
-  getTatReport : ( groupBy : TatReportGroupBy = "day", from?: string, to?: string) => {
+  // departmentId/storeId are only honored for ADMIN/PC callers — MANAGER/SENIOR get their own
+  // scope forced server-side regardless of what's passed here (see ticket.controller.ts).
+  getTatReport : ( groupBy : TatReportGroupBy = "day", from?: string, to?: string, departmentId?: string, storeId?: string) => {
     const params = new URLSearchParams({ groupBy });
     if (from) params.set('from', from);
     if (to) params.set('to', to);
+    if (departmentId) params.set('departmentId', departmentId);
+    if (storeId) params.set('storeId', storeId);
     return apiFetch<ApiResponse<TatReportRow[]>>(`/tickets/reports/tat?${params.toString()}`);
   },
 };

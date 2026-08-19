@@ -1,3 +1,4 @@
+import { Types } from "mongoose"
 import { ChecklistDefinition, type ChecklistRecurrence } from "../../models/ChecklistDefinition.js"
 import { ChecklistDefinitionItem } from "../../models/ChecklistDefinitionItem.js"
 import { ChecklistInstance } from "../../models/ChecklistInstance.js"
@@ -19,6 +20,63 @@ export type ListChecklistDefinitionsFilter = {
 const populateDefinition = (query: any) =>
     query.populate({ path: "items", options: { sort: { order: 1 } } })
 
+// Completion rate (isDone across every generated instance's items) and photo-compliance rate
+// (of items requiring a photo, what % actually got a qualifying one) per definition — same
+// pipeline shape as checklistInstance.service.ts's own complianceReport, just grouped by
+// definitionId instead of time bucket, so the Templates grid/detail page can show each
+// checklist's real-world track record without an N+1 request per card.
+const statsByDefinition = async (definitionIds: Types.ObjectId[]) => {
+    const map = new Map<string, { completionRate: number | null; qualityRate: number | null }>()
+    if (!definitionIds.length) return map
+
+    const rows = await ChecklistInstanceItem.aggregate([
+        { $lookup: { from: "checklistinstances", localField: "instanceId", foreignField: "_id", as: "instance" } },
+        { $unwind: "$instance" },
+        { $match: { "instance.definitionId": { $in: definitionIds } } },
+        { $lookup: { from: "checklistinstanceimages", localField: "_id", foreignField: "checklistInstanceItemId", as: "images" } },
+        {
+            $addFields: {
+                qualifyingImageCount: {
+                    $cond: [
+                        "$requiresLivePhoto",
+                        { $size: { $filter: { input: "$images", cond: { $eq: ["$$this.captureMethod", "LIVE"] } } } },
+                        { $size: "$images" },
+                    ],
+                },
+            },
+        },
+        {
+            $group: {
+                _id: "$instance.definitionId",
+                totalItems: { $sum: 1 },
+                doneItems: { $sum: { $cond: ["$isDone", 1, 0] } },
+                itemsRequiringPhotos: { $sum: { $cond: [{ $gt: ["$requiredImageCount", 0] }, 1, 0] } },
+                photoCompliantItems: {
+                    $sum: {
+                        $cond: [
+                            { $and: [{ $gt: ["$requiredImageCount", 0] }, { $gte: ["$qualifyingImageCount", "$requiredImageCount"] }] },
+                            1, 0,
+                        ],
+                    },
+                },
+            },
+        },
+    ])
+
+    for (const r of rows) {
+        map.set(r._id.toString(), {
+            completionRate: r.totalItems ? Math.round((r.doneItems / r.totalItems) * 1000) / 10 : null,
+            qualityRate: r.itemsRequiringPhotos ? Math.round((r.photoCompliantItems / r.itemsRequiringPhotos) * 1000) / 10 : null,
+        })
+    }
+    return map
+}
+
+const withStats = (definition: any, stats: Map<string, { completionRate: number | null; qualityRate: number | null }>) => {
+    const s = stats.get(definition._id.toString())
+    return { ...definition.toObject({ virtuals: true }), completionRate: s?.completionRate ?? null, qualityRate: s?.qualityRate ?? null }
+}
+
 export const checklistDefinitionService = {
     async list(filter: ListChecklistDefinitionsFilter) {
         const query: Record<string, unknown> = {}
@@ -27,13 +85,16 @@ export const checklistDefinitionService = {
         if (filter.storeId) query.storeIds = filter.storeId
         if (filter.recurrence) query.recurrence = filter.recurrence
         if (filter.isActive !== undefined) query.isActive = filter.isActive
-        return populateDefinition(ChecklistDefinition.find(query).sort({ name: 1 }))
+        const definitions = await populateDefinition(ChecklistDefinition.find(query).sort({ name: 1 }))
+        const stats = await statsByDefinition(definitions.map((d: any) => d._id))
+        return definitions.map((d: any) => withStats(d, stats))
     },
 
     async getById(id: string) {
         const definition = await populateDefinition(ChecklistDefinition.findById(id))
         if (!definition) throw AppError.notFound("Checklist not found")
-        return definition
+        const stats = await statsByDefinition([definition._id])
+        return withStats(definition, stats)
     },
 
     async create(input: CreateChecklistDefinitionInput, user: AccessTokenPayload) {

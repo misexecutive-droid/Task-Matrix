@@ -32,7 +32,7 @@ export const PersonCard = ({ row, onClick }: { row: PersonCardRow; onClick: () =
 
     <div className="flex items-center justify-between gap-2 pt-2 border-t border-border/60">
       <span className="text-xs text-text-muted">
-        <strong className="font-semibold text-text">{row.openTickets}</strong> tickets · <strong className="font-semibold text-text">{row.openTasks}</strong> tasks
+        <strong className="font-semibold text-text">{row.openTickets}</strong> tickets · <strong className="font-semibold text-text">{row.openTasks}</strong> delegations
       </span>
       <span className={`inline-flex items-center justify-center text-[11px] font-semibold px-2 py-0.5 rounded ${
         row.overdue > 0 ? 'bg-danger/10 text-danger' : 'bg-surface-hover text-text-muted opacity-70'

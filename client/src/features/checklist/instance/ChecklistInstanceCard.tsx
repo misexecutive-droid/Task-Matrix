@@ -1,5 +1,6 @@
 import { Link } from 'react-router';
-import { formatDateShort } from '../checklistDisplay';
+import { Clock } from 'lucide-react';
+import { formatDateShort, rateToneClass, rateBarClass, isInstanceOverdue } from '../checklistDisplay';
 import type { ChecklistInstance } from '../../../api/checklistInstances';
 
 interface ChecklistInstanceCardProps {
@@ -13,6 +14,7 @@ export const ChecklistInstanceCard = ({ instance }: ChecklistInstanceCardProps) 
   const done = instance.items.filter(i => i.isDone).length;
   const progress = total ? Math.round((done / total) * 100) : 0;
   const isComplete = total > 0 && done === total;
+  const overdue = isInstanceOverdue(instance.periodEnd, isComplete);
 
   return (
     <Link
@@ -21,21 +23,32 @@ export const ChecklistInstanceCard = ({ instance }: ChecklistInstanceCardProps) 
     >
       <div className="flex items-start justify-between gap-2">
         <p className="text-sm font-mono font-medium text-text">{instance.title}</p>
-        {isComplete && (
+        {isComplete ? (
           <span className="flex items-center gap-1 text-[10px] uppercase tracking-wider font-semibold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 shrink-0">
             Done
+          </span>
+        ) : (
+          <span className={`flex items-center gap-1 text-[10px] font-mono font-semibold px-2 py-0.5 rounded-full shrink-0 ${rateToneClass(progress)} bg-surface-hover`}>
+            Mark {progress}%
           </span>
         )}
       </div>
 
-      <p className="text-xs text-text-muted font-mono">
-        {formatDateShort(instance.periodStart)} – {formatDateShort(instance.periodEnd)}
-      </p>
+      <div className="flex items-center gap-2 flex-wrap">
+        <p className="text-xs text-text-muted font-mono">
+          {formatDateShort(instance.periodStart)} – {formatDateShort(instance.periodEnd)}
+        </p>
+        {overdue && (
+          <span className="flex items-center gap-1 text-[10px] font-mono font-semibold px-1.5 py-0.5 rounded-full bg-danger/10 text-danger">
+            <Clock size={10} /> Overdue
+          </span>
+        )}
+      </div>
 
       <div className="flex items-center gap-2">
         <div className="h-1.5 flex-1 bg-surface-hover rounded-full overflow-hidden border border-border/50">
           <div
-            className="h-full bg-gradient-to-r from-primary-500 to-primary-400 transition-all duration-500"
+            className={`h-full rounded-full transition-all duration-500 ${rateBarClass(progress)}`}
             style={{ width: `${progress}%` }}
           />
         </div>

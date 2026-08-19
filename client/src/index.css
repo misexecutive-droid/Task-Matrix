@@ -2,9 +2,7 @@
 @import "tailwindcss";
 
 @variant dark ([data-theme="dark"] &);
-
 @theme {
-  /* Navy â primary brand scale (Verma Jewellers) */
   --color-primary-50: #eef4fa;
   --color-primary-100: #dde8f3;
   --color-primary-200: #b9cce0;
@@ -24,7 +22,6 @@
   --color-cobalt-700: #143d6b;
   --color-cobalt-800: #0f2f54;
   --color-cobalt-900: #0a2240;
-  /* Gold â accent scale (Verma Jewellers) */
   --color-coral-50: #fdf8ec;
   --color-coral-100: #faf3dd;
   --color-coral-200: #f3e6bb;
@@ -41,7 +38,7 @@
   --color-status-progress: #f59e0b;
   --color-status-verify: #6366f1;
   --color-status-done: #10b981;
-  --color-background: #f7f8fa;
+  --color-background: #ffffff;
   --color-surface: #ffffff;
   --color-surface-hover: #eef0f3;
   --color-surface-active: #e2e5ea;
@@ -60,10 +57,13 @@
   --transition-fast: 150ms ease;
   --transition-normal: 220ms ease;
   --transition-slow: 350ms ease;
-
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
   --animate-slide-in-right: slideInRight 0.3s ease-out;
   --animate-fade-in-up: fadeInUp 0.3s ease-out;
   --animate-fade-in: fadeIn 0.2s ease-out;
+  --animate-float-blob: floatBlob 7s ease-in-out infinite;
+  --animate-orbit-slow: orbitSpin 22s linear infinite;
+  --animate-light-beam: lightBeamSweep 7s linear infinite;
 }
 
 @keyframes slideInRight {
@@ -79,6 +79,124 @@
 @keyframes fadeIn {
   from { opacity: 0; }
   to { opacity: 1; }
+}
+
+@keyframes floatBlob {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(-8px, 6px) scale(1.2); }
+  66% { transform: translate(5px, -6px) scale(0.9); }
+}
+
+@keyframes orbitSpin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* A thin streak sweeping across its container at a shallow angle, fading in/out at each end so
+   the loop reads as a passing beam rather than a hard reset — used for the "scanning light /
+   comet trail" ambient effect. Distance is in vw so it clears any container width. */
+@keyframes lightBeamSweep {
+  0%   { transform: translateX(-60vw) rotate(-8deg); opacity: 0; }
+  12%  { opacity: 1; }
+  45%  { opacity: 1; }
+  60%  { opacity: 0; }
+  100% { transform: translateX(60vw) rotate(-8deg); opacity: 0; }
+}
+
+/* Chromium forces its own light autofill background (yellow/blue) on remembered email & password
+   fields, ignoring the page's own dark theme entirely — this is the standard workaround: an
+   absurdly long background-color transition means that forced color never actually has time to
+   paint before the real background takes over. */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+  transition: background-color 9999s ease-in-out 0s, color 9999s ease-in-out 0s;
+  -webkit-text-fill-color: var(--color-text);
+  caret-color: var(--color-text);
+}
+
+/* A quick light flash across the whole button surface on press, instant on press-down and
+   easing back out on release — cheaper than a real ripple (no click-position tracking needed)
+   but still reads as tactile feedback before whatever the button triggers (opening a modal, etc.)
+   actually appears. */
+.press-feedback {
+  position: relative;
+  overflow: hidden;
+}
+.press-feedback::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.45) 0%, transparent 65%);
+  opacity: 0;
+  transform: scale(0.6);
+  transition: opacity 0.35s ease, transform 0.35s ease;
+  pointer-events: none;
+}
+.press-feedback:active::after {
+  opacity: 1;
+  transform: scale(1.5);
+  transition: opacity 0s, transform 0s;
+}
+
+:root {
+  --bg-body: var(--color-background);
+  --glass-bg: rgba(255, 255, 255, 0.72);
+  --glass-blur: blur(12px);
+  color-scheme: light;
+}
+
+:root[data-theme="dark"] {
+  --color-background: #0b1220;
+  --color-surface: #121a2c;
+  --color-surface-hover: #1a2338;
+  --color-surface-active: #232f49;
+  --color-border: #232f49;
+  --color-border-hover: #34415f;
+  --color-text: #eef1f6;
+  --color-text-secondary: #b7c0d1;
+  --color-text-muted: #8791a6;
+  --color-text-light: #5f6a80;
+  --glass-bg: rgba(11, 18, 32, 0.72);
+  color-scheme: dark;
+}
+
+/* Applied globally (not just .custom-scrollbar) so every scrollable area — modals, tables,
+   dropdown lists — themes its scrollbar to match the current palette instead of falling back
+   to the browser's default light-grey scrollbar in dark mode. */
+*,
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border-hover) transparent;
+}
+
+*::-webkit-scrollbar,
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+*::-webkit-scrollbar-track,
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb,
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background-color: var(--color-border-hover);
+  border-radius: 999px;
+}
+
+*::-webkit-scrollbar-thumb:hover,
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: var(--color-text-light);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
 }
 
 @theme inline {

@@ -59,6 +59,9 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
  * Custom hook to consume the theme context.
  * Throws a helpful error if used outside of the ThemeProvider.
  */
+// Provider + hook intentionally live in one file (the hook is meaningless without its provider);
+// only affects Fast Refresh granularity, not runtime correctness.
+// eslint-disable-next-line react-refresh/only-export-components
 export const useTheme = (): ThemeContextType => {
   const context = useContext(ThemeContext);
   

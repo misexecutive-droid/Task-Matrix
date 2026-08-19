@@ -17,6 +17,9 @@ interface TaskActivityChartProps {
 
 export const TaskActivityChart = ({ tasks }: TaskActivityChartProps) => {
   const { ringsData, totalTasks } = useMemo(() => {
+    // "now" only needs to be approximately current for the windowing below; memoized so it's
+    // read once per mount, not on every render (see HomePage.tsx for the same pattern).
+    // eslint-disable-next-line react-hooks/purity
     const now = Date.now();
 
     const data = WINDOWS.map((w, index) => {

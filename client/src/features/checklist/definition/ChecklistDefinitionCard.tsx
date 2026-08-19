@@ -4,7 +4,7 @@ import {
   Camera, MapPin, PenLine, Wallet, ScanLine, type LucideIcon,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-import { RECURRENCE_LABEL } from '../checklistDisplay';
+import { RECURRENCE_LABEL, rateToneClass, rateBarClass } from '../checklistDisplay';
 import type { ChecklistDefinition, ChecklistIcon, ChecklistAssigneeRole, ChecklistItemType } from '../../../api/checklistDefinitions';
 
 interface ChecklistDefinitionCardProps {
@@ -66,6 +66,7 @@ export const ChecklistDefinitionCard = ({ definition }: ChecklistDefinitionCardP
   const Icon = ICON_BY_KEY[definition.icon];
   const tags = cardTags(definition);
   const roleLabel = definition.assigneeRoles[0] ? ROLE_LABEL[definition.assigneeRoles[0]] : null;
+  const { completionRate, qualityRate } = definition;
 
   return (
     <Link
@@ -104,6 +105,29 @@ export const ChecklistDefinitionCard = ({ definition }: ChecklistDefinitionCardP
             );
           })}
         </div>
+      )}
+
+      {completionRate !== null ? (
+        <div className="flex flex-col gap-1.5">
+          <div className="flex items-center justify-between text-[11px] font-display font-semibold">
+            <span className="text-text-muted">Completion</span>
+            <span className={rateToneClass(completionRate)}>{completionRate}%</span>
+          </div>
+          <div className="h-1.5 w-full rounded-full bg-surface-hover overflow-hidden">
+            <div
+              className={`h-full rounded-full transition-[width] duration-300 ${rateBarClass(completionRate)}`}
+              style={{ width: `${completionRate}%` }}
+            />
+          </div>
+          {qualityRate !== null && (
+            <div className="flex items-center justify-between text-[11px] font-display">
+              <span className="text-text-muted">Photo compliance</span>
+              <span className={`font-semibold ${rateToneClass(qualityRate)}`}>{qualityRate}%</span>
+            </div>
+          )}
+        </div>
+      ) : (
+        <p className="text-[11px] font-display text-text-light">No runs generated yet</p>
       )}
 
       <div className="flex items-center justify-between text-xs font-display text-text-muted pt-3 border-t border-border/60 mt-auto">

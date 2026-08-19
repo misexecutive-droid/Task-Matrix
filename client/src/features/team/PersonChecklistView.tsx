@@ -27,11 +27,12 @@ const PERIOD_OPTIONS: { key: CompliancePeriod; label: string }[] = [
 
 const isPersons = (id: string | null, personId: string) => id === personId;
 
-// Bar chart broken down by Task / Issue / Delegation / Ticket, each bar clickable straight
-// through to that person's filtered list for the selected period — reviewing one category no
-// longer means re-deriving the filter by hand. Completion rate and compliance (photo-evidence)
-// rate come from the same checklist-completion aggregation the dashboard's Target card uses
-// (task.service.ts's complianceReport), just scoped to this one person within this department.
+// Bar chart broken down by Direct Task / Issue / Delegation / Ticket / Todo Task, each bar
+// clickable straight through to that person's filtered list for the selected period — reviewing
+// one category no longer means re-deriving the filter by hand. Completion rate, compliance
+// (photo-evidence) rate, and the Todo Task bar all come from the same checklist-completion
+// aggregation the dashboard's Target card uses (task.service.ts's complianceReport), just scoped
+// to this one person within this department.
 export const PersonChecklistView = ({ personName, departmentName, departmentId, personId, tasks, tickets, onBack }: PersonChecklistViewProps) => {
   const navigate = useNavigate();
   const [period, setPeriod] = useState<CompliancePeriod>('month');
@@ -71,11 +72,17 @@ export const PersonChecklistView = ({ personName, departmentName, departmentId, 
   const delegationStats = countDoneTotal(periodTasks.filter(CATEGORY_PREDICATES.delegation));
   const ticketStats = { done: periodTickets.filter(t => t.status === 'CLOSED').length, total: periodTickets.length };
 
+  // Todo-list usage: how many of this person's checklist items (across all their tasks, any
+  // category) are done vs total for the selected period — the same doneItems/totalItems the
+  // Completion Rate card above already gets from complianceReport, just surfaced as its own bar.
+  const todoStats = { done: currentBucket?.doneItems ?? 0, total: currentBucket?.totalItems ?? 0 };
+
   const bars: CategoryBar[] = [
-    { key: 'task', label: 'Task', barClassName: 'bg-primary-500', onClick: () => goToTasks('task'), ...taskStats },
+    { key: 'task', label: 'Direct Task', barClassName: 'bg-primary-500', onClick: () => goToTasks('task'), ...taskStats },
     { key: 'issue', label: 'Issue', barClassName: 'bg-danger', onClick: () => goToTasks('issue'), ...issueStats },
     { key: 'delegation', label: 'Delegation', barClassName: 'bg-info', onClick: () => goToTasks('delegation'), ...delegationStats },
     { key: 'ticket', label: 'Ticket', barClassName: 'bg-coral-500', onClick: goToTickets, ...ticketStats },
+    { key: 'todo', label: 'Todo Task', barClassName: 'bg-warning', onClick: () => navigate(`/tasks?assigneeIds=${personId}`), ...todoStats },
   ];
 
   return (

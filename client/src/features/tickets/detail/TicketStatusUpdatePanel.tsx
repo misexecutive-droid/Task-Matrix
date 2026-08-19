@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { RefreshCcw, Camera, ImageUp, X, AlertCircle } from 'lucide-react';
 import { Button } from '../../../components';
 import { SECTION_HEADER, STATUS_UPDATE_OPTIONS } from './detailConstants';
@@ -26,14 +26,10 @@ const StatusPhotoThumbnail = ({
   index: number;
   onRemove: (index: number) => void;
 }) => {
-  const [previewUrl, setPreviewUrl] = useState<string>('');
-
-  useEffect(() => {
-    const objectUrl = URL.createObjectURL(file);
-    setPreviewUrl(objectUrl);
-
-    return () => URL.revokeObjectURL(objectUrl);
-  }, [file]);
+  // Derived synchronously from `file` — no need to route it through state/effect, which would
+  // cost an extra render (mount with an empty url, then the effect setting it).
+  const previewUrl = useMemo(() => URL.createObjectURL(file), [file]);
+  useEffect(() => () => URL.revokeObjectURL(previewUrl), [previewUrl]);
 
   return (
     <div className="group relative size-14 rounded-md border border-border overflow-hidden bg-surface-muted shrink-0 transition-all">

@@ -15,10 +15,12 @@ export const useLoginMutation = () => {
     mutationFn: (payload: LoginPayload) => authApi.login(payload),
     onSuccess: ({ accessToken, user }) => {
       login(accessToken, {
-        id:    user.id,
-        name:  user.firstName ?? user.email,
-        email: user.email,
-        role:  user.role,
+        id:           user.id,
+        name:         user.firstName ?? user.email,
+        email:        user.email,
+        role:         user.role,
+        departmentId: user.departmentId,
+        storeId:      user.storeId,
       });
       navigate(user.role === 'ADMIN' || user.role === 'PC' ? '/admin' : '/', { replace: true });
     },
@@ -33,10 +35,12 @@ export const useSignupMutation = () => {
     mutationFn: (payload: SignupPayload) => authApi.register(payload),
     onSuccess: ({ accessToken, user }) => {
       login(accessToken, {
-        id:    user.id,
-        name:  user.firstName ?? user.email,
-        email: user.email,
-        role:  user.role,
+        id:           user.id,
+        name:         user.firstName ?? user.email,
+        email:        user.email,
+        role:         user.role,
+        departmentId: user.departmentId,
+        storeId:      user.storeId,
       });
       navigate('/', { replace: true });
     },

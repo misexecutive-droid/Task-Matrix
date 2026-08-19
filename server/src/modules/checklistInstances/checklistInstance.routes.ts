@@ -12,7 +12,7 @@ checklistInstanceRouter.use(authenticate)
 checklistInstanceRouter.get("/mine", checklistInstanceController.getMine)
 checklistInstanceRouter.get("/pending-verification", requireRole("PC", "ADMIN"), checklistInstanceController.listPendingVerification)
 checklistInstanceRouter.get("/", requireRole("ADMIN", "PC"), checklistInstanceController.list)
-checklistInstanceRouter.get("/reports/compliance", requireRole("ADMIN", "PC"), checklistInstanceController.complianceReport)
+checklistInstanceRouter.get("/reports/compliance", requireRole("ADMIN", "PC", "MANAGER", "SENIOR"), checklistInstanceController.complianceReport)
 checklistInstanceRouter.get("/:id", checklistInstanceController.getOne)
 checklistInstanceRouter.patch("/:id/verify", requireRole("PC", "ADMIN"), checklistInstanceController.verify)
 

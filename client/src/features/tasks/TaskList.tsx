@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router";
 import { toast } from "sonner";
 import { Wand2, CheckCheck, AlertCircle, LayoutList, Kanban, Table2, GanttChartSquare, Check, Save, Inbox, X, Plus, Settings2, FileDown } from "lucide-react";
@@ -63,7 +63,40 @@ const VIEW_TABS: { key: TaskView; label: string; icon: typeof LayoutList }[] = [
 
 const DEFAULT_FILTERS: TaskFilters = { category: 'all', status: 'all', priority: [], departmentId: '', assigneeIds: [], raisedByIds: [] };
 
+// The subset of TaskFilters a sidebar deep link can set via URL search params — every field here
+// round-trips through syncFiltersToUrl below, so the URL is always a faithful mirror of them.
+// (priority is the one filter field that's never URL-backed — it stays local-only.)
+const URL_TRACKED_DEFAULTS: Pick<TaskFilters, 'category' | 'status' | 'departmentId' | 'assigneeIds' | 'raisedByIds'> = {
+    category: 'all', status: 'all', departmentId: '', assigneeIds: [], raisedByIds: [],
+};
+
+const filtersFromUrl = (searchParams: URLSearchParams): Partial<TaskFilters> => {
+    const fromUrl: Partial<TaskFilters> = {};
+    const category = searchParams.get('category');
+    const status = searchParams.get('status');
+    const departmentId = searchParams.get('departmentId');
+    const assigneeIds = searchParams.get('assigneeIds');
+    const raisedByIds = searchParams.get('raisedByIds');
+    if (category) fromUrl.category = category as CategoryFilterKey;
+    if (status) fromUrl.status = status as Task['status'];
+    if (departmentId) fromUrl.departmentId = departmentId;
+    if (assigneeIds) fromUrl.assigneeIds = assigneeIds.split(',');
+    if (raisedByIds) fromUrl.raisedByIds = raisedByIds.split(',');
+    return fromUrl;
+};
+
 const filtersStorageKey = (userId?: string) => `task-filters:${userId ?? 'anon'}`;
+
+// "My Delegations" (?mine=1) defaults to List — a personal to-do reads better as a flat list.
+// "Smart Delegations" (?category=delegation) defaults to Board — AI/WhatsApp-origin delegations
+// read better as status columns. Every other link (Pending Approvals, Team Delegations, plain
+// /tasks, etc.) is left alone — returning null here means "don't override whatever view is
+// already active."
+const viewFromUrl = (searchParams: URLSearchParams): TaskView | null => {
+    if (searchParams.get('mine') === '1') return 'list';
+    if (searchParams.get('category') === 'delegation') return 'board';
+    return null;
+};
 
 export const TaskList = ({ userId, hideHeader = false }: TaskListProps = {}) => {
     const { user } = useAuth();
@@ -82,15 +115,7 @@ export const TaskList = ({ userId, hideHeader = false }: TaskListProps = {}) => 
     // search params, which take priority over a saved filter — otherwise, restore whatever the
     // user last saved with "Save this filter" for this account, if anything.
     const [filters, setFilters] = useState<TaskFilters>(() => {
-        const fromUrl: Partial<TaskFilters> = {};
-        const category = searchParams.get('category');
-        const status = searchParams.get('status');
-        const departmentId = searchParams.get('departmentId');
-        const assigneeIds = searchParams.get('assigneeIds');
-        if (category) fromUrl.category = category as CategoryFilterKey;
-        if (status) fromUrl.status = status as Task['status'];
-        if (departmentId) fromUrl.departmentId = departmentId;
-        if (assigneeIds) fromUrl.assigneeIds = assigneeIds.split(',');
+        const fromUrl = filtersFromUrl(searchParams);
         if (Object.keys(fromUrl).length) return { ...DEFAULT_FILTERS, ...fromUrl };
 
         try {
@@ -111,18 +136,53 @@ export const TaskList = ({ userId, hideHeader = false }: TaskListProps = {}) => 
         }
         return DEFAULT_FILTERS;
     });
+
+    // TaskList never remounts when one sidebar link (e.g. Smart Delegations) is swapped for
+    // another (e.g. My Delegations) — both point at this same /tasks route, just with a different
+    // query string, so React Router keeps the same component instance alive. Without this effect,
+    // `filters` above only ever got read from the URL on the very first mount: clicking a second
+    // sidebar link afterward changed the address bar but silently left the stale filter in place
+    // (e.g. Smart Delegations would keep showing whatever category — or none — was active before,
+    // including plain manually-created delegations that category was supposed to exclude). This
+    // re-derives the URL-backed fields on every subsequent navigation; the initial mount is
+    // skipped since the lazy initializer above already handled it (including the saved-filter
+    // fallback when the URL has no hints at all, which this effect deliberately doesn't repeat).
+    const isFirstFiltersRun = useRef(true);
+    useEffect(() => {
+        if (isFirstFiltersRun.current) {
+            isFirstFiltersRun.current = false;
+            return;
+        }
+        setFilters(prev => ({ ...prev, ...URL_TRACKED_DEFAULTS, ...filtersFromUrl(searchParams) }));
+    }, [searchParams]);
+
     const [sort, setSort] = useState<TaskSortKey>('dueDate');
-    const [view, setView] = useState<TaskView>('board');
+    const [view, setView] = useState<TaskView>(() => viewFromUrl(searchParams) ?? 'board');
+
+    // Same remount-free-navigation issue the filters effect above deals with: clicking "My
+    // Delegations" then "Smart Delegations" (or back) keeps this same TaskList instance mounted,
+    // so the lazy initializer above only ever fires once. Re-derive the view every time the URL
+    // actually changes, but only when that specific link has an opinion (viewFromUrl returns
+    // non-null) — every other navigation leaves whatever view the user is already on alone.
+    const isFirstViewRun = useRef(true);
+    useEffect(() => {
+        if (isFirstViewRun.current) {
+            isFirstViewRun.current = false;
+            return;
+        }
+        setView(prev => viewFromUrl(searchParams) ?? prev);
+    }, [searchParams]);
     const { visibility: fieldVisibility, toggle: toggleField } = useCardFieldVisibility();
     // Built into the toolbar for everyone — admin/PC get it org-wide same as their other
     // filters, a regular user gets it scoped to their own tasks same as everything else here.
     const [dueDateRange, setDueDateRange] = useState<DateRangeValue>({ from: null, to: null });
 
-    // Keeps the URL's filter params (category/status/departmentId/assigneeIds — the ones a
-    // deep link like a dashboard tile can set on mount) in sync with whatever the user does
-    // afterward in the filter UI. Without this, clearing or changing a filter only updated
-    // React state: the original deep-link params stayed in the address bar, so refreshing the
-    // page re-read them and silently brought back a filter the user had just removed.
+    // Keeps the URL's filter params (category/status/departmentId/assigneeIds/raisedByIds — the
+    // ones a deep link like a dashboard tile or sidebar link can set on mount) in sync with
+    // whatever the user does afterward in the filter UI. Without this, clearing or changing a
+    // filter only updated React state: the original deep-link params stayed in the address bar,
+    // so refreshing the page (or the URL-resync effect above, on the next sidebar navigation)
+    // re-read them and silently brought back a filter the user had just removed.
     const syncFiltersToUrl = (next: TaskFilters) => {
         setSearchParams(prev => {
             const params = new URLSearchParams(prev);
@@ -130,6 +190,7 @@ export const TaskList = ({ userId, hideHeader = false }: TaskListProps = {}) => 
             if (next.status !== 'all') params.set('status', next.status); else params.delete('status');
             if (next.departmentId) params.set('departmentId', next.departmentId); else params.delete('departmentId');
             if (next.assigneeIds.length) params.set('assigneeIds', next.assigneeIds.join(',')); else params.delete('assigneeIds');
+            if (next.raisedByIds.length) params.set('raisedByIds', next.raisedByIds.join(',')); else params.delete('raisedByIds');
             return params;
         }, { replace: true });
     };
@@ -189,7 +250,17 @@ export const TaskList = ({ userId, hideHeader = false }: TaskListProps = {}) => 
             return true;
         });
 
-    const categoryFiltered = dateFiltered.filter(CATEGORY_PREDICATES[filters.category]);
+    // "My Delegations" (Sidebar's /tasks?mine=1) — ADMIN/PC/MANAGER's server-side visibility is
+    // broader than "just mine" (org-wide / department-wide, see task.service.ts's
+    // visiblityFilter), so without this they'd land on "My Delegations" and see everyone else's
+    // delegations too. Narrows back down to creator/assignee/additional-assignee regardless of
+    // role — a no-op for AGENT/USER, who are already scoped to themselves server-side.
+    const mineOnly = searchParams.get('mine') === '1';
+    const mineFiltered = !mineOnly || !user
+        ? dateFiltered
+        : dateFiltered.filter(t => t.userId === user.id || t.assigneeId === user.id || t.additionalAssigneeIds.includes(user.id));
+
+    const categoryFiltered = mineFiltered.filter(CATEGORY_PREDICATES[filters.category]);
     const priorityFiltered = filters.priority.length === 0 ? categoryFiltered : categoryFiltered.filter(t => filters.priority.includes(t.priority));
     const departmentFiltered = filters.departmentId ? priorityFiltered.filter(t => t.departmentId === filters.departmentId) : priorityFiltered;
     const assigneeFiltered = filters.assigneeIds.length === 0
@@ -207,7 +278,7 @@ export const TaskList = ({ userId, hideHeader = false }: TaskListProps = {}) => 
 
     const activeChips: { key: string; label: string; onClear: () => void }[] = [
         ...(filters.status !== 'all' ? [{ key: 'status', label: `Status: ${STATUS_LABEL[filters.status]}`, onClear: () => updateFilters({ status: 'all' }) }] : []),
-        ...(filters.category !== 'all' ? [{ key: 'category', label: `Category: ${filters.category === 'task' ? 'Tasks' : filters.category === 'issue' ? 'Issues' : 'Delegations'}`, onClear: () => updateFilters({ category: 'all' }) }] : []),
+        ...(filters.category !== 'all' ? [{ key: 'category', label: `Category: ${filters.category === 'task' ? 'Direct Task' : filters.category === 'issue' ? 'Issues' : 'Delegations'}`, onClear: () => updateFilters({ category: 'all' }) }] : []),
         ...(filters.priority.length > 0 ? [{
             key: 'priority',
             label: `Priority: ${filters.priority.map(p => PRIORITY_MAP[p].label).join(', ')}`,
@@ -248,9 +319,9 @@ export const TaskList = ({ userId, hideHeader = false }: TaskListProps = {}) => 
                             <CheckCheck size={20} strokeWidth={2} />
                         </div>
                         <div>
-                            <h1 className="text-xl font-bold text-text tracking-tight">Tasks</h1>
+                            <h1 className="text-xl font-bold text-text tracking-tight">Delegation</h1>
                             <p className="text-sm text-text-muted mt-0.5">
-                                {tasks?.length ?? 0} total task{tasks?.length !== 1 ? 's' : ''}
+                                {tasks?.length ?? 0} total delegation{tasks?.length !== 1 ? 's' : ''}
                             </p>
                         </div>
                     </div>
@@ -300,7 +371,7 @@ export const TaskList = ({ userId, hideHeader = false }: TaskListProps = {}) => 
                             onClick={() => setShowForm(true)}
                         >
                             <Plus size={16} strokeWidth={2.5} className="transition-transform duration-300 group-hover:rotate-90" />
-                            New Task
+                            New Delegation
                         </Button>
                     )}
 
@@ -391,8 +462,8 @@ export const TaskList = ({ userId, hideHeader = false }: TaskListProps = {}) => 
                         variant="secondary"
                         className="gap-1.5 border-0 shadow-none rounded-full"
                         onClick={() => setShowExport(true)}
-                        aria-label="Export tasks"
-                        title="Export tasks"
+                        aria-label="Export delegations"
+                        title="Export delegations"
                     >
                         <FileDown size={14} />
                         Export
@@ -497,7 +568,7 @@ export const TaskList = ({ userId, hideHeader = false }: TaskListProps = {}) => 
                 <div className="flex items-start gap-3 p-4 bg-danger/10 rounded border border-danger/20 text-danger">
                     <AlertCircle size={18} className="mt-0.5 shrink-0" />
                     <div>
-                        <h4 className="text-sm font-semibold">Error Loading Tasks</h4>
+                        <h4 className="text-sm font-semibold">Error Loading Delegations</h4>
                         <p className="text-sm mt-1">Failed to connect to the server. Please refresh the page.</p>
                     </div>
                 </div>
@@ -508,11 +579,11 @@ export const TaskList = ({ userId, hideHeader = false }: TaskListProps = {}) => 
                     <div className="flex items-center justify-center mb-4 text-text-light">
                         <Inbox size={24} />
                     </div>
-                    <h3 className="text-lg font-semibold text-text tracking-tight">No tasks found</h3>
+                    <h3 className="text-lg font-semibold text-text tracking-tight">No delegations found</h3>
                     <p className="text-sm text-text-muted mt-1 max-w-sm">
                         {activeChips.length > 0
-                            ? "No tasks match the current filters — try clearing one or more of them."
-                            : "You're all caught up! There are no tasks assigned to this view."}
+                            ? "No delegations match the current filters — try clearing one or more of them."
+                            : "You're all caught up! There are no delegations assigned to this view."}
                     </p>
                 </div>
             )}
@@ -602,8 +673,8 @@ export const TaskList = ({ userId, hideHeader = false }: TaskListProps = {}) => 
             {showExport && (
                 <ExportDialog
                     reportModule="tasks"
-                    title="Export Tasks"
-                    description="Every task matching your current filters — status, priority, department, and assignee."
+                    title="Export Delegations"
+                    description="Every delegation matching your current filters — status, priority, department, and assignee."
                     onClose={() => setShowExport(false)}
                     filters={{
                         category: filters.category !== 'all' ? filters.category : undefined,

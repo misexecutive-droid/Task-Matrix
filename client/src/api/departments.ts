@@ -4,6 +4,7 @@ export type Department = {
   id: string;
   name: string;
   isActive: boolean;
+  storeId: string | null;
 };
 
 export type ApiResponse<T> = { success: boolean; data: T };
@@ -11,9 +12,13 @@ export type ApiResponse<T> = { success: boolean; data: T };
 
 export type CreateDepartmentPayload = {
   name: string;
+  storeId?: string;
 }
 
-export type UpdateDepartmentPayload = Partial<CreateDepartmentPayload> & { isActive?: boolean };
+export type UpdateDepartmentPayload = Partial<Omit<CreateDepartmentPayload, "storeId">> & {
+  isActive?: boolean;
+  storeId?: string | null;
+};
 
 
 export const departmentApi = {

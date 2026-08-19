@@ -1,8 +1,8 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Store as StoreIcon, X, AlertCircle, Loader2 } from 'lucide-react';
-import { Input } from '../../../components';
+import { Store as StoreIcon, AlertCircle } from 'lucide-react';
+import { Input, Button, Modal } from '../../../components';
 import { useCreateStoreMutation, useUpdateStoreMutation } from '../hook';
 import type { Store } from '../../../api/stores';
 
@@ -34,6 +34,8 @@ export const StoreForm = ({ onClose, store }: StoreFormProps) => {
     defaultValues: { name: store?.name || '', code: store?.code || '', address: store?.address || '' },
   });
 
+  const isPending = mutation.isPending;
+
   const onSubmit = (data: StoreFields) => {
     if (isEditing && store) {
       updateMutation.mutate({ id: store.id, payload: data }, { onSuccess: onClose });
@@ -42,69 +44,42 @@ export const StoreForm = ({ onClose, store }: StoreFormProps) => {
     }
   };
 
+  const footer = (
+    <>
+      <Button type="button" variant="outline" size="sm" onClick={onClose} disabled={isPending}>
+        Cancel
+      </Button>
+      <Button type="submit" form="store-form" variant="primary" size="sm" isLoading={isPending}>
+        {isEditing ? 'Save changes' : 'Create store'}
+      </Button>
+    </>
+  );
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-200">
-      <div role="dialog" aria-modal="true" className="w-full max-w-md bg-surface rounded-2xl shadow-2xl border border-border/60 overflow-hidden flex flex-col animate-in zoom-in-95 duration-200">
-        <header className="relative p-6 border-b border-border bg-surface-hover/40">
-          <button
-            onClick={onClose}
-            className="absolute top-5 right-5 p-2 text-text-light hover:text-text hover:bg-surface-hover rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500"
-            aria-label="Close dialog"
-          >
-            <X className="w-5 h-5" />
-          </button>
+    <Modal
+      open
+      onClose={() => !isPending && onClose()}
+      icon={<StoreIcon className="w-5 h-5" />}
+      title={isEditing ? 'Edit store' : 'New store'}
+      description="Stores are where checklists actually run — each recurring checklist gets deployed to one or more."
+      footer={footer}
+    >
+      <form id="store-form" onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4" noValidate>
+        <fieldset disabled={isPending} className="flex flex-col gap-4 disabled:opacity-60">
+          <Input id="name" label="Store name" placeholder="e.g. Karol Bagh" autoFocus error={errors.name?.message} {...register('name')} />
+          <Input id="code" label="Code (optional)" placeholder="e.g. KB01" error={errors.code?.message} {...register('code')} />
+          <Input id="address" label="Address (optional)" placeholder="e.g. 12 Main Market, Karol Bagh" error={errors.address?.message} {...register('address')} />
+        </fieldset>
 
-          <div className="flex items-start gap-4 pr-8">
-            <div className="flex items-center justify-center text-coral-600 dark:text-coral-400 shrink-0">
-              <StoreIcon className="w-6 h-6" />
-            </div>
-            <div className="space-y-1">
-              <h2 className="text-xl font-display font-bold text-text tracking-tight">
-                {isEditing ? 'Edit Store' : 'New Store'}
-              </h2>
-              <p className="text-sm text-text-muted leading-relaxed">
-                Stores are where checklists actually run — each recurring checklist gets deployed to one or more.
-              </p>
-            </div>
+        {mutation.isError && (
+          <div className="flex items-center gap-2 text-xs text-danger font-display bg-danger/10 p-2.5 rounded-lg">
+            <AlertCircle size={14} className="shrink-0" />
+            <span>
+              {mutation.error instanceof Error ? mutation.error.message : `Failed to ${isEditing ? 'update' : 'create'} store.`}
+            </span>
           </div>
-        </header>
-
-        <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col" noValidate>
-          <div className="p-6 space-y-4">
-            <Input id="name" label="Store Name" placeholder="e.g. Karol Bagh" autoFocus error={errors.name?.message} {...register('name')} />
-            <Input id="code" label="Code (optional)" placeholder="e.g. KB01" error={errors.code?.message} {...register('code')} />
-            <Input id="address" label="Address (optional)" placeholder="e.g. 12 Main Market, Karol Bagh" error={errors.address?.message} {...register('address')} />
-
-            {mutation.isError && (
-              <div className="flex items-start gap-3 p-4 bg-danger/10 border border-danger/20 rounded-xl animate-in fade-in duration-200">
-                <AlertCircle className="w-5 h-5 text-danger shrink-0 mt-0.5" />
-                <p className="text-sm font-medium text-danger">
-                  {mutation.error instanceof Error ? mutation.error.message : `Failed to ${isEditing ? 'update' : 'create'} store. Please try again.`}
-                </p>
-              </div>
-            )}
-          </div>
-
-          <footer className="p-4 sm:p-6 pt-0 mt-auto flex flex-col-reverse sm:flex-row items-center justify-end gap-3">
-            <button
-              type="button"
-              onClick={onClose}
-              disabled={mutation.isPending}
-              className="w-full sm:w-auto px-5 py-2.5 text-sm font-display font-semibold text-text-secondary bg-surface border border-border rounded-xl hover:bg-surface-hover transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={mutation.isPending}
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 text-sm font-display font-semibold text-white rounded-xl shadow-sm bg-gradient-to-b from-primary-600 to-primary-700 hover:from-primary-500 hover:to-primary-600 transition-all duration-300 ease-in-out hover:scale-[1.02] hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 disabled:opacity-70 disabled:pointer-events-none disabled:transform-none"
-            >
-              {mutation.isPending && <Loader2 className="w-4 h-4 animate-spin" />}
-              {isEditing ? 'Save changes' : 'Create store'}
-            </button>
-          </footer>
-        </form>
-      </div>
-    </div>
+        )}
+      </form>
+    </Modal>
   );
 };

@@ -3,7 +3,7 @@ import type { Task } from '../../api/task';
 
 // "Issue" and "Delegation" are the two real category values on Task, but a plain task typed
 // into the "New Task" form also lands in category "delegation" with no aiMeta at all — so from
-// the user's point of view that's really a third bucket ("Tasks") distinct from AI/WhatsApp
+// the user's point of view that's really a third bucket ("Direct Task") distinct from AI/WhatsApp
 // delegations. These are UI-only filter keys, not stored values, split out via a lookup map
 // (rather than if/else) so adding another bucket later is just one more entry here.
 export type CategoryFilterKey = 'all' | 'issue' | 'delegation' | 'task';

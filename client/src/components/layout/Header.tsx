@@ -15,7 +15,6 @@ import {
 } from 'lucide-react';
 import { NotificationBell } from '../../features/notifications/NotificationBell';
 import { Dropdown, type DropdownAction } from '../dropdown';
-import { RoleSwitcher } from './RoleSwitcher';
 import { HeaderSearchInput } from './HeaderSearchInput';
 
 // Refined to be flatter and more modern. Removed borders/shadows for a cleaner UI.
@@ -26,16 +25,6 @@ export const ICON_BUTTON_CLASS =
   'active:scale-95 ' +
   'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50';
 
-// Placeholder-only for now — not tied to real permissions. Task-Matrix's actual roles are
-// ADMIN/PC/MANAGER/AGENT/USER; these labels just mirror the reference design visually until
-// there's a real decision about what (if anything) this should switch.
-const ROLE_VIEW_OPTIONS = [
-  { value: 'staff', label: 'Staff' },
-  { value: 'store_mgr', label: 'Store Mgr' },
-  { value: 'area_head', label: 'Area Head' },
-  { value: 'md', label: 'MD' },
-];
-
 const titleCase = (value: string) =>
   value.charAt(0).toUpperCase() + value.slice(1).toLowerCase();
 
@@ -43,7 +32,6 @@ export const Header = ({ onToggleSidebar }: { onToggleSidebar?: () => void }) =>
   const { theme, toggleTheme } = useTheme();
   const { user, logout } = useAuth();
   const [search, setSearch] = useState('');
-  const [roleView, setRoleView] = useState(ROLE_VIEW_OPTIONS[0].value);
 
   const initials = (user?.name ?? 'U')
     .split(' ')
@@ -68,10 +56,9 @@ export const Header = ({ onToggleSidebar }: { onToggleSidebar?: () => void }) =>
     <header
       className="sticky top-0 z-50 w-full border-b border-border/40 bg-surface/80 backdrop-blur-md transition-colors"
       style={{
-        // Keep your custom glass variables as fallbacks if defined in your theme
-        background: 'var(--glass-bg, rgba(var(--color-surface), 0.8))',
-        backdropFilter: 'var(--glass-blur, blur(12px))',
-        WebkitBackdropFilter: 'var(--glass-blur, blur(12px))',
+        background: 'var(--glass-bg)',
+        backdropFilter: 'var(--glass-blur)',
+        WebkitBackdropFilter: 'var(--glass-blur)',
       }}
     >
       <div className="max-w-[1600px] mx-auto px-4 sm:px-6">
@@ -115,10 +102,8 @@ export const Header = ({ onToggleSidebar }: { onToggleSidebar?: () => void }) =>
             </div>
           </div>
 
-          {/* Right Module: role switcher + grouped action pill + account, separated by dividers */}
+          {/* Right Module: grouped action pill + account, separated by dividers */}
           <div className="flex items-center gap-2 sm:gap-3 ml-auto md:ml-0">
-            <RoleSwitcher options={ROLE_VIEW_OPTIONS} value={roleView} onChange={setRoleView} />
-
             <div className="flex items-center gap-0.5 p-1 rounded-full bg-surface-hover/60">
               <NotificationBell />
 

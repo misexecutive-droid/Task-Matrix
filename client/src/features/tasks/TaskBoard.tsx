@@ -14,6 +14,11 @@ import type { Task } from "../../api/task";
 const resolveAssigneeNames = (task: Task, assigneeNames: Map<string, string>) =>
   taskAssigneeIds(task).map((id) => assigneeNames.get(id)).filter((n): n is string => !!n);
 
+// task.userId is whoever raised/created the delegation — assignableUsers (the same map used to
+// resolve assignee names) covers them too, since anyone assignable can also raise a delegation.
+const resolveRaisedByName = (task: Task, assigneeNames: Map<string, string>) =>
+  assigneeNames.get(task.userId);
+
 const COLUMNS: Task['status'][] = ['todo', 'in_progress', 'pending_verification', 'done'];
 
 interface TaskBoardProps {
@@ -31,6 +36,7 @@ interface CardProps {
   isVerifier: boolean;
   onOpen: (task: Task) => void;
   assigneeNames?: string[];
+  raisedByName?: string;
   departmentName?: string;
   fields: CardFieldVisibility;
 }
@@ -96,7 +102,7 @@ const Column = ({ status, tasks, assigneeNames, departmentNames, isVerifier, onO
         {tasks.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-20 px-3 text-center border border-dashed border-border rounded-md bg-surface/40 text-text-light">
             <Sparkles size={14} className="mb-1 text-text-light" />
-            <span className="text-[11px] font-medium text-text-light">No tasks</span>
+            <span className="text-[11px] font-medium text-text-light">No delegations</span>
           </div>
         ) : (
           tasks.map(task => (
@@ -106,6 +112,7 @@ const Column = ({ status, tasks, assigneeNames, departmentNames, isVerifier, onO
               isVerifier={isVerifier}
               onOpen={onOpen}
               assigneeNames={resolveAssigneeNames(task, assigneeNames)}
+              raisedByName={resolveRaisedByName(task, assigneeNames)}
               departmentName={task.departmentId ? departmentNames?.get(task.departmentId) : undefined}
               fields={fields}
             />
@@ -192,6 +199,7 @@ export const TaskBoard = ({ tasks, assigneeNames, departmentNames, isVerifier = 
               isVerifier={isVerifier}
               onOpen={onOpen}
               assigneeNames={resolveAssigneeNames(activeTask, assigneeNames)}
+              raisedByName={resolveRaisedByName(activeTask, assigneeNames)}
               departmentName={activeTask.departmentId ? departmentNames?.get(activeTask.departmentId) : undefined}
               fields={fields}
             />

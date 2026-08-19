@@ -261,7 +261,7 @@ export const ChecklistBuilder = () => {
       <div className="flex flex-col gap-4">
         <ImportFromTemplateField templates={templates} onImport={handleImportTemplate} />
         <div className="grid grid-cols-1 lg:grid-cols-[20rem_1fr] gap-6 items-start">
-          <div className="rounded-xl border border-border bg-surface p-4 lg:sticky lg:top-6">
+          <div className="rounded-xl border border-border bg-surface shadow-sm p-4 lg:sticky lg:top-6">
             <QuestionTypePalette onAdd={addItem} storeId={primaryStoreId} />
           </div>
 
@@ -272,8 +272,8 @@ export const ChecklistBuilder = () => {
             </label>
 
             {itemDrafts.length === 0 ? (
-              <div className="flex flex-col items-center justify-center gap-2 py-10 px-4 rounded-xl border border-dashed border-border text-center">
-                <span className="flex items-center justify-center text-text-light">
+              <div className="flex flex-col items-center justify-center gap-2.5 py-10 px-4 rounded-xl border border-dashed border-border bg-surface-hover/30 text-center">
+                <span className="flex items-center justify-center size-10 rounded-full bg-gradient-to-br from-primary-600 to-primary-500 text-white shadow-sm shadow-primary-600/20">
                   <ListChecks size={18} />
                 </span>
                 <p className="text-sm font-display font-semibold text-text">No items yet</p>
@@ -342,67 +342,89 @@ export const ChecklistBuilder = () => {
     </BuilderStepFrame>,
   ];
 
+  const progressPercent = Math.round(((step + 1) / STEPS.length) * 100);
+
   return (
-    <div className="flex flex-col gap-6">
-      <div>
+    <div className="flex flex-col gap-6 w-full max-w-5xl mx-auto">
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        <div className="flex items-center gap-3">
+          <div className="size-10 rounded-xl bg-gradient-to-br from-primary-600 to-primary-500 flex items-center justify-center shrink-0 shadow-sm shadow-primary-600/20">
+            <ListChecks size={18} className="text-white" />
+          </div>
+          <div>
+            <h1 className="font-display text-xl font-bold text-text leading-tight">
+              {isEditing ? `Editing: ${existing?.name}` : 'New Checklist'}
+            </h1>
+            <p className="text-sm text-text-muted mt-0.5">
+              {isEditing && existing
+                ? `Version ${existing.version} · Live in ${existing.storeIds.length} store${existing.storeIds.length !== 1 ? 's' : ''}`
+                : 'Build a recurring checklist your team runs on a schedule.'}
+            </p>
+          </div>
+        </div>
+
         <button
           onClick={() => navigate('/admin/scheduled-checklists')}
-          className="flex items-center gap-1.5 text-xs font-display font-medium text-text-muted hover:text-text transition-colors cursor-pointer w-fit mb-2"
+          className="press-feedback flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-display font-semibold text-text-secondary border border-border bg-surface hover:bg-surface-hover hover:text-text transition-colors duration-150 cursor-pointer"
         >
           <ArrowLeft size={13} /> Back to Templates
         </button>
-        <h1 className="font-display text-2xl font-bold text-text">
-          {isEditing ? `Editing: ${existing?.name}` : 'New Checklist'}
-        </h1>
-        {isEditing && existing && (
-          <p className="text-sm text-text-muted mt-0.5">
-            Version {existing.version} · Live in {existing.storeIds.length} store{existing.storeIds.length !== 1 ? 's' : ''}
-          </p>
-        )}
       </div>
 
-      <BuilderStepper
-        steps={STEPS}
-        current={step}
-        maxReached={maxStepReached}
-        allUnlocked={isEditing}
-        isStepValid={isStepValid}
-        onSelect={goToStep}
-      />
+      <div className="rounded-2xl border border-border bg-surface shadow-sm overflow-hidden">
+        <div className="flex flex-col gap-3 px-5 sm:px-6 py-5 border-b border-border/60 bg-surface-hover/30">
+          <BuilderStepper
+            steps={STEPS}
+            current={step}
+            maxReached={maxStepReached}
+            allUnlocked={isEditing}
+            isStepValid={isStepValid}
+            onSelect={goToStep}
+          />
+          <div className="h-1 w-full rounded-full bg-border overflow-hidden">
+            <div
+              className="h-full rounded-full bg-gradient-to-r from-primary-600 to-primary-400 transition-[width] duration-300 ease-out"
+              style={{ width: `${progressPercent}%` }}
+            />
+          </div>
+        </div>
 
-      <AnimatePresence mode="wait">
-        <motion.div
-          key={step}
-          initial={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, x: direction * 24 }}
-          animate={{ opacity: 1, x: 0 }}
-          exit={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, x: direction * -24 }}
-          transition={{ duration: shouldReduceMotion ? 0.05 : 0.2, ease: 'easeOut' }}
-        >
-          {stepContent[step]}
-        </motion.div>
-      </AnimatePresence>
+        <div className="p-5 sm:p-6">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={step}
+              initial={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, x: direction * 24 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, x: direction * -24 }}
+              transition={{ duration: shouldReduceMotion ? 0.05 : 0.2, ease: 'easeOut' }}
+            >
+              {stepContent[step]}
+            </motion.div>
+          </AnimatePresence>
 
-      <div className="flex items-center justify-between pt-2">
-        {step > 0 ? (
-          <button
-            type="button"
-            onClick={() => goToStep(step - 1)}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-display font-semibold text-text-secondary border border-border bg-surface hover:bg-surface-hover transition-colors duration-150 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40"
-          >
-            <ChevronLeft size={15} /> Back
-          </button>
-        ) : <span />}
+          <div className="flex items-center justify-between pt-6 mt-6 border-t border-border/60">
+            {step > 0 ? (
+              <button
+                type="button"
+                onClick={() => goToStep(step - 1)}
+                className="press-feedback flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-display font-semibold text-text-secondary border border-border bg-surface hover:bg-surface-hover transition-colors duration-150 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40"
+              >
+                <ChevronLeft size={15} /> Back
+              </button>
+            ) : <span />}
 
-        {step < STEPS.length - 1 && (
-          <button
-            type="button"
-            onClick={() => goToStep(step + 1)}
-            disabled={!sectionValidity[step]}
-            className="flex items-center gap-1.5 px-5 py-2 rounded-lg text-sm font-display font-semibold text-white bg-primary-700 shadow-sm transition-all duration-150 hover:bg-primary-800 hover:shadow-md active:scale-[0.98] cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:shadow-sm disabled:active:scale-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40"
-          >
-            Next <ChevronRight size={15} />
-          </button>
-        )}
+            {step < STEPS.length - 1 && (
+              <button
+                type="button"
+                onClick={() => goToStep(step + 1)}
+                disabled={!sectionValidity[step]}
+                className="press-feedback flex items-center gap-1.5 px-5 py-2 rounded-lg text-sm font-display font-semibold text-white bg-primary-700 shadow-sm transition-all duration-150 hover:bg-primary-800 hover:shadow-md active:scale-[0.98] cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:shadow-sm disabled:active:scale-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40"
+              >
+                Next <ChevronRight size={15} />
+              </button>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );

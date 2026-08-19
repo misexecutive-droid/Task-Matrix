@@ -1,1 +1,1 @@
-export { AdminAnalytics } from './AdminAnalytics';
+export { OrgOverview } from './OrgOverview';

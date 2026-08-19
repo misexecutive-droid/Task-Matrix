@@ -77,6 +77,8 @@ const publicUser = (user: UserDoc) => ({
   email: user.email,
   role: user.role,
   firstName: user.firstName,
+  departmentId: user.departmentId?.toString() ?? null,
+  storeId: user.storeId?.toString() ?? null,
 });
 
 // The main authentication service - all the actual "business logic" for login/refresh/logout lives

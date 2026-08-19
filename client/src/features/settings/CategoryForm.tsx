@@ -2,14 +2,7 @@ import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Tag } from 'lucide-react';
-import { Input, Button, UserMultiSelect, Modal } from '../../components';
-import {
-  Select,
-  SelectTrigger,
-  SelectValue,
-  SelectContent,
-  SelectItem,
-} from '@/components/ui/select';
+import { Input, Button, UserMultiSelect, Modal, Combobox } from '../../components';
 import { useCreateCategoryMutation, useUpdateCategoryMutation, useDepartmentsQuery } from './hook';
 import type { Category } from '@/api/categories';
 
@@ -106,16 +99,14 @@ export const CategoryForm = ({ onClose, category }: CategoryFormProps) => {
             control={control}
             name="departmentId"
             render={({ field }) => (
-              <Select value={field.value} onValueChange={field.onChange}>
-                <SelectTrigger id="departmentId" className="w-full h-10 text-sm">
-                  <SelectValue placeholder={isDepartmentsLoading ? 'Loading departments...' : 'Select department'} />
-                </SelectTrigger>
-                <SelectContent>
-                  {departments?.map(d => (
-                    <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Combobox
+                id="departmentId"
+                value={field.value}
+                onChange={field.onChange}
+                isLoading={isDepartmentsLoading}
+                placeholder="Search departments..."
+                options={(departments ?? []).map(d => ({ value: d.id, label: d.name }))}
+              />
             )}
           />
           {errors.departmentId?.message && (

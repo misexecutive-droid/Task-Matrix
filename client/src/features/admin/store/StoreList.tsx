@@ -36,26 +36,23 @@ export const StoreList = () => {
   const activeModal = showForm || editingStore;
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between gap-3 flex-wrap">
-        <div>
-          <h1 className="font-display text-2xl font-bold text-text">Stores</h1>
-          <p className="text-sm text-text-muted mt-0.5">
-            {stores.length} store{stores.length !== 1 ? 's' : ''} configured — checklists deploy to one or more of these.
-          </p>
-        </div>
+        <p className="text-xs text-text-muted">
+          {stores.length} store{stores.length !== 1 ? 's' : ''} configured — checklists deploy to one or more of these.
+        </p>
         <button
           type="button"
           onClick={() => setShowForm(true)}
-          className="inline-flex items-center justify-center gap-2 px-5 py-2.5 text-sm font-display font-semibold text-white rounded-xl shadow-sm bg-gradient-to-b from-primary-600 to-primary-700 hover:from-primary-500 hover:to-primary-600 transition-all duration-300 ease-in-out hover:scale-[1.02] hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2"
+          className="press-feedback inline-flex items-center justify-center gap-2 px-4 py-2 text-xs font-display font-bold uppercase tracking-wide text-white rounded-xl shadow-sm bg-gradient-to-b from-primary-600 to-primary-700 hover:from-primary-500 hover:to-primary-600 transition-all duration-300 ease-in-out hover:scale-[1.02] hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2"
         >
-          <Plus className="w-4 h-4" />
-          New Store
+          <Plus className="w-3.5 h-3.5" />
+          New store
         </button>
       </div>
 
       {isPending && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 sm:gap-3">
           {Array.from({ length: 3 }).map((_, i) => (
             <div key={i} className="flex flex-col gap-4 p-5 rounded-2xl border border-border bg-surface h-44">
               <div className="flex items-center justify-between">
@@ -87,16 +84,16 @@ export const StoreList = () => {
           <button
             type="button"
             onClick={() => setShowForm(true)}
-            className="inline-flex items-center justify-center gap-2 px-5 py-2.5 text-sm font-display font-semibold rounded-xl shadow-sm bg-surface text-text-secondary border border-border transition-all duration-300 hover:bg-surface-hover hover:text-primary-600 hover:border-primary-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500"
+            className="press-feedback inline-flex items-center justify-center gap-2 px-4 py-2 text-xs font-display font-bold uppercase tracking-wide rounded-xl shadow-sm bg-surface text-text-secondary border border-border transition-all duration-300 hover:bg-surface-hover hover:text-primary-600 hover:border-primary-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500"
           >
-            <StoreIcon className="w-4 h-4" />
-            Create Store
+            <StoreIcon className="w-3.5 h-3.5" />
+            Create store
           </button>
         </section>
       )}
 
       {!isPending && !isError && stores.length > 0 && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 sm:gap-3">
           {stores.map(s => (
             <StoreCard
               key={s.id}

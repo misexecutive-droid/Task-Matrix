@@ -13,13 +13,13 @@ const assertCanAttach = (user: AccessTokenPayload, task: any) => {
     if (String(task.userId) === user.sub) return;
     if (task.assigneeId && String(task.assigneeId) === user.sub) return;
     if ((task.additionalAssigneeIds ?? []).some((id: any) => String(id) === user.sub)) return;
-    throw AppError.forbidden("You don't have access to this task's attachments");
+    throw AppError.forbidden("You don't have access to this delegation's attachments");
 };
 
 export const taskAttachmentService = {
     async upload(taskId: string, files: Express.Multer.File[], user: AccessTokenPayload) {
         const task = await Task.findById(taskId);
-        if (!task) throw AppError.notFound("Task not found");
+        if (!task) throw AppError.notFound("Delegation not found");
         assertCanAttach(user, task);
 
         if (!files.length) {

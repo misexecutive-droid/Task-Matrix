@@ -1,13 +1,12 @@
 import { useState } from 'react';
 import { Plus, CheckSquare, Library, AlertCircle } from 'lucide-react';
-import { Button, Input } from '../../components';
+import { Button, Input, ChecklistItemDraftRow, emptyChecklistItemDraft, type ChecklistItemDraft } from '../../components';
 import {
   useAddTaskChecklistMutation,
   useAssignableUsersQuery,
   useChecklistTemplatesQuery,
   useApplyChecklistTemplateMutation,
 } from './hook';
-import { ItemDraftRow, emptyItemDraft, type ItemDraft } from './ItemDraftRow';
 
 interface NewChecklistFormProps {
   taskId: string;
@@ -16,7 +15,7 @@ interface NewChecklistFormProps {
 
 export const NewChecklistForm = ({ taskId, onDone }: NewChecklistFormProps) => {
   const [title, setTitle]          = useState('');
-  const [itemDrafts, setItemDrafts] = useState<ItemDraft[]>([emptyItemDraft()]);
+  const [itemDrafts, setItemDrafts] = useState<ChecklistItemDraft[]>([emptyChecklistItemDraft()]);
   const [templateId, setTemplateId] = useState('');
 
   const { data: assignableUsers } = useAssignableUsersQuery();
@@ -29,7 +28,7 @@ export const NewChecklistForm = ({ taskId, onDone }: NewChecklistFormProps) => {
     applyTemplate.mutate(templateId, { onSuccess: () => setTemplateId('') });
   };
 
-  const updateDraft = (i: number, patch: Partial<ItemDraft>) =>
+  const updateDraft = (i: number, patch: Partial<ChecklistItemDraft>) =>
     setItemDrafts(drafts => drafts.map((d, idx) => (idx === i ? { ...d, ...patch } : d)));
 
   const handleRemoveDraft = (i: number) => {
@@ -145,20 +144,21 @@ export const NewChecklistForm = ({ taskId, onDone }: NewChecklistFormProps) => {
 
           <div className="flex flex-col gap-4">
             {itemDrafts.map((draft, i) => (
-              <ItemDraftRow
-                key={i}
+              <ChecklistItemDraftRow
+                key={draft.id}
                 index={i}
                 draft={draft}
                 assignableUsers={assignableUsers}
-                onChange={updateDraft}
-                onRemove={itemDrafts.length > 1 ? handleRemoveDraft : undefined}
+                canRemove={itemDrafts.length > 1}
+                onChange={patch => updateDraft(i, patch)}
+                onRemove={() => handleRemoveDraft(i)}
               />
             ))}
           </div>
 
           <button
             type="button"
-            onClick={() => setItemDrafts(d => [...d, emptyItemDraft()])}
+            onClick={() => setItemDrafts(d => [...d, emptyChecklistItemDraft()])}
             className="group flex items-center justify-center gap-2 py-4 mt-2 text-sm font-semibold text-primary-600 bg-primary-500/5 hover:bg-primary-500/10 border-2 border-primary-200 hover:border-primary-300 rounded-xl border-dashed transition-all w-full cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2"
           >
             <div className="flex items-center justify-center w-6 h-6 rounded-full bg-primary-100 text-primary-600 group-hover:scale-110 transition-transform">

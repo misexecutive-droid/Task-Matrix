@@ -1,12 +1,14 @@
 import { apiFetch } from './http';
 
-export type Role = 'ADMIN' | 'MANAGER' | 'AGENT' | 'USER' | 'PC';
+export type Role = 'ADMIN' | 'SENIOR' | 'MANAGER' | 'AGENT' | 'USER' | 'PC';
 
 export type AuthUser = {
-  id:        string;
-  email:     string;
-  role:      Role;
-  firstName: string | null;
+  id:           string;
+  email:        string;
+  role:         Role;
+  firstName:    string | null;
+  departmentId: string | null;
+  storeId:      string | null;
 };
 
 export type AuthResponse = {

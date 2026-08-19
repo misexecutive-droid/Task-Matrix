@@ -60,6 +60,10 @@ export type ChecklistDefinition = {
   version:       number;
   createdBy:     string;
   items:         ChecklistDefinitionItem[];
+  // Computed server-side across every generated instance of this checklist — null until at
+  // least one instance/qualifying item exists yet, rather than a misleading 0%.
+  completionRate: number | null;
+  qualityRate:    number | null;
 };
 
 export type ApiResponse<T> = { success: boolean; data: T };

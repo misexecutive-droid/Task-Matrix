@@ -3,22 +3,26 @@ import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { UserPlus, Eye, EyeOff, AlertCircle } from 'lucide-react';
-import { Input, Button, Modal } from '../../../components';
-import {
-  Select,
-  SelectTrigger,
-  SelectValue,
-  SelectContent,
-  SelectItem,
-} from '@/components/ui/select';
+import { Input, Button, Modal, Combobox } from '../../../components';
 import { useCreateUserMutation, useUpdateUserMutation, useDepartmentsQuery } from '../hook';
+import { useStoresQuery } from '../../tickets/hook';
 import type { AdminUser, Role } from '../../../api/admin';
 
-const NO_DEPARTMENT = '__none__';
+const ROLE_OPTIONS: { value: Role; label: string }[] = [
+  { value: 'USER', label: 'User' },
+  { value: 'AGENT', label: 'Agent' },
+  { value: 'MANAGER', label: 'Manager' },
+  { value: 'SENIOR', label: 'Senior (Store Head)' },
+  { value: 'PC', label: 'Process coordinator (PC)' },
+  { value: 'ADMIN', label: 'Admin' },
+];
 
-const ROLE_WARNINGS: Partial<Record<Role, string>> = {
-  MANAGER: "A Manager without a department won't see scoped data — assign one for full functionality.",
-  PC: "A Process Coordinator without a department won't see scoped data — assign one for full functionality.",
+// Which scope dimension each role needs assigned to see role-scoped data, and the warning to
+// show when it's missing. MANAGER/PC are department-scoped; SENIOR is store-scoped.
+const ROLE_SCOPE_WARNING: Partial<Record<Role, { field: 'departmentId' | 'storeId'; message: string }>> = {
+  MANAGER: { field: 'departmentId', message: "A Manager without a department won't see scoped data — assign one for full functionality." },
+  PC: { field: 'departmentId', message: "A Process Coordinator without a department won't see scoped data — assign one for full functionality." },
+  SENIOR: { field: 'storeId', message: "A Senior without a store won't see scoped data — assign one for full functionality." },
 };
 
 const buildUserSchema = (isEditing: boolean) =>
@@ -28,8 +32,9 @@ const buildUserSchema = (isEditing: boolean) =>
       lastName: z.string().trim().optional(),
       email: z.string().trim().email('Enter a valid email address'),
       password: z.string().optional(),
-      role: z.enum(['ADMIN', 'MANAGER', 'AGENT', 'USER', 'PC'] as const),
+      role: z.enum(['ADMIN', 'SENIOR', 'MANAGER', 'AGENT', 'USER', 'PC'] as const),
       departmentId: z.string().optional(),
+      storeId: z.string().optional(),
     })
     .superRefine((data, ctx) => {
       if (!isEditing && (!data.password || data.password.length < 8)) {
@@ -63,6 +68,7 @@ export const UserForm = ({ onClose, user, onCreated, prefill }: UserFormProps) =
   const mutation = isEditing ? updateMutation : createMutation;
 
   const { data: departments, isPending: isDepartmentsLoading } = useDepartmentsQuery();
+  const { data: stores, isPending: isStoresLoading } = useStoresQuery();
 
   const schema = useMemo(() => buildUserSchema(isEditing), [isEditing]);
 
@@ -80,16 +86,17 @@ export const UserForm = ({ onClose, user, onCreated, prefill }: UserFormProps) =
       email: user?.email ?? '',
       role: user?.role ?? 'USER',
       departmentId: user?.departmentId ?? prefill?.departmentId ?? '',
+      storeId: user?.storeId ?? '',
       password: '',
     },
   });
 
-  const [role, departmentId] = watch(['role', 'departmentId']);
+  const [role, departmentId, storeId] = watch(['role', 'departmentId', 'storeId']);
   const isPending = mutation.isPending || isSubmitting;
 
   const onSubmit = (data: UserFields) => {
-    const departmentPayload =
-      data.departmentId && data.departmentId !== NO_DEPARTMENT ? data.departmentId : undefined;
+    const departmentPayload = data.departmentId || undefined;
+    const storePayload = data.storeId || undefined;
 
     if (isEditing && user) {
       updateMutation.mutate(
@@ -101,6 +108,7 @@ export const UserForm = ({ onClose, user, onCreated, prefill }: UserFormProps) =
             email: data.email,
             role: data.role,
             departmentId: departmentPayload ?? null,
+            storeId: storePayload ?? null,
           },
         },
         { onSuccess: onClose }
@@ -116,6 +124,7 @@ export const UserForm = ({ onClose, user, onCreated, prefill }: UserFormProps) =
         password: data.password!,
         role: data.role,
         departmentId: departmentPayload,
+        storeId: storePayload,
       },
       {
         onSuccess: (created) => {
@@ -126,7 +135,9 @@ export const UserForm = ({ onClose, user, onCreated, prefill }: UserFormProps) =
     );
   };
 
-  const roleWarning = !departmentId || departmentId === NO_DEPARTMENT ? ROLE_WARNINGS[role] : null;
+  const scopeWarning = ROLE_SCOPE_WARNING[role];
+  const scopeValue = scopeWarning?.field === 'storeId' ? storeId : departmentId;
+  const roleWarning = scopeWarning && !scopeValue ? scopeWarning.message : null;
 
   const footer = (
     <>
@@ -207,18 +218,13 @@ export const UserForm = ({ onClose, user, onCreated, prefill }: UserFormProps) =
               control={control}
               name="role"
               render={({ field }) => (
-                <Select value={field.value} onValueChange={field.onChange}>
-                  <SelectTrigger id="role" className="w-full h-10 text-sm">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="USER">User</SelectItem>
-                    <SelectItem value="AGENT">Agent</SelectItem>
-                    <SelectItem value="MANAGER">Manager</SelectItem>
-                    <SelectItem value="PC">Process coordinator (PC)</SelectItem>
-                    <SelectItem value="ADMIN">Admin</SelectItem>
-                  </SelectContent>
-                </Select>
+                <Combobox
+                  id="role"
+                  value={field.value}
+                  onChange={(value) => field.onChange(value as Role)}
+                  placeholder="Search roles..."
+                  options={ROLE_OPTIONS}
+                />
               )}
             />
           </div>
@@ -231,29 +237,36 @@ export const UserForm = ({ onClose, user, onCreated, prefill }: UserFormProps) =
               control={control}
               name="departmentId"
               render={({ field }) => (
-                <Select
-                  value={field.value || NO_DEPARTMENT}
-                  onValueChange={v => field.onChange(v === NO_DEPARTMENT ? '' : v)}
-                  disabled={isDepartmentsLoading}
-                >
-                  <SelectTrigger id="departmentId" className="w-full h-10 text-sm">
-                    <SelectValue
-                      placeholder={
-                        isDepartmentsLoading ? 'Loading departments...' : 'Select department'
-                      }
-                    />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value={NO_DEPARTMENT} className="text-text-muted">
-                      No department
-                    </SelectItem>
-                    {(departments ?? []).map(d => (
-                      <SelectItem key={d.id} value={d.id}>
-                        {d.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Combobox
+                  id="departmentId"
+                  value={field.value ?? ''}
+                  onChange={field.onChange}
+                  isLoading={isDepartmentsLoading}
+                  placeholder="Search departments..."
+                  emptyOptionLabel="No department"
+                  options={(departments ?? []).map(d => ({ value: d.id, label: d.name }))}
+                />
+              )}
+            />
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="storeId" className="text-sm font-display text-text-secondary">
+              Store
+            </label>
+            <Controller
+              control={control}
+              name="storeId"
+              render={({ field }) => (
+                <Combobox
+                  id="storeId"
+                  value={field.value ?? ''}
+                  onChange={field.onChange}
+                  isLoading={isStoresLoading}
+                  placeholder="Search stores..."
+                  emptyOptionLabel="No store"
+                  options={(stores ?? []).map(s => ({ value: s.id, label: s.name }))}
+                />
               )}
             />
 

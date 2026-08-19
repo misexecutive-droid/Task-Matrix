@@ -1,6 +1,6 @@
 import type { ReactElement } from 'react';
 import { useParams, useNavigate } from 'react-router';
-import { ArrowLeft, AlertCircle, ShieldCheck, ShieldAlert, ShieldQuestion } from 'lucide-react';
+import { ArrowLeft, AlertCircle, ShieldCheck, ShieldAlert, ShieldQuestion, Clock } from 'lucide-react';
 import { Skeleton } from '../../../components';
 import { useChecklistInstanceQuery } from '../hook';
 import { ChecklistInstanceItemCard } from './ChecklistInstanceItemCard';
@@ -16,7 +16,7 @@ import { ChecklistInstanceItemSignatureCard } from './ChecklistInstanceItemSigna
 import { ChecklistInstanceItemDualSignatureCard } from './ChecklistInstanceItemDualSignatureCard';
 import { ChecklistInstanceItemQrScanCard } from './ChecklistInstanceItemQrScanCard';
 import { ChecklistInstanceItemCashTallyCard } from './ChecklistInstanceItemCashTallyCard';
-import { formatDate } from '../checklistDisplay';
+import { formatDate, rateToneClass, rateBarClass, isInstanceOverdue } from '../checklistDisplay';
 import { useAuth } from '../../../context/AuthContext';
 import type { ChecklistInstanceItem } from '../../../api/checklistInstances';
 
@@ -111,6 +111,8 @@ export const ChecklistInstanceDetail = () => {
   // PC has full parity with ADMIN throughout this app.
   const canWork = user?.role === 'ADMIN' || user?.role === 'PC' || (!!user && instance.assigneeIds.includes(user.id));
   const isLocked = instance.verificationStatus === 'APPROVED';
+  const isComplete = total > 0 && done === total;
+  const overdue = isInstanceOverdue(instance.periodEnd, isComplete);
 
   return (
     <div className="flex flex-col gap-6 max-w-2xl">
@@ -122,15 +124,28 @@ export const ChecklistInstanceDetail = () => {
       </button>
 
       <div className="flex flex-col gap-3 p-5 rounded-xl border border-border bg-surface">
-        <h1 className="text-lg font-mono font-semibold text-text">{instance.title}</h1>
-        <p className="text-xs text-text-muted font-mono">
-          {formatDate(instance.periodStart)} – {formatDate(instance.periodEnd)}
-        </p>
+        <div className="flex items-start justify-between gap-3">
+          <h1 className="text-lg font-mono font-semibold text-text">{instance.title}</h1>
+          <span className={`shrink-0 text-xs font-mono font-semibold px-2 py-0.5 rounded-full bg-surface-hover ${rateToneClass(progress)}`}>
+            Mark {progress}%
+          </span>
+        </div>
+
+        <div className="flex items-center gap-2 flex-wrap">
+          <p className="text-xs text-text-muted font-mono">
+            {formatDate(instance.periodStart)} – {formatDate(instance.periodEnd)}
+          </p>
+          {overdue && (
+            <span className="flex items-center gap-1 text-xs font-mono font-semibold px-2 py-0.5 rounded-full bg-danger/10 text-danger">
+              <Clock size={11} /> Overdue
+            </span>
+          )}
+        </div>
 
         <div className="flex items-center gap-2 mt-1">
           <div className="h-1.5 flex-1 bg-surface-hover rounded-full overflow-hidden border border-border/50">
             <div
-              className="h-full bg-gradient-to-r from-primary-500 to-primary-400 transition-all duration-500"
+              className={`h-full rounded-full transition-all duration-500 ${rateBarClass(progress)}`}
               style={{ width: `${progress}%` }}
             />
           </div>

@@ -63,3 +63,25 @@ export const VERIFICATION_STATUS_STYLE: Record<ChecklistVerificationStatus, stri
   APPROVED: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20',
   REJECTED: 'bg-danger/10 text-danger border-danger/20',
 };
+
+// Shared tri-color convention for any 0-100 rate shown across the checklist feature (a
+// definition's completion/compliance rate, an instance's own "Mark" — same reasoning as
+// TaskScoreBadge's coloring on the Delegations side) — a healthy rate reads differently from one
+// that needs attention, at a glance, and consistently everywhere it shows up.
+export const rateToneClass = (rate: number) => {
+  if (rate >= 80) return 'text-success';
+  if (rate >= 50) return 'text-warning';
+  return 'text-danger';
+};
+
+export const rateBarClass = (rate: number) => {
+  if (rate >= 80) return 'bg-success';
+  if (rate >= 50) return 'bg-warning';
+  return 'bg-danger';
+};
+
+// An instance is overdue once its period has closed without every item being done — mirrors
+// Task's own dueDate-passed check, using periodEnd (the calendar-day-precise deadline) rather
+// than cutoffTime (a same-day time-of-window, not modeled as a full timestamp here).
+export const isInstanceOverdue = (periodEnd: string, isComplete: boolean) =>
+  !isComplete && new Date(periodEnd).getTime() < Date.now();

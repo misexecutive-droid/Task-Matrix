@@ -8,6 +8,7 @@ import {
   Tag,
   Bug,
   UserCheck,
+  UserCog,
   Building2,
   CalendarPlus,
   History,
@@ -16,6 +17,7 @@ import {
 import type { Task } from '../../api/task';
 export type CardFieldKey =
   | 'status'
+  | 'raisedBy'
   | 'assignee'
   | 'dueDate'
   | 'subtasks'
@@ -27,6 +29,7 @@ export type CardFieldKey =
 
 export const CARD_FIELD_CONFIG: { key: CardFieldKey; label: string; icon: LucideIcon }[] = [
   { key: 'status', label: 'Status', icon: SquareStack },
+  { key: 'raisedBy', label: 'Raised by', icon: UserCog },
   { key: 'assignee', label: 'Assignee', icon: Users },
   { key: 'dueDate', label: 'Due date', icon: CalendarClock },
   { key: 'subtasks', label: 'Subtasks', icon: ListChecks },
@@ -41,6 +44,7 @@ export type CardFieldVisibility = Record<CardFieldKey, boolean>;
 
 const DEFAULT_VISIBILITY: CardFieldVisibility = {
   status: true,
+  raisedBy: true,
   assignee: true,
   dueDate: true,
   subtasks: true,

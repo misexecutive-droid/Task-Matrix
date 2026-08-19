@@ -14,10 +14,35 @@ import { DATE_FORMATS, type DateBucket } from "../../utils/index.js"
 // department/person" view (AdminTaskList) unusable for anyone but an admin. Safe to broaden here:
 // PC is still blocked from create/delete at the route level (task.routes.ts) and from raw status
 // updates in update() below, so this only actually widens list/getById/verify.
+// Same-department/creator/assignee visibility everyone below ADMIN/PC gets by default.
+const selfAndDepartmentFilter = (user: AccessTokenPayload) =>
+    ({ $or: [{ userId: user.sub }, { assigneeId: user.sub }, { additionalAssigneeIds: user.sub }] });
+
 const visiblityFilter = (user: AccessTokenPayload) => {
     if (user.role === "ADMIN" || user.role === "PC") return {};
 
-    return { $or: [{ userId: user.sub }, { assigneeId: user.sub }, { additionalAssigneeIds: user.sub }] };
+    // MANAGER is this app's "department head" role — they get everything within their own
+    // department (not just tasks they created or were assigned), on top of the same
+    // creator/assignee visibility everyone else gets for tasks outside their department. This is
+    // read-only reach: update() below deliberately does NOT use this function for that reason —
+    // see mutationFilter.
+    if (user.role === "MANAGER" && user.departmentId) {
+        const base = selfAndDepartmentFilter(user);
+        return { $or: [{ departmentId: user.departmentId }, ...base.$or] };
+    }
+
+    return selfAndDepartmentFilter(user);
+}
+
+// update()'s authorization check — deliberately narrower than visiblityFilter. ADMIN/PC still
+// get unrestricted edit rights (PC is separately blocked from calling update() at all, just
+// below), but MANAGER's department-wide *visibility* must not silently double as department-wide
+// *edit* rights — being able to see a colleague's delegation is not the same as being allowed to
+// retitle it, reassign it, or move its due date. Everyone else keeps the same creator/assignee
+// scope they always had.
+const mutationFilter = (user: AccessTokenPayload) => {
+    if (user.role === "ADMIN" || user.role === "PC") return {};
+    return selfAndDepartmentFilter(user);
 }
 
 export const taskService = {
@@ -70,7 +95,7 @@ export const taskService = {
         const task = await Task.findOne({ _id: id, ...visiblityFilter(user) })
             .populate({ path: "checklists", populate: { path: "items", populate: { path: "images" } } })
             .populate({ path: "attachments", populate: { path: "uploadedBy", select: "email firstName role" } });
-        if (!task) throw AppError.notFound("Task not found")
+        if (!task) throw AppError.notFound("Delegation not found")
         return task;
     },
 
@@ -80,21 +105,21 @@ export const taskService = {
 
     async update(id: string, input: UpdateTaskInput, user: AccessTokenPayload) {
         if (user.role === "PC") {
-            throw AppError.forbidden("PC can only act on a task through the verification queue.")
+            throw AppError.forbidden("PC can only act on a delegation through the verification queue.")
         }
 
-        const existing = await Task.findOne({ _id: id, ...visiblityFilter(user) })
+        const existing = await Task.findOne({ _id: id, ...mutationFilter(user) })
             .populate({ path: "checklists", populate: { path: "items" } });
-        if (!existing) throw AppError.notFound("Task not found");
+        if (!existing) throw AppError.notFound("Delegation not found");
 
         const beforeStatus = existing.status;
 
         if (input.status === "done" && beforeStatus !== "done") {
             if (user.role !== "ADMIN") {
-                throw AppError.forbidden("Only a verifier can mark a task done — send it for review instead.")
+                throw AppError.forbidden("Only a verifier can mark a delegation done — send it for review instead.")
             }
         } else if (input.status === "pending_verification" && beforeStatus !== "pending_verification") {
-            assertChecklistsResolved((existing as any).checklists, "sending this task for review")
+            assertChecklistsResolved((existing as any).checklists, "sending this delegation for review")
         }
 
         // Moving the deadline (or changing/clearing the reminder lead time) invalidates whatever
@@ -106,12 +131,12 @@ export const taskService = {
         }
 
         const task = await Task.findOneAndUpdate(
-            { _id: id, ...visiblityFilter(user) },
+            { _id: id, ...mutationFilter(user) },
             update,
             { new: true, runValidators: true },
 
         );
-        if (!task) throw AppError.notFound("Task not found")
+        if (!task) throw AppError.notFound("Delegation not found")
 
         if (input.status === "pending_verification" && beforeStatus !== "pending_verification") {
             await notificationService.notifyPendingVerification(task as any, 'TASK');
@@ -123,10 +148,10 @@ export const taskService = {
 
        async verify(id: string, input: VerifyTaskInput, user: AccessTokenPayload) {
         const task = await Task.findOne({ _id: id, ...visiblityFilter(user) });
-        if (!task) throw AppError.notFound("Task not found")
+        if (!task) throw AppError.notFound("Delegation not found")
 
         if (task.status !== "pending_verification") {
-            throw AppError.badRequest("This task isn't pending verification.")
+            throw AppError.badRequest("This delegation isn't pending verification.")
         }
 
         if (input.action === "APPROVE") {
@@ -149,11 +174,11 @@ export const taskService = {
     async remove(id: string, user: AccessTokenPayload) {
         const task = await Task.findOneAndDelete({ _id: id, ...visiblityFilter(user) })
 
-        if (!task) throw AppError.notFound("Task not found");
+        if (!task) throw AppError.notFound("Delegation not found");
         return task;
     },
 
-    async complianceReport(groupBy: DateBucket, departmentId?: string, from?: string, to?: string, userId?: string) {
+    async complianceReport(groupBy: DateBucket, departmentId?: string, from?: string, to?: string, userId?: string, departmentIds?: string[]) {
 
         const match: Record<string, any> = {};
         if (from || to) {
@@ -169,6 +194,14 @@ export const taskService = {
             { $lookup: { from: "tasks", localField: "checklist.taskId", foreignField: "_id", as: "task" } },
             { $unwind: "$task" },
             ...(departmentId ? [{ $match: { "task.departmentId": new Types.ObjectId(departmentId) } }] : []),
+            // A SENIOR has no department of their own — this matches every department that
+            // belongs to their store instead (see reportScope.ts's resolveDepartmentIdsForStore).
+            // Checked explicitly against `undefined` so an empty array (a store with zero
+            // departments assigned yet) still matches nothing, rather than silently matching
+            // everything.
+            ...(departmentIds !== undefined
+                ? [{ $match: { "task.departmentId": { $in: departmentIds.map((id) => new Types.ObjectId(id)) } } }]
+                : []),
             ...(userId ? [{
                 $match: {
                     $or: [

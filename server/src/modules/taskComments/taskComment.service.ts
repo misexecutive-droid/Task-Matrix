@@ -13,7 +13,7 @@ const assertCanComment = (user: AccessTokenPayload, task: any) => {
     if (String(task.userId) === user.sub) return;
     if (task.assigneeId && String(task.assigneeId) === user.sub) return;
     if ((task.additionalAssigneeIds ?? []).some((id: any) => String(id) === user.sub)) return;
-    throw AppError.forbidden("You don't have access to this task's activity");
+    throw AppError.forbidden("You don't have access to this delegation's activity");
 };
 
 const AUTHOR_FIELDS = "firstName lastName email role";
@@ -21,7 +21,7 @@ const AUTHOR_FIELDS = "firstName lastName email role";
 export const taskCommentService = {
     async list(taskId: string, user: AccessTokenPayload) {
         const task = await Task.findById(taskId);
-        if (!task) throw AppError.notFound("Task not found");
+        if (!task) throw AppError.notFound("Delegation not found");
         assertCanComment(user, task);
 
         return TaskComment.find({ taskId })
@@ -31,7 +31,7 @@ export const taskCommentService = {
 
     async create(taskId: string, input: CreateTaskCommentInput, files: Express.Multer.File[], user: AccessTokenPayload) {
         const task = await Task.findById(taskId);
-        if (!task) throw AppError.notFound("Task not found");
+        if (!task) throw AppError.notFound("Delegation not found");
         assertCanComment(user, task);
 
         const attachments = files.map((file) => ({

@@ -198,7 +198,10 @@ export const ItemTypeConfigFields = (props: ItemTypeFieldsProps) => {
 
 // Mirrors ChecklistBuilder's save-time validation, one item at a time — used both to gate the
 // quick-add popup's confirm button and (via ChecklistBuilder) the final "Create checklist" submit,
-// so an item can never look addable in one place and rejected in the other.
+// so an item can never look addable in one place and rejected in the other. Kept alongside
+// ItemTypeConfigFields since both operate on the same ItemDraft shape — only affects Fast Refresh
+// granularity, not runtime correctness.
+// eslint-disable-next-line react-refresh/only-export-components
 export const isItemDraftComplete = (draft: ItemDraft): boolean => {
   if (draft.itemType === 'AUDIT' && draft.auditUserIds.length === 0) return false;
   if ((draft.itemType === 'MULTIPLE_CHOICE' || draft.itemType === 'DROPDOWN') && draft.options.length < 2) return false;

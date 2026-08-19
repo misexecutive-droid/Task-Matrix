@@ -8,9 +8,9 @@ import { WEEKDAYS, daysUntilWeekday, matchInDays } from "./dateParsing.js"
 export const SLOT_ORDER: readonly ConversationSlot[] = ["assignee", "department", "dueDate", "priority"]
 
 export const SLOT_QUESTIONS: Record<ConversationSlot, string> = {
-    assignee: "Who should I assign this task to?",
+    assignee: "Who should I assign this delegation to?",
     department: "Which department does this belong to?",
-    dueDate: "When is this task due?",
+    dueDate: "When is this delegation due?",
     priority: "Should this be low, medium, or high priority?",
 }
 

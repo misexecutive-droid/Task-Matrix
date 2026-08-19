@@ -2,7 +2,7 @@ import { apiFetch } from "./http";
 
 export type CategoryAssignee = {
     id: string;
-    firstName: String;
+    firstName: string;
     lastName: string | null;
     email: string
 };

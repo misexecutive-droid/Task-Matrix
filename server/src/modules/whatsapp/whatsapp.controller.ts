@@ -103,12 +103,12 @@ export const whatsappController = {
             const assigneeName = assignee ? `${assignee.firstName} ${assignee.lastName ?? ""}`.trim() : "unassigned";
             await sendWhatsAppMessage(
                 from,
-                `Task Created: ${task.title}\nAssigned to: ${assigneeName}\nDue: ${dueDate.toLocaleDateString()}\nPriority: ${priority}`,
+                `Delegation Created: ${task.title}\nAssigned to: ${assigneeName}\nDue: ${dueDate.toLocaleDateString()}\nPriority: ${priority}`,
             );
 
         }catch(err){
             console.error("WhatsApp task creation failed:" ,err);
-            await sendWhatsAppMessage(from, "Sorry, something wend wrong creating that task. Please try again or add it manually.")
+            await sendWhatsAppMessage(from, "Sorry, something wend wrong creating that delegation. Please try again or add it manually.")
 
         }
     })

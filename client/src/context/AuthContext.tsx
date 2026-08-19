@@ -2,7 +2,7 @@ import { createContext, useContext, useEffect, useState } from 'react';
 import type { Role } from '../api/auth';
 import { tokenStore } from '../lib/tokenStore';
 
-type User = { id: string; name: string; email: string; role: Role };
+type User = { id: string; name: string; email: string; role: Role; departmentId: string | null; storeId: string | null };
 
 type AuthContextType = {
   user:   User | null;
@@ -48,6 +48,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   );
 };
 
+// Provider + hook intentionally live in one file (the hook is meaningless without its provider);
+// only affects Fast Refresh granularity, not runtime correctness.
+// eslint-disable-next-line react-refresh/only-export-components
 export const useAuth = (): AuthContextType => {
   const ctx = useContext(AuthContext);
   if (!ctx) throw new Error('useAuth must be used inside <AuthProvider>');

@@ -2,6 +2,7 @@ import {
   Loader2,
   Trash2,
   User,
+  UserCog,
   CheckCircle2,
   ShieldQuestion,
   Clock,
@@ -13,6 +14,7 @@ import {
 import { useDeleteTaskMutation } from "./hook";
 import { TaskVerifyActions } from "./TaskVerifyActions";
 import { PRIORITY_MAP } from "./taskDisplay";
+import { TaskScoreBadge } from "./TaskScoreBadge";
 import { departmentTagClass } from "./departmentTagColors";
 import { TaskSourceBadge } from "./TaskSourceBadge";
 import { coverPhotoFor } from "./taskAttachmentDisplay";
@@ -25,6 +27,7 @@ import type { Task } from "../../api/task";
 interface TaskCardProps {
   task: Task;
   assigneeNames?: string[];
+  raisedByName?: string;
   departmentName?: string;
   isVerifier: boolean;
   onOpen: (task: Task) => void;
@@ -42,7 +45,7 @@ const daysLeftLabel = (dueDate: string) => {
   return `${days} day${days === 1 ? '' : 's'} left`;
 };
 
-export const TaskCard = ({ task, assigneeNames = [], departmentName, isVerifier, onOpen, fields }: TaskCardProps) => {
+export const TaskCard = ({ task, assigneeNames = [], raisedByName, departmentName, isVerifier, onOpen, fields }: TaskCardProps) => {
   const deleteMutation = useDeleteTaskMutation();
   const priority = PRIORITY_MAP[task.priority];
   const coverPhoto = coverPhotoFor(task.attachments);
@@ -79,8 +82,8 @@ export const TaskCard = ({ task, assigneeNames = [], departmentName, isVerifier,
               e.stopPropagation();
               onOpen(task);
             }}
-            aria-label="Open task"
-            title="Open task"
+            aria-label="Open delegation"
+            title="Open delegation"
             className="flex items-center justify-center size-7 rounded-md text-text-light hover:text-primary-600 hover:bg-primary-500/10 transition-colors cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-primary-500/30"
           >
             <SquarePen size={15} strokeWidth={2.5} />
@@ -93,8 +96,8 @@ export const TaskCard = ({ task, assigneeNames = [], departmentName, isVerifier,
                 deleteMutation.mutate(task.id);
               }}
               disabled={deleteMutation.isPending}
-              aria-label="Delete task"
-              title="Delete task"
+              aria-label="Delete delegation"
+              title="Delete delegation"
               className="flex items-center justify-center size-7 rounded-md text-text-light hover:text-danger hover:bg-danger/10 transition-colors cursor-pointer disabled:opacity-50 outline-none focus-visible:ring-2 focus-visible:ring-danger/40"
             >
               {deleteMutation.isPending ? (
@@ -119,6 +122,15 @@ export const TaskCard = ({ task, assigneeNames = [], departmentName, isVerifier,
         <p className="text-xs text-text-muted leading-relaxed line-clamp-2">
           {task.description}
         </p>
+      )}
+
+      {fields.raisedBy && raisedByName && (
+        <div className="flex items-center gap-1.5 text-[11px] font-medium text-text-muted">
+          <UserCog size={12} strokeWidth={2.5} className="text-text-light shrink-0" />
+          <span className="truncate">
+            Raised by <span className="font-semibold text-text-secondary">{raisedByName}</span>
+          </span>
+        </div>
       )}
 
       {(fields.department || fields.priority || fields.category || fields.subtasks) && (
@@ -152,6 +164,8 @@ export const TaskCard = ({ task, assigneeNames = [], departmentName, isVerifier,
               {subtasks.done}/{subtasks.total}
             </span>
           )}
+
+          {fields.status && <TaskScoreBadge status={task.status} variant="sm" />}
         </div>
       )}
 
@@ -173,62 +187,73 @@ export const TaskCard = ({ task, assigneeNames = [], departmentName, isVerifier,
         </div>
       )}
 
-      <div className="flex items-center justify-between pt-2 border-t border-border/60">
+      <div className="flex items-center justify-between gap-2 pt-2 border-t border-border/60">
         {fields.assignee ? (
           assigneeNames.length > 0 ? (
-            <div className="flex items-center -space-x-1.5">
-              {assigneeNames.slice(0, MAX_VISIBLE_AVATARS).map((name, i) => (
-                <div
-                  key={name + i}
-                  className={`flex items-center justify-center size-6 rounded-full text-white text-[10px] font-bold ring-2 ring-surface shrink-0 ${avatarColorClass(name)}`}
-                  title={`Assigned to ${name}`}
-                >
-                  {getInitials(name)}
-                </div>
-              ))}
-              {assigneeNames.length > MAX_VISIBLE_AVATARS && (
-                <div
-                  className="flex items-center justify-center size-6 rounded-full bg-surface-hover text-text-secondary text-[10px] font-bold ring-2 ring-surface shrink-0"
-                  title={assigneeNames.slice(MAX_VISIBLE_AVATARS).join(', ')}
-                >
-                  +{assigneeNames.length - MAX_VISIBLE_AVATARS}
-                </div>
-              )}
+            <div className="flex items-center gap-1.5 min-w-0">
+              <div className="flex items-center -space-x-1.5 shrink-0">
+                {assigneeNames.slice(0, MAX_VISIBLE_AVATARS).map((name, i) => (
+                  <div
+                    key={name + i}
+                    className={`flex items-center justify-center size-6 rounded-full text-white text-[10px] font-bold ring-2 ring-surface shrink-0 ${avatarColorClass(name)}`}
+                    title={`Assigned to ${name}`}
+                  >
+                    {getInitials(name)}
+                  </div>
+                ))}
+                {assigneeNames.length > MAX_VISIBLE_AVATARS && (
+                  <div
+                    className="flex items-center justify-center size-6 rounded-full bg-surface-hover text-text-secondary text-[10px] font-bold ring-2 ring-surface shrink-0"
+                    title={assigneeNames.slice(MAX_VISIBLE_AVATARS).join(', ')}
+                  >
+                    +{assigneeNames.length - MAX_VISIBLE_AVATARS}
+                  </div>
+                )}
+              </div>
+              <span className="text-[11px] font-semibold text-text-secondary truncate">
+                {assigneeNames[0]}
+                {assigneeNames.length > 1 ? ` +${assigneeNames.length - 1}` : ''}
+              </span>
             </div>
           ) : (
-            <div
-              className="flex items-center justify-center size-6 rounded-full bg-surface-hover text-text-light ring-2 ring-surface shrink-0"
-              title="Unassigned"
-            >
-              <User size={13} strokeWidth={2.5} />
+            <div className="flex items-center gap-1.5 min-w-0">
+              <div
+                className="flex items-center justify-center size-6 rounded-full bg-surface-hover text-text-light ring-2 ring-surface shrink-0"
+                title="Unassigned"
+              >
+                <User size={13} strokeWidth={2.5} />
+              </div>
+              <span className="text-[11px] font-medium text-text-light truncate">Unassigned</span>
             </div>
           )
         ) : (
           <span />
         )}
 
-        {showVerifyActions ? (
-          <TaskVerifyActions task={task} compact />
-        ) : showDoneBadge ? (
-          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-success/10 text-success">
-            <CheckCircle2 size={15} strokeWidth={2.5} />
-            Done
-          </span>
-        ) : showReviewBadge ? (
-          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-warning/10 text-warning">
-            <ShieldQuestion size={15} strokeWidth={2.5} />
-            In review
-          </span>
-        ) : showDuePill ? (
-          <span
-            className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold ${
-              isOverdue ? 'bg-danger/10 text-danger' : 'bg-surface-hover text-text-secondary'
-            }`}
-          >
-            <Clock size={15} strokeWidth={2.5} />
-            {daysLeftLabel(task.dueDate!)}
-          </span>
-        ) : null}
+        <div className="shrink-0">
+          {showVerifyActions ? (
+            <TaskVerifyActions task={task} compact />
+          ) : showDoneBadge ? (
+            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-success/10 text-success">
+              <CheckCircle2 size={15} strokeWidth={2.5} />
+              Done
+            </span>
+          ) : showReviewBadge ? (
+            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-warning/10 text-warning">
+              <ShieldQuestion size={15} strokeWidth={2.5} />
+              In review
+            </span>
+          ) : showDuePill ? (
+            <span
+              className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold ${
+                isOverdue ? 'bg-danger/10 text-danger' : 'bg-surface-hover text-text-secondary'
+              }`}
+            >
+              <Clock size={15} strokeWidth={2.5} />
+              {daysLeftLabel(task.dueDate!)}
+            </span>
+          ) : null}
+        </div>
       </div>
     </div>
   );

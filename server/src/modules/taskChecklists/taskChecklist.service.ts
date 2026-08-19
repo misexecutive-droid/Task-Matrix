@@ -20,7 +20,7 @@ const populateChecklist = (query: any) =>
 const assertCanManage = (user: AccessTokenPayload, task: any) => {
     if (user.role === "ADMIN" || user.role === "PC") return;
     if (String(task.userId) === user.sub) return;
-    throw AppError.forbidden("Only the task owner can manage its checklists");
+    throw AppError.forbidden("Only the delegation owner can manage its checklists");
 };
 
 // Who's allowed to mark a specific item complete, or upload photos toward it — the item's
@@ -37,7 +37,7 @@ export const taskChecklistService = {
     // can carry its own assigneeId/dueDate/photo requirements from the moment it's created.
     async createForTask(taskId: string, input: CreateTaskChecklistInput, user: AccessTokenPayload) {
         const task = await Task.findById(taskId);
-        if (!task) throw AppError.notFound("Task not found");
+        if (!task) throw AppError.notFound("Delegation not found");
         assertCanManage(user, task);
 
         const checklist = await TaskChecklist.create({ title: input.title, taskId });
@@ -58,12 +58,12 @@ export const taskChecklistService = {
     // afterwards through the normal updateItem action.
     async createFromTemplate(taskId: string, templateId: string, user: AccessTokenPayload) {
         const task = await Task.findById(taskId);
-        if (!task) throw AppError.notFound("Task not found");
+        if (!task) throw AppError.notFound("Delegation not found");
         assertCanManage(user, task);
 
         const template = await ChecklistTemplate.findById(templateId);
         if (!template) throw AppError.notFound("Checklist template not found");
-        if (template.appliesTo !== "TASK") throw AppError.badRequest("This template applies to tickets, not tasks");
+        if (template.appliesTo !== "TASK") throw AppError.badRequest("This template applies to tickets, not delegations");
 
         const templateItems = await ChecklistTemplateItem.find({ templateId }).sort({ order: 1 });
 
@@ -92,7 +92,7 @@ export const taskChecklistService = {
 
         const checklist = await TaskChecklist.findById(item.taskChecklistId);
         const task = await Task.findById(checklist?.taskId);
-        if (!task) throw AppError.notFound("Task not found");
+        if (!task) throw AppError.notFound("Delegation not found");
         assertCanManage(user, task);
 
         Object.assign(item, input);
@@ -150,7 +150,7 @@ export const taskChecklistService = {
         const checklist = await TaskChecklist.findById(checklistId);
         if (!checklist) throw AppError.notFound("Checklist not found");
         const task = await Task.findById(checklist.taskId);
-        if (!task) throw AppError.notFound("Task not found");
+        if (!task) throw AppError.notFound("Delegation not found");
         assertCanManage(user, task);
 
         const items = await TaskChecklistItem.find({ taskChecklistId: checklist._id });
@@ -170,7 +170,7 @@ export const taskChecklistService = {
         if (!item) throw AppError.notFound("Checklist item not found");
         const checklist = await TaskChecklist.findById(item.taskChecklistId);
         const task = await Task.findById(checklist?.taskId);
-        if (!task) throw AppError.notFound("Task not found");
+        if (!task) throw AppError.notFound("Delegation not found");
         assertCanManage(user, task);
 
         await TaskImage.deleteMany({ taskChecklistItemId: item._id });

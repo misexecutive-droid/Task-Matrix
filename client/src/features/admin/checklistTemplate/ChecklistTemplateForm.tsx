@@ -1,20 +1,12 @@
 // features/checklist-templates/components/ChecklistTemplateForm.tsx
 import {useCreateChecklistTemplateMutation,  useDepartmentsQuery } from '../hook';
-import { ChecklistTemplateFormUI } from './ChecklistTemplateFormUi';
-import type { ChecklistTemplateTarget } from '../../../api/checklistTemplates';
-
-interface FormPayload {
-  name: string;
-  appliesTo: ChecklistTemplateTarget;
-  departmentId: string;
-  items: any[];
-}
+import { ChecklistTemplateFormUI, type ChecklistTemplateFormPayload } from './ChecklistTemplateFormUi';
 
 export const ChecklistTemplateForm = ({ onClose }: { onClose: () => void }) => {
   const { data: departments = [] } = useDepartmentsQuery();
   const createMutation = useCreateChecklistTemplateMutation();
 
-  const handleSubmit = (payload: FormPayload) => {
+  const handleSubmit = (payload: ChecklistTemplateFormPayload) => {
     createMutation.mutate(
       {
         name: payload.name.trim(),

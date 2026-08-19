@@ -23,6 +23,9 @@ export type ItemDraft = {
   conditionalActions: ChecklistConditionalAction[];
 };
 
+// Tightly coupled to ItemDraft/ChecklistDefinitionItemDraftRow in this file — only affects Fast
+// Refresh granularity, not runtime correctness.
+// eslint-disable-next-line react-refresh/only-export-components
 export const emptyItemDraft = (): ItemDraft => ({
   label: '',
   requiredImageCount: '0',
@@ -45,6 +48,7 @@ export const emptyItemDraft = (): ItemDraft => ({
   conditionalActions: [],
 });
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const ITEM_TYPE_LABEL: Record<ChecklistItemType, string> = {
   STANDARD: 'Standard',
   AUDIT: 'Audit',

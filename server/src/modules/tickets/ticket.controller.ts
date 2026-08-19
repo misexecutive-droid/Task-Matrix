@@ -2,6 +2,7 @@ import { type Request , type Response } from "express"
 import { ticketService } from "./ticket.service.js"
 import { createTicketSchema , paginatioinSchema, updateTicketSchema , tatReportQuerySchema, verifyTicketSchema, statusUpdateSchema } from "./ticket.validation.js"
 import { asyncHandler } from "../../utils/asyncHandler.js"
+import { resolveReportScope } from "../../utils/reportScope.js"
 
 export const ticketController = {
     list : asyncHandler( async ( req : Request , res : Response) => {
@@ -47,8 +48,9 @@ export const ticketController = {
     }),
 
     tatReport : asyncHandler(async (req : Request , res : Response) => {
-        const { groupBy, from , to} = tatReportQuerySchema.parse(req.query);
-        const data = await ticketService.tatReport(groupBy, from, to);
+        const { groupBy, from , to, departmentId, storeId } = tatReportQuerySchema.parse(req.query);
+        const scope = resolveReportScope(req.user!, { departmentId, storeId });
+        const data = await ticketService.tatReport(groupBy, from, to, scope.departmentId, scope.storeId);
         res.json({ success : true, data})
     })
 }

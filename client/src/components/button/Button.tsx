@@ -51,6 +51,7 @@ export function Button({
       aria-disabled={isDisabled}
       aria-busy={isLoading}
       className={cn(
+        'press-feedback',
         // Base styles: Flexbox layout & typography
         'inline-flex items-center justify-center font-semibold whitespace-nowrap',
         // Smooth transitions and micro-interactions

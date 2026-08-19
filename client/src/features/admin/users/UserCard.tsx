@@ -1,0 +1,77 @@
+import { Building2 } from 'lucide-react';
+import { clsx, type ClassValue } from 'clsx';
+import { twMerge } from 'tailwind-merge';
+import { ENTITY_CARD_CLASS, StatusPill, EntityCardActions } from '../../../components';
+import type { AdminUser } from '../../../api/admin';
+import { ROLE_STYLES, ROLE_LABEL } from '../roleBadge';
+
+function cn(...inputs: ClassValue[]) {
+  return twMerge(clsx(inputs));
+}
+
+const initialsOf = (firstName: string, lastName?: string | null) =>
+  `${firstName[0] ?? ''}${lastName?.[0] ?? ''}`.toUpperCase();
+
+interface UserCardProps {
+  user: AdminUser;
+  /** Resolved from user.departmentId by the parent list — undefined when unassigned. */
+  departmentName?: string;
+  isUpdating: boolean;
+  isDeleting: boolean;
+  onToggleActive: (id: string, isActive: boolean) => void;
+  onEdit: (user: AdminUser) => void;
+  onDelete: (id: string) => void;
+}
+
+export const UserCard = ({ user, departmentName, isUpdating, isDeleting, onToggleActive, onEdit, onDelete }: UserCardProps) => (
+  <article className={cn(ENTITY_CARD_CLASS, isDeleting && 'opacity-50 pointer-events-none grayscale-[0.3]')}>
+    <div>
+      <header className="flex items-start justify-between gap-2.5 mb-2.5">
+        <div className="flex items-center gap-2.5 min-w-0">
+          {/* Same 32px footprint as EntityIconTile, shaped as an avatar circle instead — the
+              consistent "leading visual" pattern shared with Department/Store cards, adapted for
+              a person. */}
+          <div className="flex items-center justify-center w-8 h-8 rounded-full bg-gradient-to-br from-primary-500 to-primary-700 text-white font-display font-bold text-[11px] shrink-0 shadow-sm ring-1 ring-primary-500/10">
+            {initialsOf(user.firstName, user.lastName)}
+          </div>
+          <div className="min-w-0 space-y-0.5">
+            <h3 className="text-sm font-display font-bold text-text truncate group-hover:text-primary-600 transition-colors duration-300">
+              {user.firstName} {user.lastName ?? ''}
+            </h3>
+            <p className="text-xs font-display font-medium text-text-muted truncate" title={user.email}>
+              {user.email}
+            </p>
+          </div>
+        </div>
+
+        <StatusPill
+          active={user.isActive}
+          isUpdating={isUpdating}
+          onToggle={() => onToggleActive(user.id, user.isActive)}
+          ariaLabel={`${user.isActive ? 'Deactivate' : 'Activate'} ${user.firstName}`}
+        />
+      </header>
+
+      <div className="flex items-center gap-1 text-[11px] font-display font-medium text-text-muted bg-surface-hover px-1.5 py-1 rounded-md border border-border/50 w-fit">
+        <Building2 className="w-3 h-3 text-text-light shrink-0" />
+        <span className={cn('truncate max-w-[150px]', !departmentName && 'italic text-text-light')}>
+          {departmentName ?? 'No department assigned'}
+        </span>
+      </div>
+    </div>
+
+    <footer className="flex items-center justify-between pt-2.5 mt-3 border-t border-border/60">
+      <span className={cn('text-[11px] font-display font-bold px-1.5 py-0.5 rounded-md border', ROLE_STYLES[user.role])}>
+        {ROLE_LABEL[user.role]}
+      </span>
+
+      <EntityCardActions
+        onEdit={() => onEdit(user)}
+        onDelete={() => onDelete(user.id)}
+        isDeleting={isDeleting}
+        editLabel={`Edit ${user.firstName}`}
+        deleteLabel={`Delete ${user.firstName}`}
+      />
+    </footer>
+  </article>
+);

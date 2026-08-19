@@ -2,6 +2,9 @@ import { Camera, MapPin, Clock, PenLine, ScanLine, type LucideIcon } from 'lucid
 import { Badge } from '@/components/ui/badge';
 import type { ChecklistProofType } from '../../../../api/checklistDefinitions';
 
+// Tightly coupled to BuilderProofPanel right below — only affects Fast Refresh granularity,
+// not runtime correctness.
+// eslint-disable-next-line react-refresh/only-export-components
 export const PROOF_OPTIONS: { value: ChecklistProofType; label: string; icon: LucideIcon }[] = [
   { value: 'PHOTO', label: 'Photo', icon: Camera },
   { value: 'GPS_MATCH', label: 'GPS match', icon: MapPin },

@@ -12,6 +12,7 @@
     "build": "tsc -p tsconfig.json",
     "test watch": "vitest",
     "seed:admin": "tsx src/scripts/seedAdmin.ts",
+    "seed:demo": "tsx src/scripts/seedDemoData.ts",
     "test:whatsapp" : "tsx src/scripts/testWhatsAppWebhook.ts",
     "test:rules" : "tsx src/scripts/testRuleBasedExtraction.ts",
     "migrate:checklist-instance-indexes": "tsx src/scripts/migrateChecklistInstanceIndexes.ts"

@@ -10,13 +10,12 @@ import { TicketList, useTicketSocket } from './features/tickets';
 import { TaskList, useTaskSocket } from './features/tasks';
 import { useNotificationSocket } from './features/notifications/useNotificationSocket';
 import { AdminLayout } from './features/admin/AdminLayout';
-import { UserList } from './features/admin/users';
-import { DepartmentList } from './features/admin/department';
-import { StoreList } from './features/admin/store';
+import { DirectoryPage } from './features/admin/directory';
 import { ChecklistTemplateList } from './features/admin/checklistTemplate';
+import { OrgStructurePage } from './features/admin/orgStructure';
 import { TatReport } from './features/admin/report';
 import { AdminTaskList } from './features/admin/AdminTaskList';
-import { AdminAnalytics } from './features/admin/analytics';
+import { OrgOverview } from './features/admin/analytics';
 import { SettingsPage } from './features/admin/SettingsPage';
 import { ChecklistTemplatesGrid, ChecklistDefinitionDetail, ChecklistBuilder, MyChecklists, ChecklistInstanceDetail } from './features/checklist';
 import { VerificationQueue } from './features/verification';
@@ -25,6 +24,7 @@ import { CategoryList, SettingsLayout } from './features/settings';
 import { ReportsPage } from './features/reports';
 import { EventList } from './features/events';
 import { TeamOverviewPage } from './features/team/TeamOverviewPage';
+import { TodoPage } from './features/todo';
 
 const ProtectedRoute = () => {
   const { token } = useAuth();
@@ -48,6 +48,16 @@ const PCRoute = () => {
   const { token, user } = useAuth();
   if (!token) return <Navigate to="/login" replace />;
   return user?.role === 'PC' || user?.role === 'ADMIN' ? <Outlet /> : <Navigate to="/" replace />;
+};
+
+// MANAGER (department-scoped) and SENIOR (store-scoped) reach the same merged Overview/Analytics
+// page ADMIN/PC get at /admin, but from a route under the regular Dashboard shell instead of
+// AdminLayout — they don't get the org-management tools (Users/Stores/Departments/Settings) that
+// shell exposes.
+const AnalyticsRoute = () => {
+  const { token, user } = useAuth();
+  if (!token) return <Navigate to="/login" replace />;
+  return user?.role === 'MANAGER' || user?.role === 'SENIOR' ? <Outlet /> : <Navigate to="/" replace />;
 };
 
 const router = createBrowserRouter([
@@ -85,10 +95,17 @@ const router = createBrowserRouter([
           ] },
           { path: '/tickets', element: <TicketList /> },
           { path: '/tasks', element: <TaskList /> },
+          { path: '/todo', element: <TodoPage /> },
           { path: '/events', element: <EventList /> },
           { path: '/checklists', element: <MyChecklists /> },
           { path: '/checklists/:instanceId', element: <ChecklistInstanceDetail /> },
           { path: '/dashboard', element: <Navigate to="/" replace /> },
+          {
+            element: <AnalyticsRoute />,
+            children: [
+              { path: '/analytics', element: <OrgOverview /> },
+            ],
+          },
           {
             element: <PCRoute />,
             children: [
@@ -109,17 +126,20 @@ const router = createBrowserRouter([
           {
             element: <AdminLayout />,
             children: [
-              { path: '/admin', element: <TatReport /> },
-              { path: '/admin/users', element: <UserList /> },
-              { path: '/admin/departments', element: <DepartmentList /> },
-              { path: '/admin/stores', element: <StoreList /> },
+              { path: '/admin', element: <OrgOverview /> },
+              { path: '/admin/analytics', element: <Navigate to="/admin" replace /> },
+              { path: '/admin/reports/tasks', element: <TatReport /> },
+              { path: '/admin/directory', element: <DirectoryPage /> },
+              { path: '/admin/users', element: <Navigate to="/admin/directory" replace /> },
+              { path: '/admin/departments', element: <Navigate to="/admin/directory" replace /> },
+              { path: '/admin/stores', element: <Navigate to="/admin/directory" replace /> },
+              { path: '/admin/org-structure', element: <OrgStructurePage /> },
               { path: '/admin/checklist-templates', element: <ChecklistTemplateList /> },
               { path: '/admin/scheduled-checklists', element: <ChecklistTemplatesGrid /> },
               { path: '/admin/scheduled-checklists/builder', element: <ChecklistBuilder /> },
               { path: '/admin/scheduled-checklists/builder/:definitionId', element: <ChecklistBuilder /> },
               { path: '/admin/scheduled-checklists/:definitionId', element: <ChecklistDefinitionDetail /> },
               { path: '/admin/tickets', element: <TicketList /> },
-              { path: '/admin/analytics', element: <AdminAnalytics /> },
               { path: '/admin/reports', element: <ReportsPage /> },
               { path: '/admin/settings', element: <SettingsPage /> },
             ],

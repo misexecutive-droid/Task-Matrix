@@ -15,7 +15,7 @@ export const ChecklistDetailsFields = ({
   description,
   onDescriptionChange,
 }: ChecklistDetailsFieldsProps) => (
-  <>
+  <div className="flex flex-col gap-4">
     <Input
       id="checklist-name"
       label="Checklist Name"
@@ -36,5 +36,5 @@ export const ChecklistDetailsFields = ({
       value={description}
       onChange={(e) => onDescriptionChange(e.target.value)}
     />
-  </>
+  </div>
 );

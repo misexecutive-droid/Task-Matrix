@@ -1,10 +1,12 @@
 import { Link } from 'react-router';
-import { Check, Circle, ClipboardList } from 'lucide-react';
+import { Check, Circle, ClipboardList, Clock } from 'lucide-react';
 import {
   formatDate,
   instanceProgressStatus,
   VERIFICATION_STATUS_LABEL,
   VERIFICATION_STATUS_STYLE,
+  rateToneClass,
+  isInstanceOverdue,
 } from '../checklistDisplay';
 import type { ChecklistInstance } from '../../../api/checklistInstances';
 
@@ -18,6 +20,8 @@ export const ChecklistInstanceRow = ({ instance }: ChecklistInstanceRowProps) =>
   const total = instance.items.length;
   const done = instance.items.filter(i => i.isDone).length;
   const status = instanceProgressStatus(done, total);
+  const progress = total ? Math.round((done / total) * 100) : 0;
+  const overdue = isInstanceOverdue(instance.periodEnd, status === 'COMPLETED');
 
   return (
     <Link
@@ -43,11 +47,19 @@ export const ChecklistInstanceRow = ({ instance }: ChecklistInstanceRowProps) =>
           <span className="flex items-center gap-1 text-xs text-text-muted font-mono">
             <ClipboardList size={11} /> {done}/{total}
           </span>
+          <span className={`text-xs font-mono font-semibold ${rateToneClass(progress)}`}>
+            Mark {progress}%
+          </span>
           <span
             className={`text-xs font-mono font-medium px-2 py-0.5 rounded-full border ${VERIFICATION_STATUS_STYLE[instance.verificationStatus]}`}
           >
             {VERIFICATION_STATUS_LABEL[instance.verificationStatus]}
           </span>
+          {overdue && (
+            <span className="flex items-center gap-1 text-xs font-mono font-semibold px-2 py-0.5 rounded-full bg-danger/10 text-danger">
+              <Clock size={11} /> Overdue
+            </span>
+          )}
         </div>
       </div>
 

@@ -40,10 +40,10 @@ export const TatReport = () => {
             </div>
             <div className="space-y-1">
               <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
-                Tasks
+                Delegation
               </h1>
               <p className="text-sm text-slate-500 dark:text-slate-400 max-w-lg leading-relaxed">
-                Track and manage every task across the organization. Filter by assignee to narrow your view.
+                Track and manage every delegation across the organization. Filter by assignee to narrow your view.
               </p>
             </div>
           </div>
@@ -51,7 +51,7 @@ export const TatReport = () => {
           <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
 
             <Select value={userId || ALL_USERS} onValueChange={v => setUserId(v === ALL_USERS ? "" : v)}>
-              <SelectTrigger className="w-full sm:w-56 h-10 text-sm" aria-label="Filter tasks by user">
+              <SelectTrigger className="w-full sm:w-56 h-10 text-sm" aria-label="Filter delegations by user">
                 <Users className="w-4 h-4 shrink-0 text-slate-400" />
                 <SelectValue />
               </SelectTrigger>
@@ -84,15 +84,15 @@ export const TatReport = () => {
           </div>
         </header>
 
-        <section aria-label="Task List Content" className="flex flex-col flex-1">
+        <section aria-label="Delegation List Content" className="flex flex-col flex-1">
           <TaskList userId={userId || undefined} hideHeader />
         </section>
 
         {showExport && (
           <ExportDialog
             reportModule="tasks"
-            title="Export Tasks Data"
-            description="Generate a CSV export containing every task created in the selected period, including status, priority, department, and assignee data."
+            title="Export Delegations Data"
+            description="Generate a CSV export containing every delegation created in the selected period, including status, priority, department, and assignee data."
             onClose={() => setShowExport(false)}
           />
         )}

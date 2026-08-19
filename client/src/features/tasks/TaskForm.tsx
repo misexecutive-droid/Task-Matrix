@@ -7,6 +7,7 @@ import { Input, Textarea, Modal, DateRangePicker } from '../../components';
 import type { DateRangeValue } from '../../components';
 import { useCreateTaskMutation, useAssignableUsersQuery } from './hook';
 import { useDepartmentsQuery } from '../tickets/hook';
+import { useAuth } from '../../context/AuthContext';
 import type { Task } from '../../api/task';
 import { TaskFormPrioritySelector } from './TaskFormPrioritySelector';
 import { TaskFormDepartmentField } from './TaskFormDepartmentField';
@@ -33,6 +34,7 @@ interface TaskFormProps {
 }
 
 export const TaskForm = ({ onClose, onCreated }: TaskFormProps) => {
+  const { user } = useAuth();
   const mutation = useCreateTaskMutation();
   const { data: assignableUsers, isLoading: isLoadingUsers } = useAssignableUsersQuery();
   const { data: departments, isLoading: isLoadingDepts } = useDepartmentsQuery();
@@ -49,9 +51,11 @@ export const TaskForm = ({ onClose, onCreated }: TaskFormProps) => {
     formState: { errors, isSubmitting },
   } = useForm<TaskFields>({
     resolver: zodResolver(taskSchema),
+    // Defaults to the creator's own department — almost every delegation stays within a
+    // department, so starting blank just meant re-picking the same value every time.
     defaultValues: {
       priority: 'medium',
-      departmentId: '',
+      departmentId: user?.departmentId ?? '',
     },
   });
 
@@ -87,7 +91,7 @@ export const TaskForm = ({ onClose, onCreated }: TaskFormProps) => {
       onClose={onClose}
       size="2xl"
       icon={<CheckSquare className="w-5 h-5 text-primary-600" />}
-      title="Add new task"
+      title="Add new delegation"
       description="Define objectives, set priorities, and assign responsible members."
       bodyClassName="p-0"
       footer={<TaskFormFooter onClose={onClose} isPending={mutation.isPending} isSubmitting={isSubmitting} />}
@@ -96,7 +100,7 @@ export const TaskForm = ({ onClose, onCreated }: TaskFormProps) => {
         <div className="flex flex-col gap-5 p-5 ">
           <Input
             id="title"
-            label={<>Task Title <span className="text-danger">*</span></>}
+            label={<>Delegation Title <span className="text-danger">*</span></>}
             icon={Heading}
             iconClassName={FIELD_LABEL_ICON_CLASS}
             placeholder="e.g. Redesign the landing page hero section"
@@ -114,7 +118,7 @@ export const TaskForm = ({ onClose, onCreated }: TaskFormProps) => {
             iconClassName={FIELD_LABEL_ICON_CLASS}
             containerClassName="flex-1 min-h-0"
             rows={6}
-            placeholder="Provide task context, constraints, acceptance criteria, or relevant links…"
+            placeholder="Provide delegation context, constraints, acceptance criteria, or relevant links…"
             className="focus:border-primary-500 focus:ring-primary-500/20 h-full min-h-[100px] resize-none"
             labelClassName={FIELD_LABEL_CLASS}
             {...register('description')}
